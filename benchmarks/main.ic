@@ -1,0 +1,46 @@
+#define _POSIX_C_SOURCE 200112L
+#include <time.h>
+#include <stdio.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <string.h>
+
+extern char const* name;
+extern void init();
+extern void run();
+extern void clean();
+
+/* #define CLOCK CLOCK_REALTIME */
+/* #define CLOCK CLOCK_PROCESS_CPUTIME_ID */
+#define CLOCK CLOCK_THREAD_CPUTIME_ID
+
+int main(int argc, char ** argv)
+{
+    // do we have verbose output?
+    bool verbose = argc > 1 && (strcmp(argv[1], "-v") == 0);
+    
+    init();
+
+    // get starting time    
+    struct timespec start;
+    clock_gettime(CLOCK, &start);
+
+    run();
+
+    // calculate run time
+    struct timespec stop;
+    clock_gettime(CLOCK, &stop);  
+    // number of microseconds
+    uint64_t run_time = (stop.tv_sec - start.tv_sec) * 1000000UL +
+	(stop.tv_nsec - start.tv_nsec) / 1000;
+    
+    clean();
+
+    // report runtime
+    if (verbose)
+	printf("%s run time (us): ", name);
+    printf("%" PRIu64 "\n", run_time);
+    
+    // done
+    return 0;
+}
