@@ -1,5 +1,5 @@
-#ifndef _PRINT_HH
-#define _PRINT_HH
+#ifndef PRINT_HH
+#define PRINT_HH
 
 // output streams
 #include <cstdio>
@@ -21,7 +21,7 @@ using std::map;
 struct progress_t {
   map<char, unsigned> cnts;
   FILE* o;
-  bool silent;
+  bool silent{false};
   explicit progress_t();
   void print_symbols() const;
 #ifdef DEBUG
@@ -32,7 +32,8 @@ struct progress_t {
   void newl() const;
   progress_t& operator=(progress_t const& p);
 private:
-  progress_t(progress_t const&);
+  [[ noreturn ]]
+  progress_t(progress_t const& /*unused*/);
 };
 
 extern progress_t progress;

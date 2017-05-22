@@ -1,10 +1,12 @@
-#ifndef _GETOPTS_HH
-#define _GETOPTS_HH
+#ifndef GETOPTS_HH
+#define GETOPTS_HH
+
+#include <unistd.h> // optind, optarg
 
 void get_opts(int& argc, char**& argv);
 
-typedef void (*opt_fun_t)();
-typedef void (*arg_fun_t)(char const *);
+using opt_fun_t = void (*)();
+using arg_fun_t = void (*)(const char *);
 
 struct opt_reg_t {
   opt_reg_t(unsigned char c, opt_fun_t fun, char const *go_str,
@@ -12,10 +14,5 @@ struct opt_reg_t {
   opt_reg_t(unsigned ind, arg_fun_t fun,
 	    char const *u_syn, char const *u_full);
 };
-
-extern "C" {
-  extern int optind;
-  extern char *optarg;
-}
 
 #endif

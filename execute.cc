@@ -3,19 +3,19 @@
 #include "print.hh"
 #endif
 
-#include <unistd.h> // close
-#include <cstdlib> // mkstemp
-#include <cstring> // strdup
 #include <cassert>
+#include <cstdlib>  // mkstemp
+#include <cstring>  // strdup
+#include <unistd.h> // close
 
 cmd_res_t execute(string cmd) {
-#if DEBUG
+#ifdef DEBUG
   fprintf(o1, "executing: %s\n", cmd.c_str());
 #endif
 
   cmd += " 2>&1";
-  FILE * out = popen(cmd.c_str(), "r");
-  if (out == NULL) {
+  FILE *out = popen(cmd.c_str(), "r");
+  if (out == nullptr) {
     perror("popen fails");
     exit(EXIT_FAILURE);
   }
@@ -36,30 +36,26 @@ cmd_res_t execute(string cmd) {
   status = WEXITSTATUS(status);
 
   return cmd_res_t(status, out_buf);
-
 }
 
-static char const* get_tmp_file() {
-  char* path = strdup("/tmp/osearchXXXXXX");
+static char const *get_tmp_file() {
+  char *path = strdup("/tmp/osearchXXXXXX");
   int tmp_fd = mkstemp(path);
   close(tmp_fd); // close temp file before executing it to avoid
-		 // ETXTBSY
+                 // ETXTBSY
   return path;
 }
 
 // compiler output file
-tmp_file_t::tmp_file_t(): path(get_tmp_file()) {}
+tmp_file_t::tmp_file_t() : path(get_tmp_file()) {}
 tmp_file_t::~tmp_file_t() {
-  if (unlink(path) != 0)
+  if (unlink(path) != 0) {
     perror("unlink failed");
-  free((char *)path);
+  }
+  free(const_cast<char *>(path));
 }
 
-// unused
-tmp_file_t::tmp_file_t(tmp_file_t const& tmp_file): path() {
-  assert(false && tmp_file.path);
-}
-
-tmp_file_t const& tmp_file_t::operator=(tmp_file_t const& tmp_file) {
-  assert(false && tmp_file.path);
+tmp_file_t &tmp_file_t::operator=(tmp_file_t const &tmp_file) {
+  assert(tmp_file.path == nullptr); // NYI
+  return *this;
 }

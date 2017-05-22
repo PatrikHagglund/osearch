@@ -1,18 +1,17 @@
 #include "search.hh"
 
+#include "compile.hh"
+#include "measure.hh"
+#include "point.hh"
 #include "print.hh"
 #include "read_conf.hh"
 #include "steps.hh"
-#include "measure.hh"
-#include "compile.hh"
-#include "point.hh"
 
-#include <vector>
-using std::vector;
 #include <string>
+#include <utility>
+#include <vector>
 using std::string;
 #include <utility>
-using std::make_pair;
 
 #ifdef DEBUG
 #include <cassert>
@@ -20,8 +19,9 @@ using std::make_pair;
 
 static bool skip(point_t p, point_t p_old, delta_ind_t d_ind) {
   bool same = false;
-  for (delta_ind_t::const_iterator i = d_ind.begin(); i != d_ind.end(); ++i)
-    same = same || p.val[*i] == p_old.val[*i];
+  for (unsigned short i : d_ind) {
+    same = same || p.val[i] == p_old.val[i];
+  }
   return same;
 }
 
@@ -31,7 +31,8 @@ static bool skip(point_t p, point_t p_old, delta_ind_t d_ind) {
 //      p_old.str().c_str(), delta_ind_str(d_ind).c_str());
 // #endif
 //   assert(p.val.size() == p_old.val.size());
-//   for (delta_ind_t::const_iterator i = d_ind.begin(); i != d_ind.end(); ++i) {
+//   for (delta_ind_t::const_iterator i = d_ind.begin(); i != d_ind.end(); ++i)
+//   {
 //     assert(*i < p.val.size());
 //     if (p.val[*i] == p_old.val[*i])
 //       p.val[*i] = (unsigned(p.val[*i])+1u) % conf.flags[*i]->size();
@@ -44,13 +45,15 @@ static bool skip(point_t p, point_t p_old, delta_ind_t d_ind) {
 
 static point_t get_next(point_t p, point_t p_old, delta_ind_t d_ind) {
 #ifdef DEBUG
-  fprintf(o1, "get_next: %s %s %s\n", p.str().c_str(),
-	  p_old.str().c_str(), delta_ind_str(d_ind).c_str());
+  fprintf(o1, "get_next: %s %s %s\n", p.str().c_str(), p_old.str().c_str(),
+          delta_ind_str(d_ind).c_str());
 #endif
-  for (delta_ind_t::const_iterator i = d_ind.begin(); i != d_ind.end(); ++i) {
-    p.val[*i] = (unsigned(p.val[*i])+1) % conf.flags[*i]->size();
-    if (p.val[*i] != p_old.val[*i])
+  for (unsigned short i : d_ind) {
+    p.val[i] = (unsigned(p.val[i]) + 1) %
+               static_cast<unsigned char>(conf.flags[i]->size());
+    if (p.val[i] != p_old.val[i]) {
       break;
+    }
   }
 #ifdef DEBUG
   fprintf(o1, "get_next ret: %s\n", p.str().c_str());
@@ -58,16 +61,16 @@ static point_t get_next(point_t p, point_t p_old, delta_ind_t d_ind) {
   return p;
 }
 
-static bool advance(point_t* p, point_t p_old, delta_ind_t d_ind) {
-  *p = get_next(*p, p_old, d_ind);
+static bool advance(point_t *p, const point_t &p_old, delta_ind_t d_ind) {
+  *p = get_next(*p, p_old, std::move(d_ind));
   return *p != p_old;
 }
 
 void search() {
   point_t p = get_min_point();
   obj_t res = measure(p);
-  fprintf(o1, "\n## Best (so far):\n%s %s\n",
-	  res.str().c_str(), p.str().c_str());
+  fprintf(o1, "\n## Best (so far):\n%s %s\n", res.str().c_str(),
+          p.str().c_str());
 
   steps = steps_t();
   for (;;) {
@@ -90,8 +93,9 @@ void search() {
 
     do {
       // avoid options in p/delta
-      if (skip(p_new, p_start, d_ind))
-	continue;
+      if (skip(p_new, p_start, d_ind)) {
+        continue;
+      }
 
       obj_t res_new = measure(p_new);
 
@@ -99,31 +103,29 @@ void search() {
 #ifdef DEBUG
       // assert(measure(p_old) == res_old);
 #endif
-      obj_t diff =  res_new - res;
+      obj_t diff = res_new - res;
       bool equal = equivalent_p(p_new, p);
       delta = delta_t(p_new, p, equal, diff);
-// #ifdef DEBUG
-      fprintf(o1, " point: %s res: %s delta: %s ",
-	      p_new.str().c_str(), res_new.str().c_str(), delta.str().c_str());
-// #endif
+      // #ifdef DEBUG
+      fprintf(o1, " point: %s res: %s delta: %s ", p_new.str().c_str(),
+              res_new.str().c_str(), delta.str().c_str());
+      // #endif
       steps.store(delta);
 
       // decide if this point is better or not
       unsigned optw1 = 0;
       unsigned optw2 = 0;
-      for (delta_ind_t::const_iterator i = d_ind.begin();
-	   i != d_ind.end(); ++i) {
-	optw1 += p_new.val[*i] != 0 ? 1u : 0;
-	optw2 += p.val[*i] != 0 ? 1u : 0;
+      for (unsigned short i : d_ind) {
+        optw1 += p_new.val[i] != 0 ? 1u : 0;
+        optw2 += p.val[i] != 0 ? 1u : 0;
       }
       if (equal ? optw1 < optw2 : diff < obj_t(0)) {
 
-	p = p_new;
-	res = res_new;
+        p = p_new;
+        res = res_new;
 
-	fprintf(o1, "\nAlteration adopted: %s", delta.str().c_str());
-	fprintf(o1, "\n%s %s", res.str().c_str(), p.str().c_str());
-
+        fprintf(o1, "\nAlteration adopted: %s", delta.str().c_str());
+        fprintf(o1, "\n%s %s", res.str().c_str(), p.str().c_str());
       }
     } while (advance(&p_new, p_start, d_ind));
 
@@ -144,7 +146,7 @@ void summary_first() {
 void summary_exit() {
   fprintf(o3, "\n");
   fprintf(o3, "\nTotal number of compiliations and samples: %u, %u ",
-	  progress.cnts['o'], progress.cnts['*']);
+          progress.cnts['o'], progress.cnts['*']);
   fprintf(o3, "\n");
   fprintf(o3, "\nBest combination found:");
   point_t p = get_min_point();

@@ -13,19 +13,19 @@ using std::pair;
 // steps currently searched
 
 // list of option indices altered (from current point)
-typedef set<unsigned short> delta_ind_t;
+using delta_ind_t = set<unsigned short>;
 
 #ifdef DEBUG
-string delta_ind_str(delta_ind_t delta_ind);
+string delta_ind_str(delta_ind_t d_ind);
 #endif
 
 // data for a single step
 struct delta_t {
   point_t p; // current point
   point_t p_prev; // previous point
-  bool equal; // tell if executable files are equal
+  bool equal{}; // tell if executable files are equal
   obj_t diff; // if unequal, tell the difference
-  explicit delta_t(point_t p, point_t p_prev, bool equal, obj_t diff);
+  explicit delta_t(point_t p_, point_t p_p, bool e, obj_t d);
   explicit delta_t();
   bool operator<(delta_t const& delta) const;
   string str() const;
@@ -39,19 +39,19 @@ enum delta_info_t {
 
 struct steps_t {
 private:
-  typedef vector<delta_t> done_t;
+  using done_t = vector<delta_t>;
 public:
   done_t done;
-  delta_info_t delta_info;
+  delta_info_t delta_info{};
   explicit steps_t();
-  delta_ind_t get_next(point_t x);
-  void store(delta_t delta);
+  delta_ind_t get_next(const point_t& p);
+  void store(const delta_t& delta);
   void print() const;
   void summary_exit() const;
 private:
-  unsigned level;
-  unsigned number_of_comb;
-  bool find_d_ind(delta_ind_t d_ind) const;
+  unsigned level{0};
+  unsigned number_of_comb{0};
+  bool find_d_ind(const delta_ind_t& d_ind) const;
   delta_ind_t get_rand_delta() const;
 };
 

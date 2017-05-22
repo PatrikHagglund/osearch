@@ -9,7 +9,7 @@ void summary_first_measure();
 
 void reset_measurements();
 
-obj_t measure(point_t p);
+obj_t measure(const point_t& p);
 
 point_t get_min_point();
 

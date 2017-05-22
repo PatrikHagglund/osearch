@@ -4,12 +4,12 @@
 
 /** \file main.cc */
 
-#include "search.hh" // search
-#include "measure.hh" // reset_measurements
 #include "compile.hh" // input_file, reset_compilations
-#include "read_conf.hh" // read_conf
 #include "getopts.hh" // get_opts
+#include "measure.hh" // reset_measurements
 #include "print.hh"
+#include "read_conf.hh" // read_conf
+#include "search.hh"    // search
 
 #include <cstdlib>
 

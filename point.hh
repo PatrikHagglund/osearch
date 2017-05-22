@@ -16,7 +16,7 @@ struct point_t {
   bool operator<(point_t const& p) const;
   string str() const;
   void set_rand();
-  typedef vector<unsigned char> val_t;
+  using val_t = vector<unsigned char>;
   val_t val;
 };
 
@@ -24,17 +24,17 @@ struct point_t {
 
 struct obj_t {
   explicit obj_t();
-  explicit obj_t(int64_t val);
-  explicit obj_t(string str);
+  explicit obj_t(int64_t v);
+  explicit obj_t(const string& str);
   obj_t operator-(obj_t const& obj) const;
   bool operator==(obj_t const& obj) const;
   bool operator<(obj_t const& obj) const;
   bool operator>(obj_t const& obj) const;
   string str() const;
 private:
-  explicit obj_t(bool inf, int64_t val);
-  bool inf; // mark infinite values
-  int64_t val; // value (sign for infinite values)
+  explicit obj_t(bool i, int64_t v);
+  bool inf{}; // mark infinite values
+  int64_t val{}; // value (sign for infinite values)
 };
 
 #endif // POINT_HH
