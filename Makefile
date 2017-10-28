@@ -43,6 +43,10 @@ GXX = /usr/lib/gcc-snapshot/bin/g++
 #GXX = clang++-6.0 -fsanitize=memory
 
 GXX = clang++-6.0
+# ls *.h > headers.list
+# modularize-6.0 -module-map-path=modules.map headers.list
+GXX = clang++-6.0 -fmodules-ts -Rmodule-build -fmodule-map-file=modules.map -fmodule-map-file=modules-gcc-7.2.1.map -fimplicit-modules
+
 
 CXX = $(GXX) --std=c++2a $(CPPFLAGS) $(WARN) $(CXXFLAGS)
 
@@ -92,7 +96,7 @@ osearch: $(OBJS)
 	$(CXX) -o $@ $(OBJS) $(LDLIBS)
 
 %.o: %.cc
-	$(CTIDY) $< -- --std=c++2a $(CPPFLAGS)
+	#$(CTIDY) $< -- --std=c++2a $(CPPFLAGS)
 	$(CXX) -c $<
 
 run: osearch
