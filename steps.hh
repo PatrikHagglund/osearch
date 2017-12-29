@@ -4,19 +4,16 @@
 #include "point.hh"
 
 #include <map>
-using std::map;
 #include <set>
-using std::set;
 #include <utility>
-using std::pair;
 
 // steps currently searched
 
 // list of option indices altered (from current point)
-using delta_ind_t = set<unsigned short>;
+using delta_ind_t = std::set<unsigned short>;
 
 #ifdef DEBUG
-string delta_ind_str(delta_ind_t d_ind);
+std::string delta_ind_str(delta_ind_t const &d_ind);
 #endif
 
 // data for a single step
@@ -24,11 +21,11 @@ struct delta_t {
   point_t p; // current point
   point_t p_prev; // previous point
   bool equal{}; // tell if executable files are equal
-  obj_t diff; // if unequal, tell the difference
+  obj_t diff{}; // if unequal, tell the difference
   explicit delta_t(point_t p_, point_t p_p, bool e, obj_t d);
-  explicit delta_t();
+  explicit delta_t() = default;
   bool operator<(delta_t const& delta) const;
-  string str() const;
+  std::string str() const;
   obj_t alt_diff() const;
 };
 
@@ -39,11 +36,11 @@ enum delta_info_t {
 
 struct steps_t {
 private:
-  using done_t = vector<delta_t>;
+  using done_t = std::vector<delta_t>;
 public:
   done_t done;
   delta_info_t delta_info{};
-  explicit steps_t();
+  explicit steps_t() noexcept;
   delta_ind_t get_next(const point_t& p);
   void store(const delta_t& delta);
   void print() const;

@@ -1,4 +1,5 @@
 #include "measure.hh"
+#include "assume.hh"
 
 #include "compile.hh"
 #include "execute.hh"
@@ -7,9 +8,9 @@
 #include "print.hh"
 
 #include <map>
-using std::map;
 
-#include <cassert>
+#include <iostream>
+
 #include <cstdlib> // EXIT_SUCCESS
 
 // BEGIN option handling for 'size'
@@ -18,16 +19,18 @@ static bool size = false;
 
 static void opt_s() { size = true; }
 
-static opt_reg_t
-    opt_reg('s', opt_s, "s", "  [-s]",
-            "  -s \t\tuse the size of the generated binary rather than\n"
-            "  \t\tthe output (running time)\n");
+static int _dummy =
+    (opt_reg_t::append(
+         's', opt_s, "s", "  [-s]",
+         "  -s \t\tuse the size of the generated binary rather than\n"
+         "  \t\tthe output (running time)\n"),
+     1);
 
 // END
 
 void summary_first_measure() {
   summary_first_compile();
-  fprintf(o3, "\nOptimized for: %s", size ? "size" : "time (output value)");
+  o3 << "\nOptimized for: " << (size ? "size" : "time (output value)");
 }
 
 static obj_t sample(pset_t pset) {
@@ -43,9 +46,14 @@ static obj_t sample(pset_t pset) {
 
   tmp_file_t const &tmp_file = get_tmp_file(pset);
 
-  string cmd = size ? string("size -A ") + tmp_file.path +
-                          " | grep .text | awk '{ print $2 }'"
-                    : tmp_file.path;
+  std::string foo = std::string("size -A ") + std::string(tmp_file.get_path()) +
+                    " | grep .text | awk '{ print $2 }'";
+  std::string bar = std::string(tmp_file.get_path());
+  std::string cmd = size ? foo : bar;
+
+  // string cmd = size ? string("size -A ") + tmp_file.path +
+  //                         " | grep .text | awk '{ print $2 }'"
+  //                   : tmp_file.path;
 
   cmd_res_t cmd_res = execute(cmd);
 
@@ -53,7 +61,7 @@ static obj_t sample(pset_t pset) {
 }
 
 // all results
-using results_t = map<pset_t, obj_t>;
+using results_t = std::map<pset_t, obj_t>;
 static results_t results;
 
 // check if alredy done for a given executable file
@@ -71,7 +79,7 @@ obj_t measure(const point_t &p) {
   pset_t pset = compile(p);
 
   for (; !result_sampled(pset);) {
-    assert(results.find(pset) == results.end());
+    GNUC_BUILTIN_ASSUME(results.find(pset) == results.end());
     results[pset] = sample(pset);
   }
 
@@ -81,12 +89,12 @@ obj_t measure(const point_t &p) {
 point_t get_min_point() {
 
   // if we don't have any previous mesurments, make one on a default value
-  if (results.begin() == results.end()) {
+  if (results.empty()) {
     measure(point_t());
   }
 
-  auto min_i = results.begin();
-  for (auto i = results.begin(); i != results.end(); ++i) {
+  auto min_i = results.cbegin();
+  for (auto i = results.cbegin(); i != results.cend(); ++i) {
     // ignore that measurments may use different number of samples
     if (i->second < min_i->second) {
       min_i = i;

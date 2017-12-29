@@ -1,90 +1,66 @@
 #include "getopts.hh"
+#include "assume.hh" // NONNULL
+#ifdef DEBUG
+#include "print.hh"
+#endif
 
+#include <gsl/gsl> // czstring, not_null
+
+#include <iostream> // std::cerr
+
+#include <cstdlib>
 #include <string>
 #include <unistd.h>
-using std::string;
-#include <cassert>
-#include <climits>
-#include <cstdlib>
 
 /**
  *  Options processing. Use the opt_reg_t constructor
  *  to register an option. Use get_opts() to parse all options.
  */
 
-static const unsigned arg_max = 10;
-
-struct opt_strs_t {
-  opt_fun_t opt_funs[UCHAR_MAX + 1]{};
-  string getopt_str;
-  string usage_short;
-  string usage_long;
-  arg_fun_t arg_funs[arg_max]{};
-};
-
-static opt_strs_t *p = nullptr;
-
-// *p has to be initialized (to hold empty strings) before it is
-// used. Do it dynamically, to make sure that happens.
-static void init_p() {
-  if (p == nullptr) {
-    static opt_strs_t opt_strs;
-    p = &opt_strs;
-  }
-}
-
-/** Register options to process later with get_opts()
- * \param c option character returned by getopt()
- * \param fun function (procedure) to handle the option
- * \param go_str string fragment used in getopt()
- * \param u_syn string fragment used in the usage synopsis
- * \param u_full string fragment used in the full usage description */
-
-opt_reg_t::opt_reg_t(unsigned char c, opt_fun_t fun, char const *go_str,
-                     char const *u_syn, char const *u_full) {
-  init_p();
-  p->opt_funs[c] = fun;
-  p->getopt_str += go_str;
-  p->usage_short += u_syn;
-  p->usage_long += u_full;
-}
-
-opt_reg_t::opt_reg_t(unsigned ind, arg_fun_t fun, char const *u_syn,
-                     char const *u_full) {
-  init_p();
-  assert(ind < arg_max);
-  p->arg_funs[ind] = fun;
-  p->usage_short += u_syn;
-  p->usage_long += u_full;
-}
-
-[[noreturn]] static void usage(char *prog) {
-  fprintf(stderr,
-          "usage: %s%s code_file\n\n"
-          "  Search for an optimal combination of compiler options.\n\n"
-          "  The 'code_file' is the source code to be compiled.\n\n"
-          "%s",
-          prog, p->usage_short.c_str(), p->usage_long.c_str());
+[[noreturn]] static void usage(std::string_view prog) {
+  std::cerr << "usage: " << prog << opt_reg_t::opt_strs.usage_short
+            << " code_file\n\n"
+               "  Search for an optimal combination of compiler options.\n\n"
+               "  The 'code_file' is the source code to be compiled.\n\n"
+            << opt_reg_t::opt_strs.usage_long;
   exit(EXIT_FAILURE);
 }
 
 /** Parse all options regsitred with opt_reg_t. */
 
-void get_opts(int &argc, char **&argv) {
+// wrapper for getopt
+static int my_getopt(STD::span<NONNULL(gsl::zstring<>)> args,
+                     NONNULL(gsl::czstring<>) optstring) {
 
-  for (int c; (c = getopt(argc, argv, p->getopt_str.c_str())) != -1;) {
-    if (p->opt_funs[c] != nullptr) {
-      (*p->opt_funs[c])();
+  int argc = args.size();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  auto argv = reinterpret_cast<char *const *>(args.data());
+  return getopt(argc, argv, optstring);
+}
+
+void get_opts(STD::span<NONNULL(gsl::zstring<>)> args) {
+#ifdef DEBUG
+  o3 << "opt_strs\n";
+  o3 << opt_reg_t::opt_strs.getopt_str << '\n';
+  o3 << opt_reg_t::opt_strs.usage_short << '\n';
+  o3 << opt_reg_t::opt_strs.usage_long << '\n';
+#endif
+  NONNULL(gsl::czstring<>) optstring(opt_reg_t::opt_strs.getopt_str.c_str());
+  for (int c; (c = my_getopt(args, optstring)) != -1;) {
+    if (opt_reg_t::opt_strs.opt_funs[c] != nullptr) {
+      (*opt_reg_t::opt_strs.opt_funs[c])();
     } else {
-      usage(argv[0]);
+      usage(std::string_view(args[0]));
     }
   }
 
-  for (unsigned i = 0; i < arg_max && p->arg_funs[i] != nullptr; ++i) {
-    (*p->arg_funs[i])(argv[optind++]);
+  for (unsigned i = 0;
+       i < opt_strs_t::arg_max && opt_reg_t::opt_strs.arg_funs[i] != nullptr;
+       ++i) {
+    (*opt_reg_t::opt_strs.arg_funs[i])(args[optind++]);
   }
 
-  if (argc - optind < 0) {
-    usage(argv[0]);
+  if (args.size() - optind < 0) {
+    usage(std::string_view(args[0]));
   }
 }

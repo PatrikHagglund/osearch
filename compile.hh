@@ -1,15 +1,11 @@
 #ifndef COMPILE_HH
 #define COMPILE_HH
 
-#include "execute.hh" // tmp_file_t
-#include "point.hh"
+#include "point.hh"  // for point_t
+#include <string>    // for string
+struct tmp_file_t;
 
-#include <string>
-using std::string;
-#include <utility>
-using std::pair;
-
-extern string input_file;
+extern std::string input_file;
 
 void summary_first_compile();
 
@@ -30,6 +26,6 @@ void reset_compilations();
 
 // other
 
-string get_compiler_version();
+std::string get_compiler_version();
 
 #endif

@@ -1,18 +1,17 @@
 #include "steps.hh"
 
+#include "assume.hh"
 #include "getopts.hh"   // opt_init_t
 #include "measure.hh"   // measure
 #include "print.hh"     // o
 #include "read_conf.hh" // conf
 
 #include <sstream>
-using std::ostringstream;
 #ifdef DEBUG
 #endif
 
 #include <algorithm>
 #include <utility>
-using std::sort;
 
 // BEGIN option handling for 'max_level'
 
@@ -20,15 +19,17 @@ static unsigned long max_level = 1;
 
 static void opt_l() { max_level = strtoul(optarg, nullptr, 0); }
 
-static opt_reg_t opt_reg('l', opt_l, "l:", "  [-l max_level]",
-                         "  -l max_level \tthe maximal number of options to "
-                         "alter at once (default 1)\n");
+static int _dummy =
+    (opt_reg_t::append('l', opt_l, "l:", "  [-l max_level]",
+                       "  -l max_level \tthe maximal number of options to "
+                       "alter at once (default 1)\n"),
+     1);
 
 // END
 
 #ifdef DEBUG
-string delta_ind_str(delta_ind_t d_ind) {
-  ostringstream ss;
+std::string delta_ind_str(delta_ind_t const &d_ind) {
+  std::ostringstream ss;
   ss << "delta: ";
   for (unsigned short i : d_ind) {
     ss << i << " (" << conf.flags[i]->size() << ")";
@@ -39,24 +40,22 @@ string delta_ind_str(delta_ind_t d_ind) {
 
 delta_t::delta_t(point_t p_, point_t p_p, bool e, obj_t d)
     : p(std::move(p_)), p_prev(std::move(p_p)), equal(e), diff(d) {
-  assert(p.val.size() == p_prev.val.size());
+  GNUC_BUILTIN_ASSUME(p.val.size() == p_prev.val.size());
 }
-
-delta_t::delta_t() = default;
 
 bool delta_t::operator<(delta_t const &delta) const {
   // only use diff, but with a twist
   return alt_diff() < delta.alt_diff();
 }
 
-string delta_t::str() const {
-  ostringstream ss;
+std::string delta_t::str() const {
+  std::ostringstream ss;
   if (equal) {
     ss << "= ";
   } else {
     ss << diff.str() << " ";
   }
-  for (unsigned i = 0; i < p.val.size(); ++i) {
+  for (size_t i = 0; i < p.val.size(); ++i) {
     unsigned num = p.val[i];
     unsigned num_prev = p_prev.val[i];
     if (num != num_prev) {
@@ -74,13 +73,13 @@ string delta_t::str() const {
 // revert the sign if any option has been removed
 obj_t delta_t::alt_diff() const {
   bool backwards = false; // true if any option has been removed
-  for (unsigned i = 0; i < p.val.size(); ++i) {
+  for (size_t i = 0; i < p.val.size(); ++i) {
     backwards = backwards || (p.val[i] == 0 && p_prev.val[i] != 0);
   }
   return backwards ? obj_t(0) - diff : diff;
 }
 
-static unsigned top_list_size = 7;
+constexpr unsigned top_list_size = 7;
 
 // new combinations compared to the previous level
 static unsigned new_comb(unsigned level) {
@@ -92,15 +91,15 @@ static unsigned new_comb(unsigned level) {
   return res;
 }
 
-steps_t::steps_t() = default;
+steps_t::steps_t() noexcept = default;
 
 delta_ind_t steps_t::get_next(const point_t &p) {
-  assert(done.size() <= number_of_comb);
+  GNUC_BUILTIN_ASSUME(done.size() <= number_of_comb);
   if (done.size() == number_of_comb) {
     // search space exausted
     if (level > 0) {
-      fprintf(o1, "\n### Search at level %u completed. Result:", level);
-      fprintf(o1, "\n%s %s", measure(p).str().c_str(), p.str().c_str());
+      o1 << "\n### Search at level " << level << " completed. Result:";
+      o1 << "\n" << measure(p).str() << " " << p.str();
       print();
     }
     ++level;
@@ -109,10 +108,10 @@ delta_ind_t steps_t::get_next(const point_t &p) {
       return delta_ind_t();
     }
     number_of_comb += new_comb(level);
-    fprintf(o1,
-            "\n# restarting, options combined %u "
-            "(number of combinations %u)\n",
-            level, number_of_comb);
+    o1 << "\n# restarting, options combined " << level
+       << " "
+          "(number of combinations "
+       << number_of_comb << ")\n";
   }
   delta_info = valid;
   return get_rand_delta();
@@ -127,45 +126,47 @@ void steps_t::store(const delta_t &delta) {
 }
 
 void steps_t::print() const {
-  fprintf(o1, "\ntotal number of samples: %u", progress.cnts['*']);
-  fprintf(o1, "\nexplored alterations:\n");
-  for (auto i = done.begin(); i != done.end(); ++i) {
-    if (i != done.begin()) {
-      fprintf(o1, ", ");
+  o1 << "\ntotal number of samples: " << progress.cnts['*'];
+  o1 << "\nexplored alterations:\n";
+  for (auto i = done.cbegin(); i != done.cend(); ++i) {
+    if (i != done.cbegin()) {
+      o1 << ", ";
     }
-    fprintf(o1, "%s", i->str().c_str());
+    o1 << i->str();
   }
 }
 
 void steps_t::summary_exit() const {
-  fprintf(o3, "\nBest options:");
-  for (auto i = done.begin();
-       i - done.begin() < top_list_size && i != done.end(); ++i) {
-    if (i->alt_diff() < obj_t(0)) {
-      fprintf(o3, "\n+");
-      fprintf(o3, "%s", i->str().c_str());
+  o3 << "\nBest options:";
+  for (auto const &i : done) {
+    if (!(&i - &*done.cbegin() < top_list_size)) {
+      break;
+    }
+    if (i.alt_diff() < obj_t(0)) {
+      o3 << "\n+" << i.str();
     }
   }
 
-  fprintf(o3, "\n");
-  fprintf(o3, "\nWorst options:");
-  for (auto i = done.rbegin();
-       i - done.rbegin() < top_list_size && i != done.rend(); ++i) {
+  o3 << "\n"
+     << "\nWorst options:";
+  for (auto i = done.crbegin(); i != done.crend(); ++i) {
+    if (!(i - done.crbegin() < top_list_size)) {
+      break;
+    }
     if (i->alt_diff() > obj_t(0)) {
-      fprintf(o3, "\n+");
-      fprintf(o3, "%s", i->str().c_str());
+      o3 << "\n+" << i->str();
     }
   }
 
-  fprintf(o3, "\n\n");
+  o3 << "\n\n";
 }
 
 bool steps_t::find_d_ind(const delta_ind_t &d_ind) const {
-  for (const auto &i : done) {
+  for (auto const &i : done) {
 
     delta_ind_t d_ind_p;
     // construct d_ind_p
-    for (unsigned char j = 0; j < i.p.val.size(); ++j) {
+    for (size_t j = 0; j < i.p.val.size(); ++j) {
       if (i.p.val[j] != i.p_prev.val[j]) {
         d_ind_p.insert(j);
       }
@@ -183,12 +184,12 @@ delta_ind_t steps_t::get_rand_delta() const {
   do {
     d_ind.clear();
     for (unsigned i = 0; i < level; ++i) {
-      d_ind.insert(unsigned(rand()) %
+      d_ind.insert(unsigned(my_rand()) %
                    static_cast<unsigned char>(conf.flags.size()));
     }
-    assert(d_ind.size() <= level);
+    GNUC_BUILTIN_ASSUME(d_ind.size() <= level);
   } while (d_ind.size() < level || find_d_ind(d_ind));
-  assert(d_ind.size() == level);
+  GNUC_BUILTIN_ASSUME(d_ind.size() == level);
   return d_ind;
 }
 

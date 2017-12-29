@@ -2,11 +2,13 @@
 #define PRINT_HH
 
 // output streams
-#include <cstdio>
+#include <ostream>
 
-extern FILE* o1;
-extern FILE* o2;
-extern FILE* o3;
+#include <iostream> // std::cout
+
+constexpr inline std::ostream &o1 = std::cout;
+constexpr inline std::ostream &o2 = std::cout;
+constexpr inline std::ostream &o3 = std::cout;
 
 // progress
 
@@ -15,25 +17,21 @@ extern FILE* o3;
 #endif
 
 #include <map>
-using std::map;
 #include <cstdio>
 
 struct progress_t {
-  map<char, unsigned> cnts;
-  FILE* o;
+  explicit progress_t() = default;
+  // storage
+  std::map<char, unsigned> cnts{};
+  std::ostream *o{&o2};
   bool silent{false};
-  explicit progress_t();
   void print_symbols() const;
 #ifdef DEBUG
-  void tick(char sym, point_t p);
+  void tick(char sym, point_t const &p);
 #else
   void tick(char sym);
 #endif
   void newl() const;
-  progress_t& operator=(progress_t const& p);
-private:
-  [[ noreturn ]]
-  progress_t(progress_t const& /*unused*/);
 };
 
 extern progress_t progress;

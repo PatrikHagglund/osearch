@@ -2,45 +2,46 @@
     into the #conf variable. */
 
 #include "read_conf.hh"
+#include "assume.hh"
 #include "getopts.hh"
 #include "print.hh"
 
 #include <expat.h>
 
-#include <cassert>
+#include <gsl/gsl> // czstring, not_null, gsl::owner
+
+#include <iomanip>  // std::setw
+#include <iostream> // std::cerr
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-static char const *config_file;
+static gsl::czstring<> config_file;
 
-static void arg_config_file(char const *path) { config_file = path; }
-
-static opt_reg_t opt_reg(0, arg_config_file, " config_file",
-                         "  The 'config_file' describes the search space.\n");
-
-void summary_first_read_conf() {
-  fprintf(o3, "\nConfiguration file: %s", config_file);
+static void arg_config_file(NONNULL(gsl::czstring<>) path) {
+  std::cout << "arg_config_file:path " << path << '\n';
+  config_file = path;
 }
 
-struct str_array {
-  char const *str;
-  size_t len;
-#ifdef DEBUG
-  void dump() {
-    for (size_t i = 0; i < len; ++i) {
-      printf("%c", str[i]);
-    }
-    printf("\n");
-  }
-#endif
-};
+static int _dummy =
+    (opt_reg_t::append(0, arg_config_file, " config_file",
+                       "  The 'config_file' describes the search space.\n"),
+     1);
+
+void summary_first_read_conf() {
+  o3 << "\nConfiguration file: " << config_file;
+}
 
 /** Read 'path' to a memory buffer. */
-static str_array file_read(char const *path) {
+static std::string file_read(gsl::czstring<> path) {
+
+#ifdef DEBUG
+  std::cout << "config file name: " << path << '\n';
+#endif
 
   // open file
-  FILE *file = fopen(path, "rbe");
+  gsl::owner<FILE *> file = fopen(path, "rbe");
   if (file == nullptr) {
     perror("fopen failed");
     exit(1);
@@ -55,13 +56,16 @@ static str_array file_read(char const *path) {
   if (res == -1) {
     perror("ftell failed");
   }
-  auto size = size_t(res);
   rewind(file);
+  auto size = static_cast<size_t>(res);
+#ifdef DEBUG
+  std::cout << "config file size: " << size << '\n';
+#endif
 
   // read file
-  assert(size + 1 > 0);
-  auto *file_buf = static_cast<char *>(malloc(size + 1));
-  size_t rsize = fread(file_buf, sizeof(char), size, file);
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+  char str[size];
+  size_t rsize = std::fread(&str[0], sizeof(char), size, file);
   if (rsize != size) {
     perror("fread failed");
     exit(1);
@@ -72,10 +76,11 @@ static str_array file_read(char const *path) {
     exit(1);
   }
 
-  file_buf[size] = '\0'; // write terminating null byte after the end
-
-  str_array ret = {file_buf, size};
-  return ret;
+  std::string_view str_v(&str[0], sizeof(str));
+#ifdef DEBUG
+  // std::cout << "file_read:str " << str_v << '\n';
+#endif
+  return std::string(str_v);
 }
 
 #ifdef DEBUG
@@ -94,43 +99,55 @@ static void start(void *data __attribute__((__unused__)), const char *el,
 
   // parse get_version
   if (strcmp(el, "get_version") == 0) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (strcmp(attr[0], "value") == 0) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
       conf.get_version = attr[1];
     }
   }
 
   // parse prime command
   if (strcmp(el, "prime") == 0) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (strcmp(attr[0], "command") == 0) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
       conf.prime_command = attr[1];
     }
   }
 
   // parse simple flags
   if (strcmp(el, "flag") == 0) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (strcmp(attr[0], "type") == 0 && strcmp(attr[1], "simple") == 0 &&
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         strcmp(attr[2], "value") == 0) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic,cppcoreguidelines-owning-memory)
       conf.flags.push_back(new simple_t(attr[3]));
     }
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (strcmp(attr[0], "type") == 0 && strcmp(attr[1], "enum") == 0 &&
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         strcmp(attr[2], "value") == 0) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic,cppcoreguidelines-owning-memory)
       conf.flags.push_back(new enum_t(attr[3]));
     }
   }
 
 #ifdef DEBUG
   for (int i = 0; i < Depth; i++) {
-    printf("  ");
+    std::cout << "  ";
   }
 
-  printf("%s", el);
+  std::cout << el;
 
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   for (int i = 0; attr[i] != nullptr; i += 2) {
-    printf(" %s='%s'", attr[i], attr[i + 1]);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    std::cout << " '" << attr[i] << "'='" << attr[i + 1] << "'";
   }
 
-  printf("\n");
+  std::cout << "\n";
   Depth++;
 #endif
 }
@@ -145,34 +162,34 @@ static void end(void *data __attribute__((__unused__)),
 }
 
 /** Parse the XML configuration file from a memory buffer. */
-static void parse(str_array conf_file_buf) {
+static void parse(const std::string &conf_file_buf) {
 
   XML_Parser parser = XML_ParserCreate(nullptr);
-  assert(parser != nullptr);
+  GNUC_BUILTIN_ASSUME(parser != nullptr);
 
   XML_SetElementHandler(parser, start, end);
 
-  if (XML_Parse(parser, conf_file_buf.str, static_cast<int>(conf_file_buf.len),
-                1) == 0u) {
-    fprintf(stderr, "Parse error at line %ld:\n%s\n",
-            XML_GetCurrentLineNumber(parser),
-            XML_ErrorString(XML_GetErrorCode(parser)));
+  if (XML_Parse(parser, conf_file_buf.c_str(),
+                static_cast<int>(conf_file_buf.length()), 1) == 0U) {
+    std::cerr << "Parse error at line " << XML_GetCurrentLineNumber(parser)
+              << ":\n"
+              << XML_ErrorString(XML_GetErrorCode(parser)) << "\n";
     exit(EXIT_FAILURE);
   }
 
 #ifdef DEBUG
-  printf("prime command: %s\n", conf.prime_command.c_str());
-  printf("baselines:\n");
-  for (auto i = conf.baselines.begin(); i < conf.baselines.end(); ++i) {
-    printf("%s\n", i->c_str());
+  std::cout << "prime command: " << conf.prime_command << "\n"
+            << "baselines:\n";
+  for (auto const &i : conf.baselines) {
+    std::cout << i << "\n";
   }
-  printf("flags:\n");
-  for (auto i = conf.flags.begin(); i < conf.flags.end(); ++i) {
-    printf("%3ld: ", i - conf.flags.begin());
-    for (unsigned j = 1; j < (*i)->size(); ++j) {
-      printf("%s ", (*i)->get_flag(j).c_str());
+  std::cout << "flags:\n";
+  for (auto const &i : conf.flags) {
+    std::cout << std::setw(3) << &i - &*conf.flags.cbegin() << ": ";
+    for (size_t j = 1; j < i->size(); ++j) {
+      std::cout << i->get_flag(j) << " ";
     }
-    printf("\n");
+    std::cout << "\n";
   }
 #endif
 }
@@ -180,9 +197,6 @@ static void parse(str_array conf_file_buf) {
 /** Read the configuration file and parse it into #conf. */
 
 void read_conf() {
-  str_array conf_file_buf = file_read(config_file);
-#ifdef DEBUG
-  conf_file_buf.dump();
-#endif
+  std::string conf_file_buf = file_read(config_file);
   parse(conf_file_buf);
 }
