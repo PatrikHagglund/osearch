@@ -246,5 +246,6 @@ clean:
 	$(RM) *.o *.d *.s *.ll *.ii osearch
 	$(RM) *~
 	$(RM) -r html latex
+	$(RM) -r build-*
 
 -include *.d

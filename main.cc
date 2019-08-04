@@ -23,9 +23,6 @@
 
 #include <cstdlib> // for EXIT_SUCCESS
 
-/** Parse arguments using get_opts(). Read configuration file using
-    read_conf(). */
-
 #if 0
 // convert from span of zstring to span of czstring
 // TODO(uabpath): This kind of conversions is messy.
@@ -49,6 +46,12 @@ static STD::span<NONNULL(gsl::zstring<>)> main_args(int argc, char **argv) {
   auto args = gsl::multi_span<NONNULL(gsl::zstring<>)>(argv2, argc);
   return args;
 }
+
+/// Wrapper for C++ main, to pass argc and argv as a single list of strings.
+
+/** Parse arguments using get_opts(). Read configuration file using
+    read_conf(). */
+
 
 static int my_main(STD::span<NONNULL(gsl::zstring<>)> args) {
 
