@@ -1,1 +1,1 @@
-OBJS+=execute.o point.o compile.o
+OBJS+=execute.o obj.o point.o compile.o

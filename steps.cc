@@ -3,6 +3,7 @@
 #include "assume.hh"
 #include "getopts.hh"   // opt_init_t
 #include "measure.hh"   // measure
+#include "my_rand.hh"   // my_rand()
 #include "print.hh"     // o
 #include "read_conf.hh" // conf
 
@@ -13,13 +14,22 @@
 #include <algorithm>
 #include <utility>
 
+/// \file
+/// Store (in #steps) the steps currently searched. See steps_t and
+/// delta_t for details.
+
 // BEGIN option handling for 'max_level'
 
+/// The maximal "level" (number of options to alter at once) in the
+/// search.
 static unsigned long max_level = 1;
 
+/// Option helper function.
+/// \todo Possible to use lambda function?
 static void opt_l() { max_level = strtoul(optarg, nullptr, 0); }
 
-static int _dummy =
+/// Option helper varaible.
+static int dummy_ =
     (opt_reg_t::append('l', opt_l, "l:", "  [-l max_level]",
                        "  -l max_level \tthe maximal number of options to "
                        "alter at once (default 1)\n"),
@@ -38,8 +48,8 @@ std::string delta_ind_str(delta_ind_t const &d_ind) {
 }
 #endif
 
-delta_t::delta_t(point_t p_, point_t p_p, bool e, obj_t d)
-    : p(std::move(p_)), p_prev(std::move(p_p)), equal(e), diff(d) {
+delta_t::delta_t(const point_t &p_, const point_t &p_p, bool e, obj_t d)
+    : p(p_), p_prev(p_p), equal(e), diff(d) {
   GNUC_BUILTIN_ASSUME(p.val.size() == p_prev.val.size());
 }
 
@@ -53,7 +63,7 @@ std::string delta_t::str() const {
   if (equal) {
     ss << "= ";
   } else {
-    ss << diff.str() << " ";
+    ss << diff.to_string() << " ";
   }
   for (size_t i = 0; i < p.val.size(); ++i) {
     unsigned num = p.val[i];
@@ -70,7 +80,6 @@ std::string delta_t::str() const {
   return ss.str();
 }
 
-// revert the sign if any option has been removed
 obj_t delta_t::alt_diff() const {
   bool backwards = false; // true if any option has been removed
   for (size_t i = 0; i < p.val.size(); ++i) {
@@ -79,9 +88,8 @@ obj_t delta_t::alt_diff() const {
   return backwards ? obj_t(0) - diff : diff;
 }
 
-constexpr unsigned top_list_size = 7;
-
-// new combinations compared to the previous level
+/// New combinations compared to the previous level.
+/// \todo Document better.
 static unsigned new_comb(unsigned level) {
   unsigned res = 1;
   for (unsigned j = 0; j < level; ++j) {
@@ -99,13 +107,13 @@ delta_ind_t steps_t::get_next(const point_t &p) {
     // search space exausted
     if (level > 0) {
       o1 << "\n### Search at level " << level << " completed. Result:";
-      o1 << "\n" << measure(p).str() << " " << p.str();
+      o1 << "\n" << measure(p).to_string() << " " << p.to_string();
       print();
     }
     ++level;
     if (level > max_level) {
       delta_info = finish;
-      return delta_ind_t();
+      return {};
     }
     number_of_comb += new_comb(level);
     o1 << "\n# restarting, options combined " << level
@@ -137,6 +145,7 @@ void steps_t::print() const {
 }
 
 void steps_t::summary_exit() const {
+  static const unsigned top_list_size = 7;
   o3 << "\nBest options:";
   for (auto const &i : done) {
     if (!(&i - &*done.cbegin() < top_list_size)) {
@@ -184,7 +193,7 @@ delta_ind_t steps_t::get_rand_delta() const {
   do {
     d_ind.clear();
     for (unsigned i = 0; i < level; ++i) {
-      d_ind.insert(unsigned(my_rand()) %
+      d_ind.insert(static_cast<unsigned>(my_rand()) %
                    static_cast<unsigned char>(conf.flags.size()));
     }
     GNUC_BUILTIN_ASSUME(d_ind.size() <= level);
@@ -193,4 +202,5 @@ delta_ind_t steps_t::get_rand_delta() const {
   return d_ind;
 }
 
+/// Data for all steps, stored in a vector of delta_t.
 steps_t steps;

@@ -8,12 +8,24 @@
 
 # TODO:
 
+## lsp-mode
+
+## <=>
+### Ensure that constexpr is used.
+
+## compile-time tests for obj_t operators (how is the infinite arithmetic working?)
+## <=>
+
+
+## check generated code (*next*: point.cc, main.cc)
 ## non-POD?
-## clang-doc
+## ctags/clangd
+## bazel
+## code coverage
 
 ## new C++ features
-### span (when available in GCC)
 ### <=> when available
+### constraints (GSL variant?), Google test?, compile-time unit tests?
 ### constexpr std::string and std::vector
 ### modules
 ### lambdas? (constexpr)
@@ -42,7 +54,8 @@ DEBUG := DEBUG
 DEFINES := $(DEBUG)
 GSL := -I $(HOME)/GSL/include
 CPPFLAGS := $(DEFINES:%=-D %) $(GSL)
-STD := -std=gnu++2a
+STD := -std=gnu++2b
+LLVM_VER=15
 
 # generic
 WARN := -Wall -Wextra -Werror
@@ -114,7 +127,10 @@ WARN := -Wall -Wextra -Werror
 #cc1plus: warning: command line option '-Wuse-without-only' is valid for Fortran but not for C++
 #cc1plus: warning: command line option '-Wzerotrip' is valid for Fortran but not for C++
 #cc1plus: error: command line option '-frequire-return-statement' is valid for Go but not for C++ [-Werror]
-WARN_GXX := -Wabi -Waddress -Waggressive-loop-optimizations -Walloc-zero -Walloca -Warray-bounds -Wattribute-alias -Wattributes -Wbool-compare -Wbool-operation -Wbuiltin-declaration-mismatch -Wbuiltin-macro-redefined -Wc++11-compat -Wc++14-compat -Wc++17-compat -Wcast-align -Wcast-align=strict -Wcast-function-type -Wcast-qual -Wchar-subscripts -Wchkp -Wclass-memaccess -Wclobbered -Wcomment -Wconditionally-supported -Wconversion-null -Wcoverage-mismatch -Wcpp -Wctor-dtor-privacy -Wdangling-else -Wdate-time -Wdelete-incomplete -Wdelete-non-virtual-dtor -Wdeprecated -Wdeprecated-declarations -Wdisabled-optimization -Wdiv-by-zero -Wdouble-promotion -Wduplicated-branches -Wduplicated-cond -Wempty-body -Wendif-labels -Wenum-compare -Wexpansion-to-defined -Wextra -Wextra-semi -Wfloat-conversion -Wfloat-equal -Wformat-contains-nul -Wformat-extra-args -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat-y2k -Wformat-zero-length -Wframe-address -Wfree-nonheap-object -Whsa -Wif-not-aligned -Wignored-attributes -Wignored-qualifiers -Winherited-variadic-ctor -Winit-self -Winline -Wint-in-bool-context -Wint-to-pointer-cast -Winvalid-memory-model -Winvalid-offsetof -Winvalid-pch -Wliteral-suffix -Wlogical-not-parentheses -Wlogical-op -Wlong-long -Wlto-type-mismatch -Wmain -Wmaybe-uninitialized -Wmemset-elt-size -Wmemset-transposed-args -Wmisleading-indentation -Wmissing-attributes -Wmissing-braces -Wmissing-declarations -Wmissing-field-initializers -Wmissing-include-dirs -Wmultichar -Wmultiple-inheritance -Wmultistatement-macros -Wnarrowing -Wnoexcept -Wnoexcept-type -Wnon-template-friend -Wnon-virtual-dtor -Wnonnull -Wnonnull-compare -Wnull-dereference -Wodr -Wold-style-cast -Wopenmp-simd -Woverflow -Woverlength-strings -Woverloaded-virtual -Wpacked -Wpacked-bitfield-compat -Wpacked-not-aligned -Wparentheses -Wpmf-conversions -Wpointer-arith -Wpointer-compare -Wpragmas -Wpsabi -Wredundant-decls -Wregister -Wreorder -Wrestrict -Wreturn-local-addr -Wreturn-type -Wsequence-point -Wshadow -Wshadow=compatible-local -Wshadow=local -Wshift-count-negative -Wshift-count-overflow -Wshift-negative-value -Wsign-compare -Wsign-promo -Wsized-deallocation -Wsizeof-array-argument -Wsizeof-pointer-div -Wsizeof-pointer-memaccess -Wstack-protector -Wstrict-null-sentinel -Wstringop-truncation -Wsubobject-linkage -Wsuggest-attribute=cold -Wsuggest-attribute=const -Wsuggest-attribute=format -Wsuggest-attribute=malloc -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-methods -Wsuggest-final-types -Wsuggest-override -Wswitch -Wswitch-bool -Wswitch-default -Wswitch-enum -Wswitch-unreachable -Wsync-nand -Wsynth -Wtautological-compare -Wterminate -Wtrampolines -Wtrigraphs -Wtype-limits -Wundef -Wuninitialized -Wunknown-pragmas -Wunsafe-loop-optimizations -Wunused -Wunused-but-set-parameter -Wunused-but-set-variable -Wunused-function -Wunused-label -Wunused-local-typedefs -Wunused-macros -Wunused-parameter -Wunused-result -Wunused-value -Wunused-variable -Wuseless-cast -Wvarargs -Wvariadic-macros -Wvector-operation-performance -Wvirtual-inheritance -Wvirtual-move-assign -Wvolatile-register-var -Wwrite-strings -Wzero-as-null-pointer-constant
+# GCC 10 will not have C++ -fanalyzer support: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93288
+#WARN_GXX := -fanalyzer
+WARN_GXX := -Waddress -Waggressive-loop-optimizations -Walloc-zero -Walloca -Warray-bounds -Wattribute-alias -Wattributes -Wbool-compare -Wbool-operation -Wbuiltin-declaration-mismatch -Wbuiltin-macro-redefined -Wc++11-compat -Wc++14-compat -Wc++17-compat -Wcast-align -Wcast-align=strict -Wcast-function-type -Wcast-qual -Wchar-subscripts -Wclass-memaccess -Wclobbered -Wcomment -Wconditionally-supported -Wconversion-null -Wcoverage-mismatch -Wcpp -Wctor-dtor-privacy -Wdangling-else -Wdate-time -Wdelete-incomplete -Wdelete-non-virtual-dtor -Wdeprecated -Wdeprecated-declarations -Wdisabled-optimization -Wdiv-by-zero -Wdouble-promotion -Wduplicated-branches -Wduplicated-cond -Wempty-body -Wendif-labels -Wenum-compare -Wexpansion-to-defined -Wextra -Wextra-semi -Wfloat-conversion -Wfloat-equal -Wformat-contains-nul -Wformat-extra-args -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat-y2k -Wformat-zero-length -Wframe-address -Wfree-nonheap-object -Whsa -Wif-not-aligned -Wignored-attributes -Wignored-qualifiers -Winherited-variadic-ctor -Winit-self -Winline -Wint-in-bool-context -Wint-to-pointer-cast -Winvalid-memory-model -Winvalid-offsetof -Winvalid-pch -Wliteral-suffix -Wlogical-not-parentheses -Wlogical-op -Wlong-long -Wlto-type-mismatch -Wmain -Wmaybe-uninitialized -Wmemset-elt-size -Wmemset-transposed-args -Wmisleading-indentation -Wmissing-attributes -Wmissing-braces -Wmissing-declarations -Wmissing-field-initializers -Wmissing-include-dirs -Wmultichar -Wmultiple-inheritance -Wmultistatement-macros -Wnarrowing -Wnoexcept -Wnoexcept-type -Wnon-template-friend -Wnon-virtual-dtor -Wnonnull -Wnonnull-compare -Wnull-dereference -Wodr -Wold-style-cast -Wopenmp-simd -Woverflow -Woverlength-strings -Woverloaded-virtual -Wpacked -Wpacked-bitfield-compat -Wpacked-not-aligned -Wparentheses -Wpmf-conversions -Wpointer-arith -Wpointer-compare -Wpragmas -Wpsabi -Wredundant-decls -Wregister -Wreorder -Wrestrict -Wreturn-local-addr -Wreturn-type -Wsequence-point -Wshadow -Wshadow=compatible-local -Wshadow=local -Wshift-count-negative -Wshift-count-overflow -Wshift-negative-value -Wsign-compare -Wsign-promo -Wsized-deallocation -Wsizeof-array-argument -Wsizeof-pointer-div -Wsizeof-pointer-memaccess -Wstack-protector -Wstrict-null-sentinel -Wstringop-truncation -Wsubobject-linkage -Wsuggest-attribute=cold -Wsuggest-attribute=const -Wsuggest-attribute=format -Wsuggest-attribute=malloc -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-methods -Wsuggest-final-types -Wsuggest-override -Wswitch -Wswitch-bool -Wswitch-default -Wswitch-enum -Wswitch-unreachable -Wsync-nand -Wsynth -Wtautological-compare -Wterminate -Wtrampolines -Wtrigraphs -Wtype-limits -Wundef -Wuninitialized -Wunknown-pragmas -Wunsafe-loop-optimizations -Wunused -Wunused-but-set-parameter -Wunused-but-set-variable -Wunused-function -Wunused-label -Wunused-local-typedefs -Wunused-macros -Wunused-parameter -Wunused-result -Wunused-value -Wunused-variable -Wuseless-cast -Wvarargs -Wvariadic-macros -Wvector-operation-performance -Wvirtual-inheritance -Wvirtual-move-assign -Wvolatile-register-var -Wwrite-strings
+# -Wzero-as-null-pointer-constant problem with spaceship operator
 # -Wpedantic # allow language extensions
 # -Wtemplates # we allow templates
 # -Wnamespaces # we allow namespaces
@@ -156,7 +172,7 @@ CXXFLAGS =
 #CXXFLAGS = -O3 -flto
 #GXX = g++ # 7.3.0
 #GXX = g++-8 --std=c++2a # 8.0.1
-#GXX = /usr/lib/gcc-snapshot/bin/g++ -pipe -fsanitize=undefined $(WARN_GXX) #-fsanitize=leak -fsanitize=address #-fsanitize=thread
+GXX = /usr/lib/gcc-snapshot/bin/g++ -pipe -fsanitize=undefined $(WARN_GXX) #-fsanitize=leak -fsanitize=address #-fsanitize=thread
 
 #GXX = clang++ # 4.0.1
 #GXX = clang++-libc++ # 4.0.1
@@ -165,7 +181,7 @@ CXXFLAGS =
 #GXX = clang++-7 -stdlib=libc++
 #GXX = clang++-7 --alnalyze -Xanalyzer -analyzer-output=text
 #GXX = clang++-7 -stdlib=libc++ -fstandalone-debug
-GXX = clang++ -stdlib=libc++ -fsanitize=undefined -fsanitize=integer -fsanitize=nullability
+#GXX = clang++ -stdlib=libc++ -fsanitize=undefined -fsanitize=integer -fsanitize=nullability
 #GXX = clang++-7 -fsanitize=memory
 
 #GXX = clang++-7
@@ -212,6 +228,7 @@ CXX = $(GXX) $(STD) $(CPPFLAGS) $(WARN) $(CXXFLAGS)
 # cppcoreguidelines-owning-memory
 # exclude:
 # cppcoreguidelines-pro-bounds-constant-array-index # using at() is not zero-cost, use -fsanitize=bounds/-fsanitize=bounds-strict (GCC only)
+# cppcoreguidelines-init-variables # use valgrind/MSan instead
 # -google-runtime-int # ftell and strtoul returns 'long' and 'unsigned long', rather than of a fix size.
 
 # Incoherent guidelines
@@ -222,16 +239,19 @@ CXX = $(GXX) $(STD) $(CPPFLAGS) $(WARN) $(CXXFLAGS)
 # google
 # llvm
 
-CTIDY = clang-tidy -header-filter='.*' -warnings-as-errors='*' -checks='*'
-CTIDY = clang-tidy -header-filter='.*,-gsl*' -warnings-as-errors='*' -checks='*,-cppcoreguidelines-pro-bounds-constant-array-index,-modernize-use-trailing-return-type,-google-runtime-int,-llvm-include-order,-fuchsia-default-arguments*,-fuchsia-overloaded-operator,-fuchsia-statically-constructed-objects,-cert-err58-cpp,-cert-msc32-c,cert-msc51-cpp'
+# TODO:
+# cppcoreguidelines-avoid-non-const-global-variables
+
+CTIDY = clang-tidy-$(LLVM_VER) -header-filter='.*' -warnings-as-errors='*' -checks='*'
+CTIDY = clang-tidy-$(LLVM_VER) -header-filter='.*,-gsl*' -warnings-as-errors='*' -checks='*,-cppcoreguidelines-pro-bounds-constant-array-index,-cppcoreguidelines-init-variables,-modernize-use-trailing-return-type,-readability-identifier-length,-google-runtime-int,-llvm-include-order,-fuchsia-default-arguments*,-fuchsia-overloaded-operator,-fuchsia-statically-constructed-objects,-cert-err58-cpp,-cert-msc32-c,cert-msc51-cpp,-llvmlibc-*,-cppcoreguidelines-avoid-non-const-global-variables,-altera-struct-pack-align,-altera-unroll-loops,-altera-id-dependent-backward-branch'
 
 -include *.mk
 
 osearch: $(OBJS)
-	$(CXX) -fuse-ld=lld -o $@ $(OBJS) $(LDLIBS)
+	$(CXX) -o $@ $(OBJS) $(LDLIBS)
 
 %.o: %.cc
-	$(CTIDY) -fix $< -- -stdlib=libc++ -I /usr/lib/llvm-9/include/c++/v1 $(STD) $(CPPFLAGS) && $(CXX) -c -g $<
+	$(CTIDY) -fix $< -- -stdlib=libc++ -I /usr/lib/llvm-$(LLVM_VER)/include/c++/v1 $(STD) $(CPPFLAGS) && $(CXX) -c -g $<
 	$(CXX) -c -g $<
 #	$(CXX) -S -save-temps -O3 $<
 
@@ -240,7 +260,7 @@ run: osearch
 	./test.sh
 
 clang-format:
-	clang-format -style=LLVM *.cc -i
+	clang-format-$(LLVM_VER) -style=LLVM *.cc -i
 
 clean:
 	$(RM) *.o *.d *.s *.ll *.ii osearch

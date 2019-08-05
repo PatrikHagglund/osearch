@@ -1,15 +1,13 @@
 #include "print.hh"
 #include "assume.hh"
 
-#include <cstdio>
+/// \file
+/// Progress printouts, using progress_t and its progress_t::tick() method.
 
-/** \file print.cc Progress printouts.
- */
-
-/** To be written */
-
+/// Global variable for progress printouts.
 progress_t progress;
 
+/// Print explanation of progress symbols used.
 void progress_t::print_symbols() const {
   *o << "Progress indicators used. For a given option string:\n"
         " .  request measurement result\n"
@@ -17,6 +15,7 @@ void progress_t::print_symbols() const {
         " *  measure\n";
 }
 
+/// Print out a progress tick.
 #ifdef DEBUG
 void progress_t::tick(char sym, point_t const &p) {
 #else
@@ -36,6 +35,7 @@ void progress_t::tick(char sym) {
   }
 }
 
+/// Print out a progress newline.
 void progress_t::newl() const {
   if (!silent) {
     *o << "\n";

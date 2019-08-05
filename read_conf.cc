@@ -1,5 +1,5 @@
-/** \file read_conf.cc Use read_conf() to read in configuration file
-    into the #conf variable. */
+/// \file
+/// Use read_conf() to read in configuration file into the #conf variable.
 
 #include "read_conf.hh"
 #include "assume.hh"
@@ -8,23 +8,24 @@
 
 #include <expat.h>
 
-#include <gsl/gsl> // czstring, not_null, gsl::owner
+#include <gsl/gsl> // czstring, gsl::owner
 
-#include <iomanip>  // std::setw
 #include <iostream> // std::cerr
 
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-static gsl::czstring<> config_file;
+/// Name of the file containing configuration data.
+static gsl::czstring config_file;
 
-static void arg_config_file(NONNULL(gsl::czstring<>) path) {
+/// opt_reg_t function for the config file option.
+static void arg_config_file(NONNULL(gsl::czstring) path) {
   std::cout << "arg_config_file:path " << path << '\n';
   config_file = path;
 }
 
-static int _dummy =
+/// Option registration static computaion context.
+static int dummy_ =
     (opt_reg_t::append(0, arg_config_file, " config_file",
                        "  The 'config_file' describes the search space.\n"),
      1);
@@ -34,7 +35,7 @@ void summary_first_read_conf() {
 }
 
 /** Read 'path' to a memory buffer. */
-static std::string file_read(gsl::czstring<> path) {
+static std::string file_read(gsl::czstring path) {
 
 #ifdef DEBUG
   std::cout << "config file name: " << path << '\n';
@@ -44,13 +45,13 @@ static std::string file_read(gsl::czstring<> path) {
   gsl::owner<FILE *> file = fopen(path, "rbe");
   if (file == nullptr) {
     perror("fopen failed");
-    exit(1);
+    _Exit(1);
   }
 
   // read file size
   if (fseek(file, 0, SEEK_END) != 0) {
     perror("fseek failed");
-    exit(1);
+    _Exit(1);
   }
   long res = ftell(file);
   if (res == -1) {
@@ -68,12 +69,12 @@ static std::string file_read(gsl::czstring<> path) {
   size_t rsize = std::fread(&str[0], sizeof(char), size, file);
   if (rsize != size) {
     perror("fread failed");
-    exit(1);
+    _Exit(1);
   }
 
   if (fclose(file) != 0) {
     perror("fclose failed");
-    exit(1);
+    _Exit(1);
   }
 
   std::string_view str_v(&str[0], sizeof(str));
@@ -87,8 +88,7 @@ static std::string file_read(gsl::czstring<> path) {
 static int Depth;
 #endif
 
-/** Holds the configuration values (after the parse) */
-conf_t conf = conf_t(); // start with dummy value
+conf_t conf{}; // start with dummy value
 
 /** Callback function used to parse a single xml element. Used by
     XML_SetElementHandler().
@@ -122,7 +122,7 @@ static void start(void *data __attribute__((__unused__)), const char *el,
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         strcmp(attr[2], "value") == 0) {
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic,cppcoreguidelines-owning-memory)
-      conf.flags.push_back(new simple_t(attr[3]));
+      conf.flags.push_back(new flag::simple_t(attr[3]));
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -130,7 +130,7 @@ static void start(void *data __attribute__((__unused__)), const char *el,
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         strcmp(attr[2], "value") == 0) {
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic,cppcoreguidelines-owning-memory)
-      conf.flags.push_back(new enum_t(attr[3]));
+      conf.flags.push_back(new flag::enum_t(attr[3]));
     }
   }
 
@@ -174,29 +174,14 @@ static void parse(const std::string &conf_file_buf) {
     std::cerr << "Parse error at line " << XML_GetCurrentLineNumber(parser)
               << ":\n"
               << XML_ErrorString(XML_GetErrorCode(parser)) << "\n";
-    exit(EXIT_FAILURE);
+    _Exit(EXIT_FAILURE);
   }
-
-#ifdef DEBUG
-  std::cout << "prime command: " << conf.prime_command << "\n"
-            << "baselines:\n";
-  for (auto const &i : conf.baselines) {
-    std::cout << i << "\n";
-  }
-  std::cout << "flags:\n";
-  for (auto const &i : conf.flags) {
-    std::cout << std::setw(3) << &i - &*conf.flags.cbegin() << ": ";
-    for (size_t j = 1; j < i->size(); ++j) {
-      std::cout << i->get_flag(j) << " ";
-    }
-    std::cout << "\n";
-  }
-#endif
 }
-
-/** Read the configuration file and parse it into #conf. */
 
 void read_conf() {
   std::string conf_file_buf = file_read(config_file);
   parse(conf_file_buf);
+#ifdef DEBUG
+  std::cout << conf.to_string();
+#endif
 }

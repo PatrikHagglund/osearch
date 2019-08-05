@@ -1,98 +1,124 @@
 #ifndef POINT_HH
 #define POINT_HH
 
-#include "assume.hh" // GNUC_BUILTIN_ASSUME
-
-#include <sstream>
 #include <string>
 #include <vector>
 
-// point_t
+/// \file
+/// For point_t (measurement point).
 
+/// Measurement point, represented as a list of option values.
+/// \todo Try template over length of flags list. (To make this class trivially copyable.)
 struct point_t {
+  /// Set size to number of flags in #conf, and initialize all to 0.
   explicit point_t();
+#if 0
+  /// Set to space separated option string.
   explicit point_t(std::string flags_str);
+#endif
+  /// Destructor (needed to clean up #val).
+  ~point_t() = default;
+  /// Equal operator.
   bool operator==(point_t const& p) const;
+  /// Not equal operator.
   bool operator!=(point_t const& p) const;
+  /// Less than operator.
+  /// \todo Replace with C++20 <=> operator.
   bool operator<(point_t const& p) const;
-  std::string str() const;
+  /// Number of non-zero values.
+  unsigned popcnt() const;
+  /// To string operator. Print flags space separated.
+  std::string to_string() const;
+#if 0
   void set_rand();
+#endif
+  /// Type for storing list of flag values.
   using val_t = std::vector<uint8_t>;
-  // storage
-  // for each config flag, store its value
+  /// For each config flag, store its value.
   val_t val;
 };
 
-//static_assert(std::is_trivially_copyable<point_t>::value);
+static_assert(std::is_class<point_t>::value);
+static_assert(!std::is_trivial<point_t>::value);
+static_assert(std::is_standard_layout<point_t>::value);
+static_assert(!std::is_trivially_copyable<point_t>::value);
+static_assert(!std::is_polymorphic<point_t>::value);
+//static_assert(!std::is_literal_type<point_t>::value);
+
+static_assert(std::is_default_constructible<point_t>::value);
+static_assert(!std::is_trivially_default_constructible<point_t>::value);
+static_assert(!std::is_nothrow_default_constructible<point_t>::value);
+static_assert(std::is_copy_constructible<point_t>::value);
+static_assert(!std::is_trivially_copy_constructible<point_t>::value);
+static_assert(!std::is_nothrow_copy_constructible<point_t>::value);
+static_assert(std::is_move_constructible<point_t>::value);
+static_assert(!std::is_trivially_move_constructible<point_t>::value);
+static_assert(!std::is_nothrow_move_constructible<point_t>::value);
+static_assert(std::is_copy_assignable<point_t>::value);
+static_assert(!std::is_trivially_copy_assignable<point_t>::value);
+static_assert(!std::is_nothrow_copy_assignable<point_t>::value);
+static_assert(std::is_move_assignable<point_t>::value);
+static_assert(!std::is_trivially_move_assignable<point_t>::value);
+static_assert(!std::is_nothrow_move_assignable<point_t>::value);
+static_assert(std::is_destructible<point_t>::value);
+static_assert(!std::is_trivially_destructible<point_t>::value);
+static_assert(std::is_nothrow_destructible<point_t>::value);
 
 
-// obj_t
+/// \file
+/// \todo "Standard" type configuration checks?
 
-static constexpr int sign(int64_t i) { return i == 0 ? 0 : (i < 0 ? -1 : 1); }
+static_assert(std::is_class<std::string>::value);
+static_assert(!std::is_trivial<std::string>::value);
+static_assert(std::is_standard_layout<std::string>::value);
+static_assert(!std::is_trivially_copyable<std::string>::value);
+static_assert(!std::is_polymorphic<std::string>::value);
+//static_assert(!std::is_literal_type<std::string>::value);
 
-struct obj_t {
-  explicit obj_t() = default;
-  constexpr explicit obj_t(int64_t v) : inf(false), val(v) {};
-  explicit obj_t(const std::string& str)
-    : inf(str == "inf"),
-      val(inf ? 1 : int64_t(strtoul(str.c_str(), nullptr, 0))) {
-    GNUC_BUILTIN_ASSUME(!str.empty());
-  }
-  constexpr obj_t operator-(obj_t const& obj) const {
-    GNUC_BUILTIN_ASSUME((!inf || sign(val) == val) && (!obj.inf || sign(obj.val) == obj.val));
-    return obj_t(inf || obj.inf, (obj.inf ? 0 : val) - (inf ? 0 : obj.val));
-  }
-  constexpr bool operator==(obj_t const &obj) const {
-    return inf == obj.inf && val == obj.val;
-  }
-  constexpr bool operator<(obj_t const &obj) const { return 0 < (obj - *this).val; }
-  constexpr bool operator>(obj_t const &obj) const {
-    return !(*this < obj || *this == obj);
-  }
-  std::string str() const {
-    if (inf) {
-      return std::string(val < 0 ? "-" : "") + "inf";
-    }
-    std::ostringstream ss;
-    ss << val;
-    return ss.str();
-  }
-
-private:
-  constexpr explicit obj_t(bool i, int64_t v) : inf(i), val(inf ? sign(v) : v) {}
-  bool inf; // mark infinite values
-  int64_t val; // value (sign for infinite values)
-};
+static_assert(std::is_default_constructible<std::string>::value);
+static_assert(!std::is_trivially_default_constructible<std::string>::value);
+static_assert(std::is_nothrow_default_constructible<std::string>::value);
+static_assert(std::is_copy_constructible<std::string>::value);
+static_assert(!std::is_trivially_copy_constructible<std::string>::value);
+static_assert(!std::is_nothrow_copy_constructible<std::string>::value);
+static_assert(std::is_move_constructible<std::string>::value);
+static_assert(!std::is_trivially_move_constructible<std::string>::value);
+static_assert(std::is_nothrow_move_constructible<std::string>::value);
+static_assert(std::is_copy_assignable<std::string>::value);
+static_assert(!std::is_trivially_copy_assignable<std::string>::value);
+static_assert(!std::is_nothrow_copy_assignable<std::string>::value);
+static_assert(std::is_move_assignable<std::string>::value);
+static_assert(!std::is_trivially_move_assignable<std::string>::value);
+static_assert(std::is_nothrow_move_assignable<std::string>::value);
+static_assert(std::is_destructible<std::string>::value);
+static_assert(!std::is_trivially_destructible<std::string>::value);
+static_assert(std::is_nothrow_destructible<std::string>::value);
 
 
-static_assert(std::is_class<obj_t>::value);
-static_assert(std::is_trivial<obj_t>::value);
-static_assert(std::is_standard_layout<obj_t>::value);
-static_assert(std::is_trivially_copyable<obj_t>::value);
-static_assert(!std::is_polymorphic<obj_t>::value);
-static_assert(std::is_literal_type<obj_t>::value);
-static_assert(std::is_pod<obj_t>::value);
+static_assert(std::is_class<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivial<std::vector<uint8_t>>::value);
+static_assert(std::is_standard_layout<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivially_copyable<std::vector<uint8_t>>::value);
+static_assert(!std::is_polymorphic<std::vector<uint8_t>>::value);
+//static_assert(!std::is_literal_type<std::vector<uint8_t>>::value);
 
-static_assert(std::is_default_constructible<obj_t>::value);
-static_assert(std::is_trivially_default_constructible<obj_t>::value);
-static_assert(std::is_nothrow_default_constructible<obj_t>::value);
-static_assert(std::is_copy_constructible<obj_t>::value);
-static_assert(std::is_trivially_copy_constructible<obj_t>::value);
-static_assert(std::is_nothrow_copy_constructible<obj_t>::value);
-static_assert(std::is_move_constructible<obj_t>::value);
-static_assert(std::is_trivially_move_constructible<obj_t>::value);
-static_assert(std::is_nothrow_move_constructible<obj_t>::value);
-static_assert(std::is_copy_assignable<obj_t>::value);
-static_assert(std::is_trivially_copy_assignable<obj_t>::value);
-static_assert(std::is_nothrow_copy_assignable<obj_t>::value);
-static_assert(std::is_move_assignable<obj_t>::value);
-static_assert(std::is_trivially_move_assignable<obj_t>::value);
-static_assert(std::is_nothrow_move_assignable<obj_t>::value);
-static_assert(std::is_destructible<obj_t>::value);
-static_assert(std::is_trivially_destructible<obj_t>::value);
-static_assert(std::is_nothrow_destructible<obj_t>::value);
-
-// replacement for rand()
-int my_rand();
+static_assert(std::is_default_constructible<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivially_default_constructible<std::vector<uint8_t>>::value);
+static_assert(std::is_nothrow_default_constructible<std::vector<uint8_t>>::value);
+static_assert(std::is_copy_constructible<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivially_copy_constructible<std::vector<uint8_t>>::value);
+static_assert(!std::is_nothrow_copy_constructible<std::vector<uint8_t>>::value);
+static_assert(std::is_move_constructible<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivially_move_constructible<std::vector<uint8_t>>::value);
+static_assert(std::is_nothrow_move_constructible<std::vector<uint8_t>>::value);
+static_assert(std::is_copy_assignable<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivially_copy_assignable<std::vector<uint8_t>>::value);
+static_assert(!std::is_nothrow_copy_assignable<std::vector<uint8_t>>::value);
+static_assert(std::is_move_assignable<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivially_move_assignable<std::vector<uint8_t>>::value);
+static_assert(std::is_nothrow_move_assignable<std::vector<uint8_t>>::value);
+static_assert(std::is_destructible<std::vector<uint8_t>>::value);
+static_assert(!std::is_trivially_destructible<std::vector<uint8_t>>::value);
+static_assert(std::is_nothrow_destructible<std::vector<uint8_t>>::value);
 
 #endif // POINT_HH

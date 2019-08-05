@@ -6,9 +6,12 @@ BENCHMARKS=benchmarks/*.c
 
      #CONFIG=gcc48.osearch
      CONFIG=gcc48-test.osearch
-     ./osearch -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
-     # lldb-7 -- ./osearch -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
-     valgrind ./osearch -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
+     ./osearch -s -i '-std=c18 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
+     #gdb --args ./osearch -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
+     #lldb-12 -- ./osearch -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
+     #echo "set args -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS"
+     #ddd ./osearch
+     #valgrind ./osearch -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
 
 #    for f in $BENCHMARKS; do
 #	runacovea -config config/$CONFIG -input $f

@@ -9,8 +9,9 @@
 # env CC=/usr/lib/gcc-snapshot/bin/gcc CXX='/usr/lib/gcc-snapshot/bin/g++ -std=gnu++2a -g3 -gdwarf-4 -ggdb -O3 -flto' cmake -G Ninja -H. -Bbuild-gcc-opt
 # ninja -C build-gcc-opt -v
 # objdump -d build-clang-opt/osearch | c++filt | less
-cmake_minimum_required(VERSION 3.11)
+project(osearch)
+cmake_minimum_required(VERSION 3.22)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(/home/uabpath/GSL/include)
-add_executable(osearch main.cc compile.cc  execute.cc  getopts.cc  measure.cc  point.cc  print.cc  read_conf.cc  search.cc  steps.cc)
+add_executable(osearch main.cc my_rand.cc obj.cc point.cc compile.cc  execute.cc  getopts.cc  measure.cc print.cc  read_conf.cc  search.cc  steps.cc)
 target_link_libraries(osearch expat)

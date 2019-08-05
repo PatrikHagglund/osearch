@@ -5,15 +5,16 @@
 
 #include <iostream> // std::cerr
 
-#include <random> // default_random_engine, uniform_int_distribution
+#if 0
+#include <cstddef> // ptrdiff_t
+#endif
 
-#include <cstddef>
-#include <cstdlib> // rand, strtoul
-
-// point_t
+/// \file
+/// For point_t (measurement point).
 
 point_t::point_t() : val(conf.flags.size(), 0U) {}
 
+#if 0
 point_t::point_t(std::string flags_str) {
   flags_str.append(" ");
   for (auto const &i : conf.flags) {
@@ -37,6 +38,7 @@ point_t::point_t(std::string flags_str) {
     exit(1);
   }
 }
+#endif
 
 bool point_t::operator==(point_t const &p) const { return val == p.val; }
 
@@ -45,25 +47,7 @@ bool point_t::operator!=(point_t const &p) const { return val != p.val; }
 bool point_t::operator<(point_t const &p) const {
   GNUC_BUILTIN_ASSUME(val.size() == p.val.size());
 
-  // if the number of options turned on (size) are unequal, use the
-  // size
-  unsigned size1 = 0;
-  for (auto const &i : val) {
-    if (i != 0) {
-      ++size1;
-    }
-  }
-  unsigned size2 = 0;
-  for (auto const &i : p.val) {
-    if (i != 0) {
-      ++size2;
-    }
-  }
-  if (size1 != size2) {
-    return size1 < size2;
-  }
-
-  // otherwise use lexicographical order
+  // use lexicographical order
   for (size_t i = 0; i < val.size(); ++i) {
     unsigned t1 = val[i];
     unsigned t2 = p.val[i];
@@ -74,7 +58,15 @@ bool point_t::operator<(point_t const &p) const {
   return false;
 }
 
-std::string point_t::str() const {
+unsigned point_t::popcnt() const {
+  unsigned popcnt = 0;
+  for (unsigned v : val) {
+    popcnt += v != 0 ? 1U : 0;
+  }
+  return popcnt;
+}
+
+std::string point_t::to_string() const {
   std::string flags_str;
   for (auto const &i : val) {
     if (i != 0U) {
@@ -85,19 +77,11 @@ std::string point_t::str() const {
   return flags_str;
 }
 
-constexpr int rand_max = 32767;
-// Seed with a real random value, if available
-// std::random_device r;
-// std::default_random_engine e(r());
-// NOLINTNEXTLINE(cert-msc51-cpp)
-static std::default_random_engine e(0);
-static std::uniform_int_distribution<int> uniform_dist(0, rand_max);
-
-int my_rand() { return uniform_dist(e); }
-
+#if 0
 void point_t::set_rand() {
 
   for (auto &i : val) {
     i = static_cast<unsigned char>(my_rand() % 2 == 0);
   }
 }
+#endif

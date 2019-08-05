@@ -8,9 +8,12 @@
 
 #include <iostream> // std::cerr
 
-#include <cstdlib>
-#include <string>
-#include <unistd.h>
+#include <cstdlib>  // _Exit
+#include <string>   // std::string
+#include <unistd.h> // getopt
+
+/// \file
+/// Register (opt_reg_t) and process (get_opts()) command line options.
 
 /**
  *  Options processing. Use the opt_reg_t constructor
@@ -23,29 +26,35 @@
                "  Search for an optimal combination of compiler options.\n\n"
                "  The 'code_file' is the source code to be compiled.\n\n"
             << opt_reg_t::opt_strs.usage_long;
-  exit(EXIT_FAILURE);
+  _Exit(EXIT_FAILURE);
+}
+
+/// Wrapper for getopt(), hiding casts.
+static int my_getopt(std::span<const NONNULL(argv_czstring)> args,
+                     NONNULL(gsl::czstring) optstring) {
+
+  auto argc = static_cast<int>(args.size());
+#if !defined(__clang__) || !defined(USE_CZSTRING)
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  auto *argv = reinterpret_cast<char *const *>(args.data());
+#else
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+  const auto *argv = const_cast<char *const *>(args.data());
+#endif
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
+  return getopt(argc, argv, optstring);
 }
 
 /** Parse all options regsitred with opt_reg_t. */
 
-// wrapper for getopt
-static int my_getopt(STD::span<NONNULL(gsl::zstring<>)> args,
-                     NONNULL(gsl::czstring<>) optstring) {
-
-  int argc = args.size();
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  auto argv = reinterpret_cast<char *const *>(args.data());
-  return getopt(argc, argv, optstring);
-}
-
-void get_opts(STD::span<NONNULL(gsl::zstring<>)> args) {
+void get_opts(std::span<const NONNULL(argv_czstring)> args) {
 #ifdef DEBUG
   o3 << "opt_strs\n";
   o3 << opt_reg_t::opt_strs.getopt_str << '\n';
   o3 << opt_reg_t::opt_strs.usage_short << '\n';
   o3 << opt_reg_t::opt_strs.usage_long << '\n';
 #endif
-  NONNULL(gsl::czstring<>) optstring(opt_reg_t::opt_strs.getopt_str.c_str());
+  NONNULL(gsl::czstring) optstring(opt_reg_t::opt_strs.getopt_str.c_str());
   for (int c; (c = my_getopt(args, optstring)) != -1;) {
     if (opt_reg_t::opt_strs.opt_funs[c] != nullptr) {
       (*opt_reg_t::opt_strs.opt_funs[c])();
@@ -60,7 +69,7 @@ void get_opts(STD::span<NONNULL(gsl::zstring<>)> args) {
     (*opt_reg_t::opt_strs.arg_funs[i])(args[optind++]);
   }
 
-  if (args.size() - optind < 0) {
+  if (static_cast<ssize_t>(args.size()) < optind) {
     usage(std::string_view(args[0]));
   }
 }

@@ -12,7 +12,13 @@
 #include <utility>
 #include <vector>
 
+/// \file
+/// Main loop (search()), to search for good options.
+
+/// Check if p and p_old are "equal".
+/// \todo Improve documentation.
 static bool skip(point_t p, point_t p_old, delta_ind_t const &d_ind) {
+  /// \todo Create an "equal" function.
   bool same = false;
   for (uint16_t i : d_ind) {
     same = same || p.val[i] == p_old.val[i];
@@ -38,34 +44,48 @@ static bool skip(point_t p, point_t p_old, delta_ind_t const &d_ind) {
 //   return p;
 // }
 
+/// Step forward a point, increasing options. Used in advance().
+/// \param p
+/// \param p_old
+/// \param d_ind
+/// \return point_t (the "next" point)
+/// \todo Improve documentation.
 static point_t get_next(point_t p, point_t p_old, delta_ind_t const &d_ind) {
 #ifdef DEBUG
-  o1 << "get_next: " << p.str() << " " << p_old.str() << " "
+  o1 << "get_next: " << p.to_string() << " " << p_old.to_string() << " "
      << delta_ind_str(d_ind) << "\n";
 #endif
   for (uint16_t i : d_ind) {
-    p.val[i] = (unsigned(p.val[i]) + 1) %
+    p.val[i] = (static_cast<unsigned>(p.val[i]) + 1) %
                static_cast<unsigned char>(conf.flags[i]->size());
     if (p.val[i] != p_old.val[i]) {
       break;
     }
   }
 #ifdef DEBUG
-  o1 << "get_next ret: " << p.str() << "\n";
+  o1 << "get_next ret: " << p.to_string() << "\n";
 #endif
   return p;
 }
 
-static bool advance(NONNULL_IMPLICIT(point_t *) p, const point_t &p_old,
+/// Step forward a point using get_next().
+/// \param p
+/// \param p_old
+/// \param d_ind
+/// \return return false if a fixed point has been reached, true otherwise
+static bool advance(NONNULL(point_t *) p, const point_t &p_old,
                     delta_ind_t const &d_ind) {
   *p = get_next(*p, p_old, d_ind);
   return *p != p_old;
 }
 
+/// Search for better points (until fixed point is reached).
+/// \todo Improve documentation.
 void search() {
   point_t p = get_min_point();
   obj_t res = measure(p);
-  o1 << "\n## Best (so far):\n" << res.str() << " " << p.str() << "\n";
+  o1 << "\n## Best (so far):\n"
+     << res.to_string() << " " << p.to_string() << "\n";
   steps = steps_t();
   for (;;) {
     // get new step data
@@ -101,25 +121,19 @@ void search() {
       bool equal = equivalent_p(p_new, p);
       delta = delta_t(p_new, p, equal, diff);
       // #ifdef DEBUG
-      o1 << " point: " << p_new.str() << " res: " << res_new.str()
+      o1 << " point: " << p_new.to_string() << " res: " << res_new.to_string()
          << " delta: " << delta.str() << " ";
       // #endif
       steps.store(delta);
 
       // decide if this point is better or not
-      unsigned optw1 = 0;
-      unsigned optw2 = 0;
-      for (uint16_t i : d_ind) {
-        optw1 += p_new.val[i] != 0 ? 1U : 0;
-        optw2 += p.val[i] != 0 ? 1U : 0;
-      }
-      if (equal ? optw1 < optw2 : diff < obj_t(0)) {
+      if (equal ? p_new.popcnt() < p.popcnt() : diff < obj_t(0)) {
 
         p = p_new;
         res = res_new;
 
         o1 << "\nAlteration adopted: " << delta.str();
-        o1 << "\n" << res.str() << " " << p.str();
+        o1 << "\n" << res.to_string() << " " << p.to_string();
       }
     } while (advance(&p_new, p_start, d_ind));
 
@@ -142,6 +156,6 @@ void summary_exit() {
   o3 << "\n";
   o3 << "\nBest combination found:";
   point_t p = get_min_point();
-  o3 << "\n" << measure(p).str() << " " << p.str() << "\n";
+  o3 << "\n" << measure(p).to_string() << " " << p.to_string() << "\n";
   steps.summary_exit();
 }

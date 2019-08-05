@@ -1,21 +1,38 @@
 #ifndef ASSUME_HH
 #define ASSUME_HH
 
+/// \file
+/// Language extensions, such as #GNUC_BUILTIN_ASSUME and #NONNULL.
+
 #ifdef __GNUC__
-#define GNUC_BUILTIN_ASSUME(cond) if (!(cond)) __builtin_unreachable()
+static constexpr bool my_id(bool cond) { return cond; }
+#if defined(__clang__) && 0
+#define GNUC_BUILTIN_ASSUME(cond) __builtin_assume(my_id(cond))
+#else
+#define GNUC_BUILTIN_ASSUME(cond) if (my_id(!(cond))) __builtin_unreachable()
+#endif
+#else
+/// Assert without any side effect. (Should be detected in UBSan or similar.)
+/// \todo Even with my_id above, clang -Wassume will complain about ignored side effects.
+#define GNUC_BUILTIN_ASSUME(cond)
 #endif
 
 #ifdef __clang__
 #define NONNULL(type) type _Nonnull
-#define NONNULL_IMPLICIT(type) type _Nonnull
 #define NULLABLE(type) type _Nullable
 #else
 #include <gsl/gsl>
+/// Pointer type attribute to mark as non-null.
+/// \todo Check if some can be replaced with references.
 #define NONNULL(type) gsl::not_null<type>
-// no non-explicit not_null?
-// https://github.com/Microsoft/GSL/issues/395
-#define NONNULL_IMPLICIT(type) type
+/// Opposite of NONNULL. (Currently unused.)
 #define NULLABLE(type) type
+#endif
+
+#ifdef __clang__
+#define CONSTEXPR_STR
+#else
+#define CONSTEXPR_STR constexpr
 #endif
 
 #endif

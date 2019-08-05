@@ -13,13 +13,21 @@
 
 #include <cstdlib> // EXIT_SUCCESS
 
+/// \file
+/// Measure (compile and sample) given a point_t, using measure(). Store results
+/// in the results mapping.
+
 // BEGIN option handling for 'size'
 
-static bool size = false;
+/// Flag to tell if we optimize for size, or execution time.
+static bool opt_size = false;
 
-static void opt_s() { size = true; }
+/// Option helper function.
+/// \todo Possible to use lambda function?
+static void opt_s() { opt_size = true; }
 
-static int _dummy =
+/// Option helper varaible.
+static int dummy_ =
     (opt_reg_t::append(
          's', opt_s, "s", "  [-s]",
          "  -s \t\tuse the size of the generated binary rather than\n"
@@ -30,12 +38,16 @@ static int _dummy =
 
 void summary_first_measure() {
   summary_first_compile();
-  o3 << "\nOptimized for: " << (size ? "size" : "time (output value)");
+  o3 << "\nOptimized for: " << (opt_size ? "size" : "time (output value)");
 }
 
+/// Compute the objective function (generated code size if opt_size,
+/// otherwise execution time) for a given pset_t.
+/// \param pset pset_t
+/// \return obj_t
 static obj_t sample(pset_t pset) {
-  if (pset == error_pset()) {
-    return obj_t("inf");
+  if (pset == pset_invalid) {
+    return obj_t_inf;
   }
 
 #ifdef DEBUG
@@ -46,25 +58,32 @@ static obj_t sample(pset_t pset) {
 
   tmp_file_t const &tmp_file = get_tmp_file(pset);
 
-  std::string foo = std::string("size -A ") + std::string(tmp_file.get_path()) +
-                    " | grep .text | awk '{ print $2 }'";
-  std::string bar = std::string(tmp_file.get_path());
-  std::string cmd = size ? foo : bar;
+  const std::string foo = std::string("size -A ") +
+                          std::string(tmp_file.get_path()) +
+                          " | grep .text | awk '{ print $2 }'";
+  const std::string bar = std::string(tmp_file.get_path());
+  const std::string cmd = opt_size ? foo : bar;
 
   // string cmd = size ? string("size -A ") + tmp_file.path +
   //                         " | grep .text | awk '{ print $2 }'"
   //                   : tmp_file.path;
 
-  cmd_res_t cmd_res = execute(cmd);
-
-  return obj_t(cmd_res.status == EXIT_SUCCESS ? cmd_res.output : "inf");
+  const cmd_res_t cmd_res = execute(cmd);
+  const obj_t obj = cmd_res.status == EXIT_SUCCESS
+                        ? obj_t(std::stol(cmd_res.output))
+                        : obj_t_inf;
+  return obj;
 }
 
-// all results
+/// Mapping of all results.
 using results_t = std::map<pset_t, obj_t>;
+/// Mapping of all results.
 static results_t results;
 
-// check if alredy done for a given executable file
+/// Check if sampled for a given pset_t (executable file).
+/// \param pset pset_t
+/// \return true if sampled, false otherwise
+/// \todo Make a member function
 static bool result_sampled(pset_t pset) {
   return results.find(pset) != results.end();
 }
