@@ -53,7 +53,6 @@ private:
 constexpr obj_t obj_t_inf = obj_t(0, /*is_inf*/ true);
 
 static_assert(std::is_class<obj_t>::value);
-static_assert(std::is_trivial<obj_t>::value);
 static_assert(std::is_standard_layout<obj_t>::value);
 static_assert(std::is_trivially_copyable<obj_t>::value);
 static_assert(!std::is_polymorphic<obj_t>::value);

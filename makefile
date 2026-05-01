@@ -54,7 +54,7 @@ DEBUG := DEBUG
 DEFINES := $(DEBUG)
 GSL := -I $(HOME)/GSL/include
 CPPFLAGS := $(DEFINES:%=-D %) $(GSL)
-STD := -std=gnu++2b
+STD := -std=gnu++26
 LLVM_VER=15
 
 # generic

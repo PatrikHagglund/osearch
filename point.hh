@@ -2,6 +2,7 @@
 #define POINT_HH
 
 #include <string>
+#include <cstdint>
 #include <vector>
 
 /// \file
@@ -39,7 +40,6 @@ struct point_t {
 };
 
 static_assert(std::is_class<point_t>::value);
-static_assert(!std::is_trivial<point_t>::value);
 static_assert(std::is_standard_layout<point_t>::value);
 static_assert(!std::is_trivially_copyable<point_t>::value);
 static_assert(!std::is_polymorphic<point_t>::value);
@@ -69,7 +69,6 @@ static_assert(std::is_nothrow_destructible<point_t>::value);
 /// \todo "Standard" type configuration checks?
 
 static_assert(std::is_class<std::string>::value);
-static_assert(!std::is_trivial<std::string>::value);
 static_assert(std::is_standard_layout<std::string>::value);
 static_assert(!std::is_trivially_copyable<std::string>::value);
 static_assert(!std::is_polymorphic<std::string>::value);
@@ -96,7 +95,6 @@ static_assert(std::is_nothrow_destructible<std::string>::value);
 
 
 static_assert(std::is_class<std::vector<uint8_t>>::value);
-static_assert(!std::is_trivial<std::vector<uint8_t>>::value);
 static_assert(std::is_standard_layout<std::vector<uint8_t>>::value);
 static_assert(!std::is_trivially_copyable<std::vector<uint8_t>>::value);
 static_assert(!std::is_polymorphic<std::vector<uint8_t>>::value);
@@ -122,3 +120,4 @@ static_assert(!std::is_trivially_destructible<std::vector<uint8_t>>::value);
 static_assert(std::is_nothrow_destructible<std::vector<uint8_t>>::value);
 
 #endif // POINT_HH
+POINT_HH
