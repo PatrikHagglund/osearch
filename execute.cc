@@ -34,7 +34,7 @@ cmd_res_t execute(std::string cmd) {
     _Exit(EXIT_FAILURE);
   }
   out_buf[n++] = '\0';
-  std::string_view out_str(out_buf.data(), n);
+  std::string_view const out_str(out_buf.data(), n);
 
   int status = pclose(out);
   if (status == -1) {
@@ -50,7 +50,7 @@ cmd_res_t execute(std::string cmd) {
 /// file).
 tmp_file_t::tmp_file_t() {
   std::strncpy(&path[0], &templ[0], sizeof(path));
-  int tmp_fd = mkstemp(&path[0]);
+  int const tmp_fd = mkstemp(&path[0]);
   close(tmp_fd); // close temp file before executing it to avoid
                  // ETXTBSY
 }

@@ -21,6 +21,7 @@
 #include <span>
 
 #include <cstdlib> // for EXIT_SUCCESS
+#include <utility>
 
 #ifdef USE_CZSTRING
 /// Convert from span of zstring to span of czstring.
@@ -67,7 +68,7 @@ static int my_main(std::span<const NONNULL(argv_czstring)> args) {
 
   progress.print_symbols();
 
-  for (; optind < static_cast<typeof(optind)>(args.size()); ++optind) {
+  for (; std::cmp_less(optind ,args.size()); ++optind) {
 
     input_file = args[optind];
 

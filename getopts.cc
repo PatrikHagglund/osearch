@@ -10,6 +10,7 @@
 
 #include <cstdlib>  // _Exit
 #include <string>   // std::string
+#include <utility>
 #include <unistd.h> // getopt
 
 /// \file
@@ -69,7 +70,7 @@ void get_opts(std::span<const NONNULL(argv_czstring)> args) {
     (*opt_reg_t::opt_strs.arg_funs[i])(args[optind++]);
   }
 
-  if (static_cast<ssize_t>(args.size()) < optind) {
+  if (std::cmp_less(args.size(), optind)) {
     usage(std::string_view(args[0]));
   }
 }

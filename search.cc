@@ -20,7 +20,7 @@
 static bool skip(point_t p, point_t p_old, delta_ind_t const &d_ind) {
   /// \todo Create an "equal" function.
   bool same = false;
-  for (uint16_t i : d_ind) {
+  for (uint16_t const i : d_ind) {
     same = same || p.val[i] == p_old.val[i];
   }
   return same;
@@ -55,7 +55,7 @@ static point_t get_next(point_t p, point_t p_old, delta_ind_t const &d_ind) {
   o1 << "get_next: " << p.to_string() << " " << p_old.to_string() << " "
      << delta_ind_str(d_ind) << "\n";
 #endif
-  for (uint16_t i : d_ind) {
+  for (uint16_t const i : d_ind) {
     p.val[i] = (static_cast<unsigned>(p.val[i]) + 1) %
                static_cast<unsigned char>(conf.flags[i]->size());
     if (p.val[i] != p_old.val[i]) {
@@ -89,7 +89,7 @@ void search() {
   steps = steps_t();
   for (;;) {
     // get new step data
-    delta_ind_t d_ind = steps.get_next(p);
+    delta_ind_t const d_ind = steps.get_next(p);
 #ifdef DEBUG
     o1 << delta_ind_str(d_ind);
 #endif
@@ -101,7 +101,7 @@ void search() {
     GNUC_BUILTIN_ASSUME(measure(p) == res);
 #endif
 
-    point_t p_start = p;
+    point_t const p_start = p;
     point_t p_new = p;
     delta_t delta;
 
@@ -111,14 +111,14 @@ void search() {
         continue;
       }
 
-      obj_t res_new = measure(p_new);
+      obj_t const res_new = measure(p_new);
 
       // get difference
 #ifdef DEBUG
       // GNUC_BUILTIN_ASSUME(measure(p_old) == res_old);
 #endif
-      obj_t diff = res_new - res;
-      bool equal = equivalent_p(p_new, p);
+      obj_t const diff = res_new - res;
+      bool const equal = equivalent_p(p_new, p);
       delta = delta_t(p_new, p, equal, diff);
       // #ifdef DEBUG
       o1 << " point: " << p_new.to_string() << " res: " << res_new.to_string()
@@ -155,7 +155,7 @@ void summary_exit() {
      << ", " << progress.cnts['*'] << " ";
   o3 << "\n";
   o3 << "\nBest combination found:";
-  point_t p = get_min_point();
+  point_t const p = get_min_point();
   o3 << "\n" << measure(p).to_string() << " " << p.to_string() << "\n";
   steps.summary_exit();
 }

@@ -53,20 +53,22 @@ static std::string file_read(gsl::czstring path) {
     perror("fseek failed");
     _Exit(1);
   }
-  long res = ftell(file);
+  long const res = ftell(file);
   if (res == -1) {
     perror("ftell failed");
   }
-  rewind(file);
+  if (fseek(file, 0, SEEK_SET) != 0) {
+    perror("fseek failed");
+    _Exit(1);
+  }
   auto size = static_cast<size_t>(res);
 #ifdef DEBUG
   std::cout << "config file size: " << size << '\n';
 #endif
 
   // read file
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
-  char str[size];
-  size_t rsize = std::fread(&str[0], sizeof(char), size, file);
+  std::string str(size, '\0');
+  size_t const rsize = std::fread(str.data(), sizeof(char), size, file);
   if (rsize != size) {
     perror("fread failed");
     _Exit(1);
@@ -77,11 +79,10 @@ static std::string file_read(gsl::czstring path) {
     _Exit(1);
   }
 
-  std::string_view str_v(&str[0], sizeof(str));
 #ifdef DEBUG
-  // std::cout << "file_read:str " << str_v << '\n';
+  // std::cout << "file_read:str " << str << '\n';
 #endif
-  return std::string(str_v);
+  return str;
 }
 
 #ifdef DEBUG
@@ -179,7 +180,7 @@ static void parse(const std::string &conf_file_buf) {
 }
 
 void read_conf() {
-  std::string conf_file_buf = file_read(config_file);
+  std::string const conf_file_buf = file_read(config_file);
   parse(conf_file_buf);
 #ifdef DEBUG
   std::cout << conf.to_string();

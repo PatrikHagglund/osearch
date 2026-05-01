@@ -49,8 +49,8 @@ bool point_t::operator<(point_t const &p) const {
 
   // use lexicographical order
   for (size_t i = 0; i < val.size(); ++i) {
-    unsigned t1 = val[i];
-    unsigned t2 = p.val[i];
+    unsigned const t1 = val[i];
+    unsigned const t2 = p.val[i];
     if (t1 != t2) {
       return t1 < t2;
     }
@@ -60,7 +60,7 @@ bool point_t::operator<(point_t const &p) const {
 
 unsigned point_t::popcnt() const {
   unsigned popcnt = 0;
-  for (unsigned v : val) {
+  for (unsigned const v : val) {
     popcnt += v != 0 ? 1U : 0;
   }
   return popcnt;

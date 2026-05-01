@@ -66,8 +66,8 @@ std::string delta_t::str() const {
     ss << diff.to_string() << " ";
   }
   for (size_t i = 0; i < p.val.size(); ++i) {
-    unsigned num = p.val[i];
-    unsigned num_prev = p_prev.val[i];
+    unsigned const num = p.val[i];
+    unsigned const num_prev = p_prev.val[i];
     if (num != num_prev) {
       if (num != 0) {
         ss << conf.flags[i]->get_flag(num);

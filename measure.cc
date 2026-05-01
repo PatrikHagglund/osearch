@@ -85,7 +85,7 @@ static results_t results;
 /// \return true if sampled, false otherwise
 /// \todo Make a member function
 static bool result_sampled(pset_t pset) {
-  return results.find(pset) != results.end();
+  return results.contains(pset);
 }
 
 obj_t measure(const point_t &p) {
@@ -95,10 +95,10 @@ obj_t measure(const point_t &p) {
   progress.tick('.');
 #endif
 
-  pset_t pset = compile(p);
+  pset_t const pset = compile(p);
 
   for (; !result_sampled(pset);) {
-    GNUC_BUILTIN_ASSUME(results.find(pset) == results.end());
+    GNUC_BUILTIN_ASSUME(!results.contains(pset));
     results[pset] = sample(pset);
   }
 

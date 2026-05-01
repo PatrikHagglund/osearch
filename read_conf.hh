@@ -27,19 +27,19 @@ struct flag_t {
   flag_t(flag_t&&) = delete;
   flag_t& operator=(flag_t&&) = delete;
 
-  virtual std::string get_flag(unsigned num) const = 0;
-  virtual size_t size() const = 0;
+  [[nodiscard]] virtual std::string get_flag(unsigned num) const = 0;
+  [[nodiscard]] virtual size_t size() const = 0;
   // TODO(uabpath) Implement enough to enable use of range based for loops?
 };
 
 /// Representing a compiler option, which may be either present or absent.
 struct simple_t: flag_t {
   explicit simple_t(std::string v): value(std::move(v)) {}
-  std::string get_flag(unsigned num) const override {
+  [[nodiscard]] std::string get_flag(unsigned num) const override {
     GNUC_BUILTIN_ASSUME(num == 1);
     return value;
   }
-  size_t size() const override {
+  [[nodiscard]] size_t size() const override {
     return 2;
   }
 private:
@@ -58,11 +58,11 @@ struct enum_t: flag_t {
     values.push_back(value.substr(start));
   }
 
-  std::string get_flag(unsigned num) const override {
+  [[nodiscard]] std::string get_flag(unsigned num) const override {
     GNUC_BUILTIN_ASSUME(1 <= num && num < size());
     return values[num-1];
   }
-  size_t size() const override {
+  [[nodiscard]] size_t size() const override {
     return values.size()+1;
   }
 private:

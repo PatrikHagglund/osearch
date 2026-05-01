@@ -60,7 +60,7 @@ LLVM_VER=15
 # generic
 WARN := -Wall -Wextra -Werror
 # for Clang
-#WARN = -Weverything -Wno-pedantic -Wno-c++98-compat -Wno-c++98-compat-bind-to-temporary-copy -Wno-padded -Wno-global-constructors -Wno-weak-vtables -Wno-exit-time-destructors
+#WARN = -Weverything -Wno-pedantic -Wno-c++98-compat -Wno-c++98-compat-bind-to-temporary-copy -Wno-padded -Wno-global-constructors -Wno-weak-vtables -Wno-exit-time-destructors -Wno-vla-cxx-extension
 
 # /usr/lib/gcc-snapshot/bin/g++ -Q --help=warning | sed -e 's/^\s*\(\-\S*\)\s*\[\w*\]/\1 /gp;d' | tr -d '\n'
 #cc1plus: warning: command line option '-Waliasing' is valid for Fortran but not for C++

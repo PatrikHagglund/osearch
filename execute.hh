@@ -45,7 +45,7 @@ private:
   char path[sizeof(templ)] = "";
 public:
   /// Getter for tmp_file_t#path.
-  std::string_view get_path() const {
+  [[nodiscard]] std::string_view get_path() const {
     return std::string_view(&path[0], std::strlen(&path[0]));
   }
   /// Reset the path name, to the empty string.

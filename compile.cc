@@ -54,20 +54,20 @@ static std::string point_to_cmd(const point_t &p,
 
   std::string cmd = conf.prime_command;
 
-  std::string prefix = "OSEARCH_";
+  std::string const prefix = "OSEARCH_";
 
   // Replace OSEARCH_IN
-  std::string inp_str = prefix + "IN";
+  std::string const inp_str = prefix + "IN";
   std::string::size_type loc = cmd.find(inp_str);
   cmd.replace(loc, inp_str.size(), input_add + input_file + " -lm -lrt");
 
   // Replace OSEARCH_OUT
-  std::string outp_str = prefix + "OUT";
+  std::string const outp_str = prefix + "OUT";
   loc = cmd.find(outp_str);
   cmd.replace(loc, outp_str.size(), tmp_path);
 
   // Replace OSEARCH_OPT
-  std::string opt_str = prefix + "OPTS";
+  std::string const opt_str = prefix + "OPTS";
   loc = cmd.find(opt_str);
   cmd.replace(loc, opt_str.size(), p.to_string());
 
@@ -85,7 +85,7 @@ static std::string bugpoint(point_t p, cmd_res_t const &cmd_res,
     if (i != 0U) {
       point_t new_p = p;
       new_p.val[&i - &*p.val.cbegin()] = static_cast<unsigned char>(i == 0U);
-      cmd_res_t new_cmd_res = execute(point_to_cmd(new_p, tmp_path));
+      cmd_res_t const new_cmd_res = execute(point_to_cmd(new_p, tmp_path));
       /// \todo equal operator?
       if (new_cmd_res.status != EXIT_SUCCESS &&
           new_cmd_res.output == cmd_res.output) {
@@ -105,7 +105,7 @@ using pset_to_point_t = std::map<pset_t, point_t>;
 static pset_to_point_t pset_to_point;
 
 point_t get_point(pset_t pset) {
-  GNUC_BUILTIN_ASSUME(pset_to_point.find(pset) != pset_to_point.end());
+  GNUC_BUILTIN_ASSUME(pset_to_point.contains(pset));
   return pset_to_point[pset];
 }
 
@@ -115,8 +115,8 @@ using point_to_pset_t = std::map<point_t, pset_t>;
 static point_to_pset_t point_to_pset;
 
 bool equivalent_p(const point_t &p1, const point_t &p2) {
-  GNUC_BUILTIN_ASSUME(point_to_pset.find(p1) != point_to_pset.end() &&
-                      point_to_pset.find(p2) != point_to_pset.end());
+  GNUC_BUILTIN_ASSUME(point_to_pset.contains(p1) &&
+                      point_to_pset.contains(p2));
   return point_to_pset[p1] == point_to_pset[p2];
 }
 
@@ -126,9 +126,9 @@ bool equivalent_p(const point_t &p1, const point_t &p2) {
 /// \return true if the content is equal, false otherwise
 static bool file_equal(const std::string_view path1,
                        const std::string_view path2) {
-  std::string cmd =
+  std::string const cmd =
       std::string("cmp ") + std::string(path1) + " " + std::string(path2);
-  cmd_res_t cmd_res = execute(cmd);
+  cmd_res_t const cmd_res = execute(cmd);
   return cmd_res.status == 0;
 }
 
@@ -170,7 +170,7 @@ static pset_t get_pset(const std::string_view tmp_path) {
 }
 
 tmp_file_t const &get_tmp_file(pset_t p) {
-  GNUC_BUILTIN_ASSUME(exe_files.m().find(p) != exe_files.m().end());
+  GNUC_BUILTIN_ASSUME(exe_files.m().contains(p));
   return exe_files.m().find(p)->second;
 }
 
@@ -179,7 +179,7 @@ tmp_file_t const &get_tmp_file(pset_t p) {
 /// \param p point_t
 static void hard_compile(const point_t &p) {
   tmp_file_t tmp_file;
-  std::string cmd = point_to_cmd(p, tmp_file.get_path());
+  std::string const cmd = point_to_cmd(p, tmp_file.get_path());
 
 #if 0
 #ifdef DEBUG
@@ -189,7 +189,7 @@ static void hard_compile(const point_t &p) {
 #endif
 #endif
 
-  cmd_res_t cmd_res = execute(cmd);
+  cmd_res_t const cmd_res = execute(cmd);
 
   if (cmd_res.status != EXIT_SUCCESS) {
     std::cerr << "\nExectuion of '" << cmd
@@ -199,26 +199,26 @@ static void hard_compile(const point_t &p) {
     return;
   }
 
-  pset_t pset = get_pset(tmp_file.get_path());
+  pset_t const pset = get_pset(tmp_file.get_path());
 
-  GNUC_BUILTIN_ASSUME(point_to_pset.find(p) == point_to_pset.end());
+  GNUC_BUILTIN_ASSUME(!point_to_pset.contains(p));
   point_to_pset[p] = pset;
 
-  if (exe_files.m().find(pset) == exe_files.m().end()) {
+  if (!exe_files.m().contains(pset)) {
     exe_files.m().insert(std::pair<pset_t, tmp_file_t const &>(pset, tmp_file));
     tmp_file.reset_path();
   }
 }
 
 pset_t compile(const point_t &p) {
-  if (point_to_pset.find(p) == point_to_pset.end()) {
+  if (!point_to_pset.contains(p)) {
     hard_compile(p);
   }
-  pset_t pset = point_to_pset[p];
-  GNUC_BUILTIN_ASSUME(exe_files.m().find(pset) != exe_files.m().end());
+  pset_t const pset = point_to_pset[p];
+  GNUC_BUILTIN_ASSUME(exe_files.m().contains(pset));
 
   /// Update pset-to-point mapping as a side-effect.
-  if (pset_to_point.find(pset) == pset_to_point.end() ||
+  if (!pset_to_point.contains(pset) ||
       p < pset_to_point[pset]) {
     pset_to_point[pset] = p;
   }
@@ -237,7 +237,7 @@ void reset_compilations() {
 }
 
 std::string get_compiler_version() {
-  cmd_res_t cmd_res = execute(conf.get_version);
+  cmd_res_t const cmd_res = execute(conf.get_version);
   std::string str = cmd_res.output;
   str.erase(str.end() - 1); // delete '\n'
   return str;

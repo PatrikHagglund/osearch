@@ -40,7 +40,7 @@ struct obj_t {
   //   return val <=> obj.val;
   // }
 
-  CONSTEXPR_STR std::string to_string() const {
+  [[nodiscard]] CONSTEXPR_STR std::string to_string() const {
     return inf ? (std::string(val < 0 ? "-" : "") + "inf") : std::to_string(val);
   }
 
@@ -52,30 +52,30 @@ private:
 
 constexpr obj_t obj_t_inf = obj_t(0, /*is_inf*/ true);
 
-static_assert(std::is_class<obj_t>::value);
-static_assert(std::is_standard_layout<obj_t>::value);
-static_assert(std::is_trivially_copyable<obj_t>::value);
-static_assert(!std::is_polymorphic<obj_t>::value);
+static_assert(std::is_class_v<obj_t>);
+static_assert(std::is_standard_layout_v<obj_t>);
+static_assert(std::is_trivially_copyable_v<obj_t>);
+static_assert(!std::is_polymorphic_v<obj_t>);
 //static_assert(std::is_literal_type<obj_t>::value);
 
-static_assert(std::is_default_constructible<obj_t>::value);
-static_assert(std::is_trivially_default_constructible<obj_t>::value);
-static_assert(std::is_nothrow_default_constructible<obj_t>::value);
-static_assert(std::is_copy_constructible<obj_t>::value);
-static_assert(std::is_trivially_copy_constructible<obj_t>::value);
-static_assert(std::is_nothrow_copy_constructible<obj_t>::value);
-static_assert(std::is_move_constructible<obj_t>::value);
-static_assert(std::is_trivially_move_constructible<obj_t>::value);
-static_assert(std::is_nothrow_move_constructible<obj_t>::value);
-static_assert(std::is_copy_assignable<obj_t>::value);
-static_assert(std::is_trivially_copy_assignable<obj_t>::value);
-static_assert(std::is_nothrow_copy_assignable<obj_t>::value);
-static_assert(std::is_move_assignable<obj_t>::value);
-static_assert(std::is_trivially_move_assignable<obj_t>::value);
-static_assert(std::is_nothrow_move_assignable<obj_t>::value);
-static_assert(std::is_destructible<obj_t>::value);
-static_assert(std::is_trivially_destructible<obj_t>::value);
-static_assert(std::is_nothrow_destructible<obj_t>::value);
+static_assert(std::is_default_constructible_v<obj_t>);
+static_assert(std::is_trivially_default_constructible_v<obj_t>);
+static_assert(std::is_nothrow_default_constructible_v<obj_t>);
+static_assert(std::is_copy_constructible_v<obj_t>);
+static_assert(std::is_trivially_copy_constructible_v<obj_t>);
+static_assert(std::is_nothrow_copy_constructible_v<obj_t>);
+static_assert(std::is_move_constructible_v<obj_t>);
+static_assert(std::is_trivially_move_constructible_v<obj_t>);
+static_assert(std::is_nothrow_move_constructible_v<obj_t>);
+static_assert(std::is_copy_assignable_v<obj_t>);
+static_assert(std::is_trivially_copy_assignable_v<obj_t>);
+static_assert(std::is_nothrow_copy_assignable_v<obj_t>);
+static_assert(std::is_move_assignable_v<obj_t>);
+static_assert(std::is_trivially_move_assignable_v<obj_t>);
+static_assert(std::is_nothrow_move_assignable_v<obj_t>);
+static_assert(std::is_destructible_v<obj_t>);
+static_assert(std::is_trivially_destructible_v<obj_t>);
+static_assert(std::is_nothrow_destructible_v<obj_t>);
 
 
 #endif // OBJ_HH

@@ -34,10 +34,10 @@ struct delta_t {
   /// Less operator, using alt_diff().
   bool operator<(delta_t const& delta) const;
   /// Provide a string ready for prinout of the class data.
-  std::string str() const;
+  [[nodiscard]] std::string str() const;
   /// Alternative to the delta_t::diff field. Revert the sign if any
   /// option has been removed.
-  obj_t alt_diff() const;
+  [[nodiscard]] obj_t alt_diff() const;
 };
 
 /// Information to tell if level has reached max_level (finish).
@@ -74,8 +74,8 @@ public:
 private:
   unsigned level{0};
   unsigned number_of_comb{0};
-  bool find_d_ind(const delta_ind_t& d_ind) const;
-  delta_ind_t get_rand_delta() const;
+  [[nodiscard]] bool find_d_ind(const delta_ind_t& d_ind) const;
+  [[nodiscard]] delta_ind_t get_rand_delta() const;
 };
 
 extern steps_t steps;
