@@ -9,8 +9,6 @@
 
 #include <map>
 
-#include <iostream>
-
 #include <cstdlib> // EXIT_SUCCESS
 
 /// \file

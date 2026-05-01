@@ -9,7 +9,6 @@
 #include <cstring> // srncpy
 
 #include <array>    // std::array
-#include <iostream> // std::cout
 
 /// \file
 /// Execute a system command using execute().

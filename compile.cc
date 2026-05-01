@@ -181,14 +181,6 @@ static void hard_compile(const point_t &p) {
   tmp_file_t tmp_file;
   std::string const cmd = point_to_cmd(p, tmp_file.get_path());
 
-#if 0
-#ifdef DEBUG
-  progress.tick('o', p);
-#else
-  progress.tick('o');
-#endif
-#endif
-
   cmd_res_t const cmd_res = execute(cmd);
 
   if (cmd_res.status != EXIT_SUCCESS) {

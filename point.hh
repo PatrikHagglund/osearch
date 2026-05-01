@@ -16,10 +16,6 @@ struct point_t {
   static constexpr size_t max_flags = 256;
   /// Set size to number of flags in #conf, and initialize all to 0.
   explicit point_t();
-#if 0
-  /// Set to space separated option string.
-  explicit point_t(std::string flags_str);
-#endif
   /// Destructor.
   ~point_t() = default;
   /// Defaulted comparison operators (lexicographic on val).
@@ -29,9 +25,6 @@ struct point_t {
   [[nodiscard]] unsigned popcnt() const;
   /// To string operator. Print flags space separated.
   [[nodiscard]] std::string to_string() const;
-#if 0
-  void set_rand();
-#endif
   /// Type for storing list of flag values.
   using val_t = std::inplace_vector<uint8_t, max_flags>;
   /// For each config flag, store its value.
@@ -70,7 +63,6 @@ static_assert(std::is_class_v<std::string>);
 static_assert(std::is_standard_layout_v<std::string>);
 static_assert(!std::is_trivially_copyable_v<std::string>);
 static_assert(!std::is_polymorphic_v<std::string>);
-//static_assert(!std::is_literal_type<std::string>::value);
 
 static_assert(std::is_default_constructible_v<std::string>);
 static_assert(!std::is_trivially_default_constructible_v<std::string>);

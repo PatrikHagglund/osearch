@@ -8,7 +8,6 @@ static_assert(std::is_class_v<obj_t>);
 static_assert(std::is_standard_layout_v<obj_t>);
 static_assert(std::is_trivially_copyable_v<obj_t>);
 static_assert(!std::is_polymorphic_v<obj_t>);
-// static_assert(std::is_literal_type<obj_t>::value);
 
 static_assert(std::is_default_constructible_v<obj_t>);
 static_assert(std::is_trivially_default_constructible_v<obj_t>);

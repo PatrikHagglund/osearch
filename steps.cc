@@ -8,11 +8,8 @@
 #include "read_conf.hh" // conf
 
 #include <sstream>
-#ifdef DEBUG
-#endif
 
 #include <algorithm>
-#include <utility>
 
 /// \file
 /// Store (in #steps) the steps currently searched. See steps_t and

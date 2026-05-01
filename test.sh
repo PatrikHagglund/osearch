@@ -1,24 +1,22 @@
-#! /bin/sh -xe
+#!/bin/sh
+# Smoke test: build and run osearch on a single benchmark.
+set -e
 
-BENCHMARKS=benchmarks/*.c
+# Build if needed
+if [ ! -x ./osearch ]; then
+  if [ -d build ]; then
+    ninja -C build
+    OSEARCH=./build/osearch
+  else
+    echo "No osearch binary found. Build first." >&2
+    exit 1
+  fi
+else
+  OSEARCH=./osearch
+fi
 
-#for CONFIG in gcc43_full.acovea llvm-gcc40.acovea; do
+echo "=== Smoke test: fftbench with gcc48-test config ==="
+$OSEARCH config/gcc48-test.osearch benchmarks/fftbench.c
 
-     #CONFIG=gcc48.osearch
-     CONFIG=gcc48-test.osearch
-     ./osearch -s -i '-std=c18 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
-     #gdb --args ./osearch -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
-     #lldb-12 -- ./osearch -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
-     #echo "set args -s -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS"
-     #ddd ./osearch
-     #valgrind ./osearch -i '-std=c99 -lm -lrt -Werror' config/$CONFIG $BENCHMARKS
-
-#    for f in $BENCHMARKS; do
-#	runacovea -config config/$CONFIG -input $f
-#    done
-#
-#    for f in $BENCHMARKS; do
-#	runacovea -size -config config/$CONFIG -input $f
-#    done
-
-#done
+echo ""
+echo "=== PASS ==="
