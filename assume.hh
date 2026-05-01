@@ -4,7 +4,10 @@
 /// \file
 /// Language extensions, such as #GNUC_BUILTIN_ASSUME and #NONNULL.
 
-#ifdef __GNUC__
+#ifdef USE_CONTRACTS
+/// Use C++26 contract_assert for assumptions.
+#define GNUC_BUILTIN_ASSUME(cond) contract_assert(cond)
+#elif defined(__GNUC__)
 static constexpr bool my_id(bool cond) { return cond; }
 #if defined(__clang__) && 0
 #define GNUC_BUILTIN_ASSUME(cond) __builtin_assume(my_id(cond))
@@ -13,7 +16,6 @@ static constexpr bool my_id(bool cond) { return cond; }
 #endif
 #else
 /// Assert without any side effect. (Should be detected in UBSan or similar.)
-/// \todo Even with my_id above, clang -Wassume will complain about ignored side effects.
 #define GNUC_BUILTIN_ASSUME(cond)
 #endif
 

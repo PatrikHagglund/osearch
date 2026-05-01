@@ -3,6 +3,7 @@
 
 #include "read_conf.hh" // conf
 
+#include <algorithm>
 #include <iostream> // std::cerr
 
 #if 0
@@ -40,30 +41,9 @@ point_t::point_t(std::string flags_str) {
 }
 #endif
 
-bool point_t::operator==(point_t const &p) const { return val == p.val; }
-
-bool point_t::operator!=(point_t const &p) const { return val != p.val; }
-
-bool point_t::operator<(point_t const &p) const {
-  GNUC_BUILTIN_ASSUME(val.size() == p.val.size());
-
-  // use lexicographical order
-  for (size_t i = 0; i < val.size(); ++i) {
-    unsigned const t1 = val[i];
-    unsigned const t2 = p.val[i];
-    if (t1 != t2) {
-      return t1 < t2;
-    }
-  }
-  return false;
-}
-
 unsigned point_t::popcnt() const {
-  unsigned popcnt = 0;
-  for (unsigned const v : val) {
-    popcnt += v != 0 ? 1U : 0;
-  }
-  return popcnt;
+  return static_cast<unsigned>(
+      std::ranges::count_if(val, [](uint8_t v) { return v != 0; }));
 }
 
 std::string point_t::to_string() const {

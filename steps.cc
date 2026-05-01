@@ -112,7 +112,7 @@ delta_ind_t steps_t::get_next(const point_t &p) {
     }
     ++level;
     if (level > max_level) {
-      delta_info = finish;
+      delta_info = delta_info_t::finish;
       return {};
     }
     number_of_comb += new_comb(level);
@@ -121,7 +121,7 @@ delta_ind_t steps_t::get_next(const point_t &p) {
           "(number of combinations "
        << number_of_comb << ")\n";
   }
-  delta_info = valid;
+  delta_info = delta_info_t::valid;
   return get_rand_delta();
 }
 
@@ -130,7 +130,7 @@ void steps_t::store(const delta_t &delta) {
   // delta_print(o1, delta);
 #endif
   done.push_back(delta);
-  sort(done.begin(), done.end());
+  std::ranges::sort(done, std::less{});
 }
 
 void steps_t::print() const {

@@ -11,19 +11,16 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 /// \file
 /// Main loop (search()), to search for good options.
 
 /// Check if p and p_old are "equal".
-/// \todo Improve documentation.
 static bool skip(point_t p, point_t p_old, delta_ind_t const &d_ind) {
-  /// \todo Create an "equal" function.
-  bool same = false;
-  for (uint16_t const i : d_ind) {
-    same = same || p.val[i] == p_old.val[i];
-  }
-  return same;
+  return std::ranges::any_of(d_ind, [&](auto i) {
+    return p.val[i] == p_old.val[i];
+  });
 }
 
 // static point_t normalize(point_t p, point_t p_old, delta_ind_t d_ind) {
@@ -93,7 +90,7 @@ void search() {
 #ifdef DEBUG
     o1 << delta_ind_str(d_ind);
 #endif
-    if (steps.delta_info == finish) {
+    if (steps.delta_info == delta_info_t::finish) {
       return;
     }
 

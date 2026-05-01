@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <utility>
+#include <vector>
 
 /// \file
 /// Store (in #steps) the steps currently searched. See steps_t and
@@ -41,8 +42,7 @@ struct delta_t {
 };
 
 /// Information to tell if level has reached max_level (finish).
-/// \todo Just use a 'valid' bool in delta_ind_t?
-enum delta_info_t {
+enum class delta_info_t {
   valid,
   finish
 };
