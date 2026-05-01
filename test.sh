@@ -19,4 +19,9 @@ echo "=== Smoke test: fftbench with gcc48-test config ==="
 $OSEARCH config/gcc48-test.osearch benchmarks/fftbench.c
 
 echo ""
+echo "=== Verify DEBUG build compiles ==="
+g++ -std=gnu++26 -DDEBUG -I ~/GSL/include -fsyntax-only *.cc
+echo "DEBUG build: OK"
+
+echo ""
 echo "=== PASS ==="
