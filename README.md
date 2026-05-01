@@ -75,3 +75,13 @@ The `benchmarks/` directory contains C programs used as test workloads:
 - [GSL](https://github.com/microsoft/GSL) (Guidelines Support Library)
 - [libexpat](https://libexpat.github.io/) (XML parsing)
 - CMake 3.22+ and Ninja (build system)
+
+## TODO
+
+- Run with `-l 2` to search flag pairs (may find synergies)
+- Full GCC 16 config with all 280 optimization flags
+- Add a clang/LLVM config file
+- Parallelize compilations (per-step is embarrassingly parallel)
+- Remove the legacy makefile
+- Output results as JSON/CSV for analysis
+- Add a `--quick` mode that tests fewer flags
