@@ -1,0 +1,4 @@
+*.o
+osearch
+build/
+build-*/
