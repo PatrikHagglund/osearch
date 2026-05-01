@@ -4,6 +4,49 @@ A C++ tool that searches for optimal compiler optimization flags by compiling be
 
 Successor/rewrite of [ACOVEA](http://www.coyotegulch.com/products/acovea/) (Analysis of Compiler Options via Evolutionary Algorithm).
 
+## Building
+
+Requires GCC 16+ (C++26), [GSL](https://github.com/microsoft/GSL), and [libexpat](https://libexpat.github.io/).
+
+```sh
+git clone https://github.com/microsoft/GSL.git ~/GSL
+cmake -G Ninja -B build
+ninja -C build
+```
+
+## Usage
+
+```sh
+./build/osearch [options] config_file code_file
+
+  -i in_opts    extra options for compiling 'code_file'
+  -s            optimize for binary size instead of execution time
+  -l max_level  max number of options to alter at once (default 1)
+```
+
+Example:
+
+```sh
+./build/osearch config/gcc16-test.osearch benchmarks/fftbench.c
+```
+
+## Configuration
+
+XML profiles in `config/` define available flags for different compilers:
+
+| Config | Description |
+|--------|-------------|
+| `gcc16-test.osearch` | GCC 16, key optimization flags (60 flags) |
+| `gcc48-test.osearch` | GCC 4.8, small test set |
+| `gcc48.osearch` | GCC 4.8, full flag set |
+| `gcc43_full.osearch` | GCC 4.3, full flag set |
+
+## Benchmarks
+
+The `benchmarks/` directory contains C programs used as test workloads:
+
+- FFT, Huffman coding, tree operations, linear algebra, evolutionary algorithm, astronomical calculations, and more.
+
 ## Components
 
 | File | Purpose |
@@ -20,30 +63,15 @@ Successor/rewrite of [ACOVEA](http://www.coyotegulch.com/products/acovea/) (Anal
 | `getopts.cc` | Command-line argument parsing |
 | `print.cc` | Progress/output reporting |
 
-## Configuration
+## Testing
 
-XML profiles in `config/` define available flags for different compilers and architectures:
-
-- GCC 4.3, 4.8
-- LLVM-GCC 4.0
-- Architectures: Core2, Athlon XP
-
-## Benchmarks
-
-The `benchmarks/` directory contains C programs used as test workloads:
-
-- FFT, Huffman coding, tree operations, linear algebra, evolutionary algorithm, astronomical calculations, and more.
+```sh
+./test.sh
+```
 
 ## Dependencies
 
+- GCC 16+ (uses C++26: `std::inplace_vector`, contracts, ranges)
 - [GSL](https://github.com/microsoft/GSL) (Guidelines Support Library)
 - [libexpat](https://libexpat.github.io/) (XML parsing)
-
-## Building
-
-```sh
-cmake -G Ninja -H. -Bbuild
-ninja -C build
-```
-
-Adjust `CMakeLists.txt` if your GSL installation path differs from the default.
+- CMake 3.22+ and Ninja (build system)
