@@ -1,22 +1,30 @@
 #!/bin/sh
-# Smoke test: build and run osearch on a single benchmark.
+# Smoke tests for osearch.
 set -e
 
-# Build if needed
-if [ ! -x ./osearch ]; then
-  if [ -d build ]; then
-    ninja -C build
-    OSEARCH=./build/osearch
-  else
-    echo "No osearch binary found. Build first." >&2
-    exit 1
-  fi
-else
+if [ -x ./build/osearch ]; then
+  OSEARCH=./build/osearch
+elif [ -x ./osearch ]; then
   OSEARCH=./osearch
+else
+  echo "No osearch binary found. Build first." >&2
+  exit 1
 fi
 
-echo "=== Smoke test: fftbench with gcc48-test config ==="
-$OSEARCH config/gcc48-test.osearch benchmarks/fftbench.c
+echo "=== Test: default (single flag search) ==="
+$OSEARCH config/gcc16-test.osearch benchmarks/fftbench.c
+
+echo ""
+echo "=== Test: -l 2 (flag pair search) ==="
+$OSEARCH -l 2 config/gcc16-test.osearch benchmarks/fftbench.c
+
+echo ""
+echo "=== Test: -s (optimize for size) ==="
+$OSEARCH -s config/gcc16-test.osearch benchmarks/fftbench.c
+
+echo ""
+echo "=== Test: -i (extra compile options) ==="
+$OSEARCH -i "-march=native" config/gcc16-test.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== Verify DEBUG build compiles ==="
@@ -24,4 +32,4 @@ g++ -std=gnu++26 -DDEBUG -I ~/GSL/include -fsyntax-only *.cc
 echo "DEBUG build: OK"
 
 echo ""
-echo "=== PASS ==="
+echo "=== ALL PASS ==="
