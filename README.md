@@ -110,7 +110,9 @@ Unit tests combine two complementary styles:
   A "failure" is a build error; the runtime `main()` is a no-op.
 - **Runtime tests** using a tiny `CHECK` / `CHECK_EQ` macro defined in
   `tests/check.hh` for things that cannot be evaluated at compile time
-  (e.g. `point_t::popcnt()` and `to_string()` in `tests/test_point.cc`).
+  (e.g. `point_t::popcnt()` and `to_string()` in `tests/test_point.cc`,
+  `delta_t::alt_diff()` and `steps_t::store()` sorting in
+  `tests/test_steps.cc`).
   Each test file is its own executable; `main()` returns non-zero on
   failure and CTest records pass/fail from the exit status.
 
@@ -148,6 +150,5 @@ osearch_add_test(test_foo tests/test_foo.cc)
 - Parallelize compilations (per-step is embarrassingly parallel)
 - Output results as JSON/CSV for analysis
 - Add a `--quick` mode that tests fewer flags
-- Add unit tests for measure logic (obj_t and point_t now covered)
-- Add CI configuration (GitHub Actions or similar)
+- Add unit tests for measure logic (obj_t, point_t, and steps_t/delta_t now covered)
 - Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)

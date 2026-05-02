@@ -101,3 +101,7 @@ osearch_add_test(test_obj_static tests/test_obj_static.cc)
 # Runtime tests for point_t. Defines its own `conf` global, so read_conf.cc
 # is intentionally NOT linked in.
 osearch_add_test(test_point tests/test_point.cc point.cc)
+
+# Runtime tests for steps_t / delta_t. Stubs out conf, progress, measure(),
+# and my_rand(); never calls any method that would touch them.
+osearch_add_test(test_steps tests/test_steps.cc steps.cc point.cc)
