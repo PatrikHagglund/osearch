@@ -109,3 +109,15 @@ osearch_add_test(test_point tests/test_point.cc point.cc)
 # Runtime tests for steps_t / delta_t. Stubs out conf, progress, measure(),
 # and my_rand(); never calls any method that would touch them.
 osearch_add_test(test_steps tests/test_steps.cc steps.cc point.cc)
+
+# Runtime tests for measure(). Stubs compile/execute/progress; tests the
+# results-map logic (caching, get_min_point, reset).
+osearch_add_test(test_measure tests/test_measure.cc measure.cc point.cc)
+
+# Runtime tests for read_conf (flag types + XML parsing into conf_t).
+# Links read_conf.cc and getopts.cc; writes a temp XML file.
+add_executable(test_read_conf tests/test_read_conf.cc read_conf.cc getopts.cc)
+target_include_directories(test_read_conf PRIVATE ${GSL_INCLUDE_DIR})
+target_link_libraries(test_read_conf PRIVATE EXPAT::EXPAT)
+target_compile_options(test_read_conf PRIVATE ${_osearch_warn_opts})
+add_test(NAME test_read_conf COMMAND test_read_conf)
