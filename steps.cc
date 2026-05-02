@@ -34,6 +34,25 @@ static int dummy_ =
 
 // END
 
+// BEGIN option handling for 'quick' (per-level sample cap)
+
+/// Quick mode: cap on the number of combinations sampled per level.
+/// 0 means "no cap" (full search). Set via -Q.
+static unsigned long quick_cap = 0;
+
+/// Option helper function.
+static void opt_Q() { quick_cap = strtoul(optarg, nullptr, 0); }
+
+/// Option helper variable.
+static int dummy_Q_ =
+    (opt_reg_t::append('Q', opt_Q, "Q:", "  [-Q n]",
+                       "  -Q n \t\tquick mode: at each level, stop after "
+                       "sampling\n  \t\tat most 'n' combinations "
+                       "(0 = no cap, default)\n"),
+     1);
+
+// END
+
 #ifdef DEBUG
 std::string delta_ind_str(delta_ind_t const &d_ind) {
   std::ostringstream ss;
@@ -115,11 +134,19 @@ delta_ind_t steps_t::get_next(const point_t &p) {
       delta_info = delta_info_t::finish;
       return {};
     }
-    number_of_comb += new_comb(level);
+    unsigned const this_level_comb = new_comb(level);
+    unsigned const capped = (quick_cap != 0 && this_level_comb > quick_cap)
+                                ? static_cast<unsigned>(quick_cap)
+                                : this_level_comb;
+    number_of_comb += capped;
     o1 << "\n# restarting, options combined " << level
        << " "
           "(number of combinations "
-       << number_of_comb << ")\n";
+       << number_of_comb;
+    if (capped != this_level_comb) {
+      o1 << ", capped from " << this_level_comb << " by -Q";
+    }
+    o1 << ")\n";
   }
   delta_info = delta_info_t::valid;
   return get_rand_delta();

@@ -24,6 +24,7 @@ ninja -C build
   -i in_opts    extra options for compiling 'code_file'
   -s            optimize for binary size instead of execution time
   -l max_level  max number of options to alter at once (default 1)
+  -Q n          quick mode: sample at most 'n' combinations per level
   -q            suppress progress output
 ```
 
@@ -151,6 +152,5 @@ osearch_add_test(test_foo tests/test_foo.cc)
 - Add a clang/LLVM config file
 - Parallelize compilations (per-step is embarrassingly parallel)
 - Output results as JSON/CSV for analysis
-- Add a `--quick` mode that tests fewer flags
 - Add unit tests for measure logic (obj_t, point_t, and steps_t/delta_t now covered)
 - Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)

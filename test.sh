@@ -54,6 +54,14 @@ fi
 echo "OK: progress output suppressed"
 
 echo ""
+echo "=== Test: -Q (quick mode cap) ==="
+OUT=$($OSEARCH -q -Q 5 config/gcc16-test.osearch benchmarks/fftbench.c)
+if ! echo "$OUT" | grep -q "capped from"; then
+  echo "FAIL: -Q did not produce 'capped from' message" >&2; exit 1
+fi
+echo "OK: -Q cap applied"
+
+echo ""
 echo "=== Test: default (single flag search) ==="
 $OSEARCH config/gcc16-test.osearch benchmarks/fftbench.c
 
