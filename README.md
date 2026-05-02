@@ -96,9 +96,42 @@ microsecond value as the objective.
 
 ## Testing
 
+Two layers:
+
+- **Unit tests** (`tests/`) — small, fast, no external processes. Registered
+  with CTest via CMake.
+- **Integration smoke tests** (`test.sh`) — end-to-end search runs on real
+  benchmarks.
+
+Unit tests combine two complementary styles:
+
+- **Compile-time tests** using `static_assert` for anything `constexpr`
+  (e.g. `obj_t` comparison and arithmetic in `tests/test_obj_static.cc`).
+  A "failure" is a build error; the runtime `main()` is a no-op.
+- **Runtime tests** using a tiny `CHECK` / `CHECK_EQ` macro defined in
+  `tests/check.hh` for things that cannot be evaluated at compile time
+  (e.g. `point_t::popcnt()` and `to_string()` in `tests/test_point.cc`).
+  Each test file is its own executable; `main()` returns non-zero on
+  failure and CTest records pass/fail from the exit status.
+
+No external dependency is added — `tests/check.hh` is ~60 lines of plain
+C++ and reuses the main target's compile flags.
+
+Run:
+
 ```sh
-./test.sh
+./test.sh --fast    # ctest + DEBUG syntax check (~seconds)
+./test.sh           # fast layer + full integration search runs (minutes)
+ctest --test-dir build --output-on-failure   # unit tests only
 ```
+
+Add a new unit test by dropping `tests/test_foo.cc` next to the existing
+ones and registering it in `CMakeLists.txt`:
+
+```cmake
+osearch_add_test(test_foo tests/test_foo.cc)
+```
+
 
 ## Dependencies
 
@@ -115,6 +148,6 @@ microsecond value as the objective.
 - Parallelize compilations (per-step is embarrassingly parallel)
 - Output results as JSON/CSV for analysis
 - Add a `--quick` mode that tests fewer flags
-- Add unit tests (at minimum for obj_t, point_t, and measure logic)
+- Add unit tests for measure logic (obj_t and point_t now covered)
 - Add CI configuration (GitHub Actions or similar)
 - Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)

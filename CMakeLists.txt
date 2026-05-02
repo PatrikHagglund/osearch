@@ -77,3 +77,27 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Generating documentation with Doxygen")
 endif()
+
+# ---------------------------------------------------------------------------
+# Tests (run: ctest --test-dir build [--output-on-failure])
+# ---------------------------------------------------------------------------
+enable_testing()
+
+# Reuse the same warning flags as the main target.
+get_target_property(_osearch_warn_opts osearch COMPILE_OPTIONS)
+
+# Helper: register a self-contained test executable.
+function(osearch_add_test name)
+  set(sources ${ARGN})
+  add_executable(${name} ${sources})
+  target_include_directories(${name} PRIVATE ${GSL_INCLUDE_DIR})
+  target_compile_options(${name} PRIVATE ${_osearch_warn_opts})
+  add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
+# Compile-time-only tests for obj_t. "Passing" == "compiles".
+osearch_add_test(test_obj_static tests/test_obj_static.cc)
+
+# Runtime tests for point_t. Defines its own `conf` global, so read_conf.cc
+# is intentionally NOT linked in.
+osearch_add_test(test_point tests/test_point.cc point.cc)
