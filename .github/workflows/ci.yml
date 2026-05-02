@@ -23,7 +23,7 @@ jobs:
           g++ --version
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch GSL headers
         run: git clone --depth 1 https://github.com/microsoft/GSL.git $HOME/GSL
