@@ -1,8 +1,0 @@
-main-+-------------------read_conf
-     |-------------------getopts
-     |-------------------print
-     `-compile-+---------read_conf
-               |---------getopts
-               |---------print
-               |-execute
-               `-point---read_conf(conf/point)

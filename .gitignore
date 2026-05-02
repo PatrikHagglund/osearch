@@ -1,4 +1,5 @@
 *.o
 osearch
 build/
-build-*/
+build-*
+tmp//

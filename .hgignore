@@ -1,6 +1,0 @@
-syntax: glob
-*.o
-*.d
-osearch
-html
-latex

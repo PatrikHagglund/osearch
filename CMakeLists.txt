@@ -16,3 +16,55 @@ add_executable(osearch
 
 target_include_directories(osearch PRIVATE ${GSL_INCLUDE_DIR})
 target_link_libraries(osearch PRIVATE EXPAT::EXPAT)
+
+# Warning flags (migrated from legacy makefile, verified clean on GCC 16)
+target_compile_options(osearch PRIVATE
+  -Wall -Wextra -Werror
+  -Waddress -Waggressive-loop-optimizations -Walloc-zero -Walloca
+  -Warray-bounds -Wattributes -Wbool-compare -Wbool-operation
+  -Wbuiltin-declaration-mismatch -Wbuiltin-macro-redefined
+  -Wcast-align -Wcast-align=strict -Wcast-function-type -Wcast-qual
+  -Wchar-subscripts -Wclass-memaccess -Wclobbered -Wcomment
+  -Wconditionally-supported -Wconversion-null -Wcoverage-mismatch
+  -Wctor-dtor-privacy -Wdangling-else -Wdate-time -Wdelete-incomplete
+  -Wdelete-non-virtual-dtor -Wdeprecated -Wdeprecated-declarations
+  -Wdisabled-optimization -Wdiv-by-zero -Wdouble-promotion
+  -Wduplicated-branches -Wduplicated-cond -Wempty-body -Wendif-labels
+  -Wenum-compare -Wexpansion-to-defined -Wextra-semi -Wfloat-conversion
+  -Wfloat-equal -Wformat-contains-nul -Wformat-extra-args
+  -Wformat-nonliteral -Wformat-security -Wformat-signedness
+  -Wformat-y2k -Wformat-zero-length -Wframe-address -Wfree-nonheap-object
+  -Wif-not-aligned -Wignored-attributes -Wignored-qualifiers
+  -Winherited-variadic-ctor -Winit-self -Winline -Wint-in-bool-context
+  -Wint-to-pointer-cast -Winvalid-memory-model -Winvalid-offsetof
+  -Winvalid-pch -Wliteral-suffix -Wlogical-not-parentheses -Wlogical-op
+  -Wlto-type-mismatch -Wmain -Wmaybe-uninitialized -Wmemset-elt-size
+  -Wmemset-transposed-args -Wmisleading-indentation -Wmissing-attributes
+  -Wmissing-braces -Wmissing-declarations -Wmissing-field-initializers
+  -Wmissing-include-dirs -Wmultichar -Wmultiple-inheritance
+  -Wmultistatement-macros -Wnarrowing -Wnoexcept -Wnoexcept-type
+  -Wnon-template-friend -Wnon-virtual-dtor -Wnonnull -Wnonnull-compare
+  -Wnull-dereference -Wodr -Wold-style-cast -Wopenmp-simd -Woverflow
+  -Woverlength-strings -Woverloaded-virtual -Wpacked -Wpacked-bitfield-compat
+  -Wpacked-not-aligned -Wparentheses -Wpmf-conversions -Wpointer-arith
+  -Wpointer-compare -Wpragmas -Wredundant-decls -Wregister -Wreorder
+  -Wrestrict -Wreturn-local-addr -Wreturn-type -Wsequence-point -Wshadow
+  -Wshadow=compatible-local -Wshadow=local -Wshift-count-negative
+  -Wshift-count-overflow -Wshift-negative-value -Wsign-compare -Wsign-promo
+  -Wsized-deallocation -Wsizeof-array-argument -Wsizeof-pointer-div
+  -Wsizeof-pointer-memaccess -Wstack-protector -Wstrict-null-sentinel
+  -Wsubobject-linkage -Wsuggest-attribute=cold -Wsuggest-attribute=const
+  -Wsuggest-attribute=format -Wsuggest-attribute=malloc
+  -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure
+  -Wsuggest-final-methods -Wsuggest-final-types -Wsuggest-override
+  -Wswitch -Wswitch-bool -Wswitch-default -Wswitch-enum
+  -Wswitch-unreachable -Wsync-nand -Wsynth -Wtautological-compare
+  -Wterminate -Wtrampolines -Wtrigraphs -Wtype-limits -Wundef
+  -Wuninitialized -Wunknown-pragmas -Wunused -Wunused-but-set-parameter
+  -Wunused-but-set-variable -Wunused-function -Wunused-label
+  -Wunused-local-typedefs -Wunused-macros -Wunused-parameter
+  -Wunused-result -Wunused-value -Wunused-variable -Wuseless-cast
+  -Wvarargs -Wvariadic-macros -Wvector-operation-performance
+  -Wvirtual-inheritance -Wvirtual-move-assign -Wvolatile-register-var
+  -Wwrite-strings
+)
