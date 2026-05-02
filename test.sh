@@ -27,6 +27,14 @@ echo "=== Test: -i (extra compile options) ==="
 $OSEARCH -i "-march=native" config/gcc16-test.osearch benchmarks/fftbench.c
 
 echo ""
+echo "=== Test: -q (quiet mode) ==="
+OUT=$($OSEARCH -q config/gcc16-test.osearch benchmarks/fftbench.c)
+if echo "$OUT" | grep -q "^Progress indicators"; then
+  echo "FAIL: -q did not suppress progress output" >&2; exit 1
+fi
+echo "OK: progress output suppressed"
+
+echo ""
 echo "=== Verify DEBUG build compiles ==="
 g++ -std=gnu++26 -DDEBUG -I ~/GSL/include -fsyntax-only *.cc
 echo "DEBUG build: OK"

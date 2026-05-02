@@ -22,6 +22,7 @@ ninja -C build
   -i in_opts    extra options for compiling 'code_file'
   -s            optimize for binary size instead of execution time
   -l max_level  max number of options to alter at once (default 1)
+  -q            suppress progress output
 ```
 
 Example:
@@ -46,6 +47,36 @@ XML profiles in `config/` define available flags for different compilers:
 The `benchmarks/` directory contains C programs used as test workloads:
 
 - FFT, Huffman coding, tree operations, linear algebra, evolutionary algorithm, astronomical calculations, and more.
+
+Each benchmark implements four symbols consumed by the shared harness `main.ic`:
+
+```c
+char const* name;   // benchmark name
+void init();        // allocate/setup
+void run();         // the timed workload
+void clean();       // teardown
+```
+
+`main.ic` provides `main()`, which calls `init()`, times `run()` using
+`CLOCK_THREAD_CPUTIME_ID`, calls `clean()`, and prints the elapsed
+microseconds to stdout. Pass `-v` for a labeled line.
+
+To build benchmarks standalone (with their own `main`):
+
+```sh
+make -C benchmarks
+```
+
+To build with `LINK` mode (compiles `main.ic` together with the benchmark
+via `-DLINK -x c main.ic`):
+
+```sh
+make -C benchmarks all2
+```
+
+osearch uses the standalone mode: it compiles the benchmark source with
+candidate flags, runs the resulting binary, and parses the printed
+microsecond value as the objective.
 
 ## Components
 
@@ -83,9 +114,7 @@ The `benchmarks/` directory contains C programs used as test workloads:
 - Add a clang/LLVM config file
 - Parallelize compilations (per-step is embarrassingly parallel)
 - Output results as JSON/CSV for analysis
-- Add `-q` (quiet) flag to suppress per-step progress output
 - Add a `--quick` mode that tests fewer flags
 - Add unit tests (at minimum for obj_t, point_t, and measure logic)
-- Document the benchmark harness (main.ic / LINK mode)
 - Add CI configuration (GitHub Actions or similar)
 - Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)

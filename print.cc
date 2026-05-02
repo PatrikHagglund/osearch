@@ -1,5 +1,6 @@
 #include "print.hh"
 #include "assume.hh"
+#include "getopts.hh"
 
 /// \file
 /// Progress printouts, using progress_t and its progress_t::tick() method.
@@ -7,8 +8,15 @@
 /// Global variable for progress printouts.
 progress_t progress;
 
+/// Option -q: suppress progress output.
+static void opt_q() { progress.silent = true; }
+static int dummy_ = (opt_reg_t::append('q', opt_q, "q", "  [-q]",
+                                        "  -q \t\tsuppress progress output\n"),
+                     1);
+
 /// Print explanation of progress symbols used.
 void progress_t::print_symbols() const {
+  if (silent) return;
   *o << "Progress indicators used. For a given option string:\n"
         " .  request measurement result\n"
         " o  compile\n"
@@ -21,8 +29,7 @@ void progress_t::tick(char sym, point_t const &p) {
 #else
 void progress_t::tick(char sym) {
 #endif
-  // only allow '.' to be supressed
-  GNUC_BUILTIN_ASSUME(sym == '.' || (!silent && (sym == 'o' || sym == '*')));
+  GNUC_BUILTIN_ASSUME(sym == '.' || sym == 'o' || sym == '*');
 
   ++cnts[sym];
 

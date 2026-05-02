@@ -122,5 +122,7 @@ point_t get_min_point() {
 
 void reset_measurements() {
   results = results_t();
+  bool const was_silent = progress.silent;
   progress = progress_t();
+  progress.silent = was_silent;
 }
