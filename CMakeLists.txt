@@ -7,7 +7,11 @@ set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(EXPAT REQUIRED)
-find_path(GSL_INCLUDE_DIR gsl/gsl PATHS /home/uabpath/GSL/include REQUIRED)
+find_path(GSL_INCLUDE_DIR gsl/gsl
+  PATHS
+    $ENV{HOME}/GSL/include
+    /home/uabpath/GSL/include
+  REQUIRED)
 
 add_executable(osearch
   main.cc my_rand.cc obj.cc point.cc compile.cc

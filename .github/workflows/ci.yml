@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  fast-tests:
+    name: Fast tests (ctest + DEBUG syntax)
+    runs-on: ubuntu-latest
+    # osearch requires C++26 features (std::inplace_vector, contracts) which
+    # are only available in GCC 16+. Run inside a Fedora rawhide container
+    # because stock ubuntu-latest images don't ship GCC 16 yet.
+    container:
+      image: fedora:rawhide
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf install -y --setopt=install_weak_deps=False \
+            gcc-c++ cmake ninja-build expat-devel git
+          g++ --version
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch GSL headers
+        run: git clone --depth 1 https://github.com/microsoft/GSL.git $HOME/GSL
+
+      - name: Configure
+        run: cmake -G Ninja -B build
+
+      - name: Build
+        run: ninja -C build
+
+      - name: Run ctest
+        run: ctest --test-dir build --output-on-failure
+
+      - name: DEBUG syntax check
+        run: g++ -std=gnu++26 -DDEBUG -I $HOME/GSL/include -fsyntax-only *.cc
