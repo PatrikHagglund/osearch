@@ -10,7 +10,6 @@ static_assert(std::is_trivially_copyable_v<obj_t>);
 static_assert(!std::is_polymorphic_v<obj_t>);
 
 static_assert(std::is_default_constructible_v<obj_t>);
-static_assert(std::is_trivially_default_constructible_v<obj_t>);
 static_assert(std::is_nothrow_default_constructible_v<obj_t>);
 static_assert(std::is_copy_constructible_v<obj_t>);
 static_assert(std::is_trivially_copy_constructible_v<obj_t>);

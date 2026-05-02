@@ -82,7 +82,10 @@ obj_t delta_t::alt_diff() const {
   for (size_t i = 0; i < p.val.size(); ++i) {
     backwards = backwards || (p.val[i] == 0 && p_prev.val[i] != 0);
   }
-  return backwards ? obj_t(0) - diff : diff;
+  // Negation is only defined for finite diffs; if the diff is the "worst"
+  // sentinel (failed compile/run), leave it as-is — such a delta should
+  // always sort as worst regardless of direction.
+  return (backwards && diff.is_finite()) ? -diff : diff;
 }
 
 /// New combinations compared to the previous level.

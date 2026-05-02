@@ -107,11 +107,13 @@ void search() {
 
       obj_t const res_new = measure(p_new);
 
-      // get difference
+      // get difference (only meaningful when both measurements are finite;
+      // otherwise mark as "infinitely worse" so the delta sorts last).
 #ifdef DEBUG
       // GNUC_BUILTIN_ASSUME(measure(p_old) == res_old);
 #endif
-      obj_t const diff = res_new - res;
+      obj_t const diff =
+          (res_new.is_finite() && res.is_finite()) ? (res_new - res) : obj_t_inf;
       bool const equal = equivalent_p(p_new, p);
       delta = delta_t(p_new, p, equal, diff);
       // #ifdef DEBUG
@@ -121,7 +123,7 @@ void search() {
       steps.store(delta);
 
       // decide if this point is better or not
-      if (equal ? p_new.popcnt() < p.popcnt() : diff < obj_t(0)) {
+      if (equal ? p_new.popcnt() < p.popcnt() : res_new < res) {
 
         p = p_new;
         res = res_new;
