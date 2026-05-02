@@ -152,5 +152,6 @@ osearch_add_test(test_foo tests/test_foo.cc)
 - Add a clang/LLVM config file
 - Parallelize compilations (per-step is embarrassingly parallel)
 - Output results as JSON/CSV for analysis
-- Add unit tests for measure logic (obj_t, point_t, and steps_t/delta_t now covered)
+- Add unit tests for `measure` (requires a seam to inject fake `compile`/`execute`)
+- Add unit tests for `read_conf` (parse a small XML string, verify `conf_t`)
 - Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)
