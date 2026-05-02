@@ -2,7 +2,7 @@
 
 A C++ tool that searches for optimal compiler optimization flags by compiling benchmark programs with different flag combinations and measuring their performance. It uses heuristic search over the compiler flag space to find the best-performing set of options.
 
-Successor/rewrite of [ACOVEA](http://www.coyotegulch.com/products/acovea/) (Analysis of Compiler Options via Evolutionary Algorithm).
+Successor/rewrite of [ACOVEA](https://web.archive.org/web/20071230224418/http://www.coyotegulch.com/products/acovea/) (Analysis of Compiler Options via Evolutionary Algorithm).
 
 ## Building
 
@@ -82,6 +82,18 @@ The `benchmarks/` directory contains C programs used as test workloads:
 - Full GCC 16 config with all 280 optimization flags
 - Add a clang/LLVM config file
 - Parallelize compilations (per-step is embarrassingly parallel)
-- Remove the legacy makefile
+- Remove legacy build files (makefile, *.mk, ninja.sh)
+- Remove .hgignore (repo is git now)
+- Remove or archive modules.map and modules-gcc-7.2.1.map (dead C++ modules experiment)
+- Convert remaining .acovea config files to .osearch format and remove them
+- Remove or .gitignore the tmp/ directory (old optimizer dumps)
 - Output results as JSON/CSV for analysis
+- Add `-q` (quiet) flag to suppress per-step progress output
 - Add a `--quick` mode that tests fewer flags
+- Update test.sh to use gcc16-test.osearch config
+- Add test cases for -l 2, -s, and -i flags
+- Add unit tests (at minimum for obj_t, point_t, and measure logic)
+- Run Doxygen in CI or remove the Doxyfile
+- Document the benchmark harness (main.ic / LINK mode)
+- Add CI configuration (GitHub Actions or similar)
+- Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)
