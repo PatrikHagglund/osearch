@@ -57,7 +57,7 @@ std::string delta_ind_str(delta_ind_t const &d_ind) {
   std::ostringstream ss;
   ss << "delta: ";
   for (unsigned short i : d_ind) {
-    ss << i << " (" << conf.flags[i]->size() << ")";
+    ss << i << " (" << flag::flag_size(conf.flags[i]) << ")";
   }
   return ss.str();
 }
@@ -86,10 +86,10 @@ std::string delta_t::str() const {
     unsigned const num_prev = p_prev.val[i];
     if (num != num_prev) {
       if (num != 0) {
-        ss << conf.flags[i]->get_flag(num);
+        ss << flag::get_flag(conf.flags[i], num);
       }
       if (num_prev != 0) {
-        ss << "!" << conf.flags[i]->get_flag(num_prev);
+        ss << "!" << flag::get_flag(conf.flags[i], num_prev);
       }
     }
   }

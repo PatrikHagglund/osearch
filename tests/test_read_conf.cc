@@ -89,15 +89,15 @@ static void test_read_conf_parses_xml() {
   CHECK_EQ(conf.flags.size(), size_t{3});
 
   // First two are simple flags.
-  CHECK_EQ(conf.flags[0]->size(), size_t{2});
-  CHECK(conf.flags[0]->get_flag(1) == std::string{"-funroll-loops"});
-  CHECK_EQ(conf.flags[1]->size(), size_t{2});
-  CHECK(conf.flags[1]->get_flag(1) == std::string{"-finline-functions"});
+  CHECK_EQ(flag::flag_size(conf.flags[0]), size_t{2});
+  CHECK(flag::get_flag(conf.flags[0], 1) == std::string{"-funroll-loops"});
+  CHECK_EQ(flag::flag_size(conf.flags[1]), size_t{2});
+  CHECK(flag::get_flag(conf.flags[1], 1) == std::string{"-finline-functions"});
 
   // Third is an enum flag with 4 values.
-  CHECK_EQ(conf.flags[2]->size(), size_t{5});
-  CHECK(conf.flags[2]->get_flag(1) == std::string{"-O0"});
-  CHECK(conf.flags[2]->get_flag(4) == std::string{"-O3"});
+  CHECK_EQ(flag::flag_size(conf.flags[2]), size_t{5});
+  CHECK(flag::get_flag(conf.flags[2], 1) == std::string{"-O0"});
+  CHECK(flag::get_flag(conf.flags[2], 4) == std::string{"-O3"});
 
   unlink(path);
 }

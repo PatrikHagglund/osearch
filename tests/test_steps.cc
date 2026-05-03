@@ -41,13 +41,10 @@ int16_t my_rand() {
 // --- Fixture ----------------------------------------------------------------
 
 static void setup_conf() {
-  static flag::simple_t fa{"-fa"};
-  static flag::simple_t fb{"-fb"};
-  static flag::simple_t fc{"-fc"};
   conf.flags.clear();
-  conf.flags.push_back(&fa);
-  conf.flags.push_back(&fb);
-  conf.flags.push_back(&fc);
+  conf.flags.emplace_back(flag::simple_t{"-fa"});
+  conf.flags.emplace_back(flag::simple_t{"-fb"});
+  conf.flags.emplace_back(flag::simple_t{"-fc"});
 }
 
 // Build a point with the given flag values.

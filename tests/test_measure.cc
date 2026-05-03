@@ -63,11 +63,9 @@ void progress_t::print_symbols() const {}
 // --- Setup ------------------------------------------------------------------
 
 static void setup() {
-  static flag::simple_t fa{"-O1"};
-  static flag::simple_t fb{"-O2"};
   conf.flags.clear();
-  conf.flags.push_back(&fa);
-  conf.flags.push_back(&fb);
+  conf.flags.emplace_back(flag::simple_t{"-O1"});
+  conf.flags.emplace_back(flag::simple_t{"-O2"});
   next_pset = 1;
   reset_measurements();
 }

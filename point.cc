@@ -18,7 +18,7 @@ std::string point_t::to_string() const {
   std::string flags_str;
   for (auto const &i : val) {
     if (i != 0U) {
-      flags_str.append(conf.flags[&i - &*val.cbegin()]->get_flag(i));
+      flags_str.append(flag::get_flag(conf.flags[&i - &*val.cbegin()], i));
       flags_str.append(" ");
     }
   }

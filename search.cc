@@ -53,7 +53,7 @@ static point_t get_next(point_t p, point_t p_old, delta_ind_t const &d_ind) {
 #endif
   for (uint16_t const i : d_ind) {
     p.val[i] = (static_cast<unsigned>(p.val[i]) + 1) %
-               static_cast<unsigned char>(conf.flags[i]->size());
+               static_cast<unsigned char>(flag::flag_size(conf.flags[i]));
     if (p.val[i] != p_old.val[i]) {
       break;
     }

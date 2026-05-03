@@ -23,6 +23,8 @@ target_link_libraries(osearch PRIVATE EXPAT::EXPAT)
 
 # Warning flags (migrated from legacy makefile, verified clean on GCC 16)
 target_compile_options(osearch PRIVATE
+  -fno-exceptions -fno-rtti
+  -fno-unwind-tables -fno-asynchronous-unwind-tables
   -Wall -Wextra -Werror
   -Waddress -Waggressive-loop-optimizations -Walloc-zero -Walloca
   -Warray-bounds -Wattributes -Wbool-compare -Wbool-operation

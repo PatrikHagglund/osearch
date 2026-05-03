@@ -122,16 +122,16 @@ static void start(void *data __attribute__((__unused__)), const char *el,
     if (strcmp(attr[0], "type") == 0 && strcmp(attr[1], "simple") == 0 &&
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         strcmp(attr[2], "value") == 0) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic,cppcoreguidelines-owning-memory)
-      conf.flags.push_back(new flag::simple_t(attr[3]));
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+      conf.flags.emplace_back(flag::simple_t(attr[3]));
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (strcmp(attr[0], "type") == 0 && strcmp(attr[1], "enum") == 0 &&
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         strcmp(attr[2], "value") == 0) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic,cppcoreguidelines-owning-memory)
-      conf.flags.push_back(new flag::enum_t(attr[3]));
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+      conf.flags.emplace_back(flag::enum_t(attr[3]));
     }
   }
 
