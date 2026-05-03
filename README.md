@@ -147,7 +147,6 @@ osearch_add_test(test_foo tests/test_foo.cc)
 
 ## TODO
 
-- Run with `-l 2` to search flag pairs (may find synergies)
 - Full GCC 16 config with all 280 optimization flags
 - Add a clang/LLVM config file
 - Parallelize compilations (per-step is embarrassingly parallel)

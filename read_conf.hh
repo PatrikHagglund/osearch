@@ -4,6 +4,7 @@
 #include "assume.hh"
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -27,7 +28,7 @@ struct flag_t {
   flag_t(flag_t&&) = delete;
   flag_t& operator=(flag_t&&) = delete;
 
-  [[nodiscard]] virtual std::string get_flag(unsigned num) const = 0;
+  [[nodiscard]] virtual std::string_view get_flag(unsigned num) const = 0;
   [[nodiscard]] virtual size_t size() const = 0;
   // TODO(uabpath) Implement enough to enable use of range based for loops?
 };
@@ -35,7 +36,7 @@ struct flag_t {
 /// Representing a compiler option, which may be either present or absent.
 struct simple_t: flag_t {
   explicit simple_t(std::string v): value(std::move(v)) {}
-  [[nodiscard]] std::string get_flag(unsigned num) const override {
+  [[nodiscard]] std::string_view get_flag(unsigned num) const override {
     GNUC_BUILTIN_ASSUME(num == 1);
     return value;
   }
@@ -58,7 +59,7 @@ struct enum_t: flag_t {
     values.push_back(value.substr(start));
   }
 
-  [[nodiscard]] std::string get_flag(unsigned num) const override {
+  [[nodiscard]] std::string_view get_flag(unsigned num) const override {
     GNUC_BUILTIN_ASSUME(1 <= num && num < size());
     return values[num-1];
   }
