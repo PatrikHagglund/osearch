@@ -177,9 +177,34 @@ to enforce zero-overhead C++ discipline:
 
 - Full GCC 16 config with all 280 optimization flags
 - Add a clang/LLVM config file
-- Priority-based flag exploration: evaluate flags in config-file order
-  (or by explicit `priority` attribute) instead of randomly, so the
-  most-likely-useful flags are tested first
-- Cross-benchmark aggregation script: run osearch `-j` on all benchmarks,
-  rank flags by average improvement, and reorder the config file accordingly
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures
+
+### Noise-robust search
+
+The greedy adoption strategy amplifies measurement noise: a flag that
+wins by luck sends the search down a wrong branch. Plan for addressing
+this, in order:
+
+1. **Measurement cache** — store every `sample(pset)` result in a
+   `flat_map<point_t, obj_t>` so later stages can reuse measurements
+   without recompiling/rerunning.
+
+2. **Adoption threshold** — new `-T permille` option (units of 0.1%,
+   so `-T 5` = 0.5%). Only adopt a flag if improvement ≥ threshold.
+   Suggested defaults: `-T 1` (0.1%) with `-p`, `-T 20` (2%) with time.
+
+3. **Post-search validation pass** — after the main search, try
+   removing each adopted flag against the final baseline; drop any
+   whose removal doesn't hurt beyond the threshold. Catches
+   noise-driven false positives and flags that became redundant
+   after later adoptions.
+
+### Perf speed
+
+Each `perf stat` invocation has ~50ms startup overhead. For short
+benchmarks this dominates. Options to investigate:
+- `perf stat -r N` for built-in repeats (amortizes startup)
+- Use `rdpmc` / direct `perf_event_open()` from within the benchmark
+  harness (eliminates fork+exec per sample)
+- Sample multiple flag sets in parallel (extend `compile_batch()` to
+  cover measurement, but beware contention between measurements)
