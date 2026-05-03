@@ -357,6 +357,9 @@ void run() {
         }
     }
 
+    // Prevent dead-code elimination.
+    volatile double sink = position[0] + position[1] + position[2];
+    (void)sink;
 }
 
 void clean() {
