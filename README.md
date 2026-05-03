@@ -174,4 +174,9 @@ to enforce zero-overhead C++ discipline:
 
 - Full GCC 16 config with all 280 optimization flags
 - Add a clang/LLVM config file
+- Priority-based flag exploration: evaluate flags in config-file order
+  (or by explicit `priority` attribute) instead of randomly, so the
+  most-likely-useful flags are tested first
+- Cross-benchmark aggregation script: run osearch `-j` on all benchmarks,
+  rank flags by average improvement, and reorder the config file accordingly
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures

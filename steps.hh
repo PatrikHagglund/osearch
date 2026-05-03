@@ -94,8 +94,9 @@ private:
   unsigned level{0};
   unsigned number_of_comb{0};
   unsigned dispatched{0};
+  mutable unsigned seq_index{0};
   [[nodiscard]] bool find_d_ind(const delta_ind_t& d_ind) const;
-  [[nodiscard]] delta_ind_t get_rand_delta() const
+  [[nodiscard]] delta_ind_t get_next_delta() const
     post(r : r.size() == level);
 };
 

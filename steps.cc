@@ -145,6 +145,7 @@ delta_ind_t steps_t::get_next(const point_t &p)
       print();
     }
     ++level;
+    seq_index = 0;
     if (level > max_level) {
       delta_info = delta_info_t::finish;
       return {};
@@ -165,7 +166,9 @@ delta_ind_t steps_t::get_next(const point_t &p)
   }
   delta_info = delta_info_t::valid;
   ++dispatched;
-  return get_rand_delta();
+  auto result = get_next_delta();
+  ++seq_index;
+  return result;
 }
 
 void steps_t::store(const delta_t &delta) {
@@ -245,17 +248,39 @@ bool steps_t::find_d_ind(const delta_ind_t &d_ind) const {
   return false;
 }
 
-delta_ind_t steps_t::get_rand_delta() const
+delta_ind_t steps_t::get_next_delta() const
 {
+  // Sequential exploration in config-file order.
+  // seq_index tracks position within the current level.
+  unsigned const n = static_cast<unsigned>(conf.flags.size());
   delta_ind_t d_ind;
-  do {
-    d_ind.clear();
-    for (unsigned i = 0; i < level; ++i) {
-      d_ind.insert(static_cast<unsigned>(my_rand()) %
-                   static_cast<unsigned char>(conf.flags.size()));
+
+  if (level == 1) {
+    d_ind.insert(static_cast<unsigned short>(seq_index % n));
+  } else if (level == 2) {
+    // Map seq_index to combination (i, j) where i < j.
+    unsigned idx = 0;
+    for (unsigned i = 0; i < n; ++i) {
+      for (unsigned j = i + 1; j < n; ++j) {
+        if (idx == seq_index) {
+          d_ind.insert(static_cast<unsigned short>(i));
+          d_ind.insert(static_cast<unsigned short>(j));
+          return d_ind;
+        }
+        ++idx;
+      }
     }
-    contract_assert(d_ind.size() <= level);
-  } while (d_ind.size() < level || find_d_ind(d_ind));
+  } else {
+    // For level >= 3, fall back to random.
+    do {
+      d_ind.clear();
+      for (unsigned i = 0; i < level; ++i) {
+        d_ind.insert(static_cast<unsigned>(my_rand()) %
+                     static_cast<unsigned char>(n));
+      }
+      contract_assert(d_ind.size() <= level);
+    } while (d_ind.size() < level || find_d_ind(d_ind));
+  }
   return d_ind;
 }
 
