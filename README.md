@@ -146,6 +146,22 @@ osearch_add_test(test_foo tests/test_foo.cc)
 ```
 
 
+## Design choices
+
+The codebase is built with `-fno-exceptions -fno-rtti -fno-unwind-tables`
+to enforce zero-overhead C++ discipline:
+
+- **Contracts** (C++26 `pre`/`post`/`contract_assert`) replace assertions
+  and document function invariants. A custom `handle_contract_violation`
+  handler in `contract.cc` aborts with a diagnostic on failure.
+- **No virtual dispatch** — flag types use `std::variant` + `std::visit`
+  instead of inheritance.
+- **No exceptions** — errors are handled via return values or `_Exit()`.
+- **Value semantics** — `point_t` uses `std::inplace_vector` (trivially
+  copyable), config flags are stored by value in a `std::vector<variant>`.
+- **Flat maps** — associative containers use a sorted `std::vector` of
+  pairs (`flat_map.hh`) instead of `std::map` for cache-friendliness.
+
 ## Dependencies
 
 - GCC 16+ (uses C++26: `std::inplace_vector`, contracts, ranges)

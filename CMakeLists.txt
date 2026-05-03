@@ -20,6 +20,7 @@ add_executable(osearch
 
 target_include_directories(osearch PRIVATE ${GSL_INCLUDE_DIR})
 target_link_libraries(osearch PRIVATE EXPAT::EXPAT)
+target_link_options(osearch PRIVATE -Wl,--no-eh-frame-hdr)
 
 # Warning flags (migrated from legacy makefile, verified clean on GCC 16)
 target_compile_options(osearch PRIVATE

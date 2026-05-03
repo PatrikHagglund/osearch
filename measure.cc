@@ -6,7 +6,7 @@
 #include "point.hh"
 #include "print.hh"
 
-#include <map>
+#include "flat_map.hh"
 
 #include <cstdlib> // EXIT_SUCCESS
 
@@ -73,7 +73,7 @@ static obj_t sample(pset_t pset) {
 }
 
 /// Mapping of all results.
-using results_t = std::map<pset_t, obj_t>;
+using results_t = flat_map<pset_t, obj_t>;
 /// Mapping of all results.
 static results_t results;
 

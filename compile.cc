@@ -1,12 +1,12 @@
 #include "compile.hh"
 
 #include "execute.hh"   // for cmd_res_t, tmp_file_t
+#include "flat_map.hh"  // for flat_map
 #include "getopts.hh"   // for opt_reg_t
 #include "print.hh"     // for o
 #include "read_conf.hh" // for conf
 
 #include <iostream> // for cerr
-#include <map>      // for map
 #include <string>   // for string
 #include <thread>   // for jthread
 #include <utility>  // for pair
@@ -101,7 +101,7 @@ static std::string bugpoint(point_t p, cmd_res_t const &cmd_res,
 }
 
 /// Current "minimal" option string for producing this file.
-using pset_to_point_t = std::map<pset_t, point_t>;
+using pset_to_point_t = flat_map<pset_t, point_t>;
 /// Current "minimal" option string for producing this file.
 static pset_to_point_t pset_to_point;
 
@@ -111,7 +111,7 @@ point_t get_point(pset_t pset) {
 }
 
 /// Map points to sets of equivalent points.
-using point_to_pset_t = std::map<point_t, pset_t>;
+using point_to_pset_t = flat_map<point_t, pset_t>;
 /// Map points to sets of equivalent points.
 static point_to_pset_t point_to_pset;
 
@@ -136,7 +136,7 @@ static bool file_equal(const std::string_view path1,
 /// Store handles to all executable files.
 struct exe_files_t {
 private:
-  using m_t = std::map<pset_t, tmp_file_t>;
+  using m_t = flat_map<pset_t, tmp_file_t>;
   /// Storage consisting of a map from the set of points to tmp_files
   /// (generated programs).
   m_t m_;

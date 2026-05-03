@@ -4,7 +4,6 @@
 #include "point.hh" // point_t
 #include "obj.hh" // obj_t
 
-#include <map>
 #include <set>
 #include <utility>
 #include <vector>

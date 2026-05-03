@@ -22,13 +22,13 @@ constexpr inline std::ostream &o3 = std::cout;
 #include "point.hh"
 #endif
 
-#include <map>
+#include "flat_map.hh"
 
 /// Class for progress printouts.
 struct progress_t {
   explicit progress_t() = default;
   // storage
-  std::map<char, unsigned> cnts{};
+  flat_map<char, unsigned> cnts{};
   std::ostream *o{&o2};
   /// Suppress '.' progress printouts.
   bool silent{false};
