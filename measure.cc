@@ -34,8 +34,8 @@ static int dummy_ =
 
 // BEGIN option handling for 'num_samples'
 
-/// Number of samples per measurement (take minimum). Default 1.
-static unsigned long num_samples = 1;
+/// Number of samples per measurement (take minimum). Default 3.
+static unsigned long num_samples = 3;
 
 /// Option helper function.
 static void opt_n() { num_samples = strtoul(optarg, nullptr, 0); }

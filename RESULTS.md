@@ -4,19 +4,19 @@ Config: `config/gcc16-test.osearch` (61 flags, priority-ordered)
 Compiler: GCC 16.0.1
 Date: 2026-05-03
 
-## Level 1 (full search, 61 combinations)
+## Level 1 (full search, 61 combinations, -n 3)
 
 | Benchmark   | Time (µs) | Best flags |
 |-------------|-----------|------------|
-| almabench   | 1         | -Ofast |
-| distbench   | 8400      | -O2 -fno-caller-saves -fno-asynchronous-unwind-tables -fno-toplevel-reorder -march=native |
-| evobench    | 355126    | -O2 -fno-optimize-sibling-calls -fipa-cp-clone |
-| fftbench    | 78111     | -Ofast -fno-inline-functions -fno-align-functions -fno-caller-saves -fno-crossjumping -fno-move-loop-invariants -march=native |
-| huffbench   | 95122     | -Ofast -fno-tree-loop-optimize |
-| linbench    | 21080     | -Ofast -fno-code-hoisting -fno-caller-saves -fno-expensive-optimizations -fno-move-loop-invariants -march=native |
-| linsmall    | 23029     | -Ofast -fno-inline-functions -fno-align-functions -fno-align-loops -march=native |
-| mat1bench   | 9020      | -Ofast -fno-inline-functions -fno-align-functions -fno-align-loops -fno-schedule-insns2 -march=native |
-| treebench   | 162040    | -O3 -fno-cse-follow-jumps -fno-crossjumping -fno-ipa-sra |
+| almabench   | 0         | -Ofast |
+| distbench   | 8231      | -Ofast -march=native |
+| evobench    | 343204    | -O3 -fno-ivopts |
+| fftbench    | 22928     | -Ofast -fno-inline-functions -fno-move-loop-invariants -march=native |
+| huffbench   | 90780     | -O3 -fno-expensive-optimizations -fno-tree-loop-optimize |
+| linbench    | 32008     | -Ofast -fno-inline-functions -fno-peephole2 |
+| linsmall    | 23244     | -Ofast -fno-inline-functions -fno-asynchronous-unwind-tables -march=native |
+| mat1bench   | 13833     | -Ofast -fno-inline-functions -fno-align-functions -fno-caller-saves -fno-gcse -fno-tree-pre |
+| treebench   | 148414    | -Ofast -fno-cse-follow-jumps |
 
 ## Level 2, Q=10 (10 flag-pair combinations sampled)
 
@@ -69,5 +69,9 @@ Results are **100% reproducible** (deterministic binary size).
 ## Reproducibility
 
 - **Size (-s):** 100% reproducible — identical results across runs
-- **Time:** Noisy — different runs may find different "best" flags due to
-  measurement variance (e.g., fftbench: 42295µs vs 37201µs across runs)
+- **Time (-n 3):** Values are stable within ~10%, but the greedy adoption
+  path can diverge due to residual noise, leading to different flag sets.
+  The minimum-of-3 strategy eliminates most outliers but cannot fully
+  compensate for CPU frequency scaling and thermal effects.
+- **For deterministic time results:** use `-s` (size) or a future
+  instruction-count mode (`perf stat -e instructions:u`)
