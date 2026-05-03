@@ -32,20 +32,20 @@ static void test_default_ctor_sizes_from_conf() {
   }
 }
 
-static void test_popcnt_zero_by_default() {
+static void test_active_count_zero_by_default() {
   point_t const p;
-  CHECK_EQ(p.popcnt(), 0U);
+  CHECK_EQ(p.active_count(), 0U);
 }
 
-static void test_popcnt_counts_nonzero() {
+static void test_active_count_counts_nonzero() {
   point_t p;
   p.val[0] = 1;
   p.val[2] = 1;
-  CHECK_EQ(p.popcnt(), 2U);
+  CHECK_EQ(p.active_count(), 2U);
 
   // Setting to zero decrements count.
   p.val[0] = 0;
-  CHECK_EQ(p.popcnt(), 1U);
+  CHECK_EQ(p.active_count(), 1U);
 }
 
 static void test_to_string_empty_when_all_zero() {
@@ -79,8 +79,8 @@ int main() {
   setup_conf();
 
   test_default_ctor_sizes_from_conf();
-  test_popcnt_zero_by_default();
-  test_popcnt_counts_nonzero();
+  test_active_count_zero_by_default();
+  test_active_count_counts_nonzero();
   test_to_string_empty_when_all_zero();
   test_to_string_lists_enabled_flags();
   test_equality_and_ordering();

@@ -1,6 +1,7 @@
 #ifndef POINT_HH
 #define POINT_HH
 
+#include <algorithm>
 #include <string>
 #include <compare>
 #include <cstdint>
@@ -22,7 +23,10 @@ struct point_t {
   auto operator<=>(point_t const&) const = default;
   bool operator==(point_t const&) const = default;
   /// Number of non-zero values.
-  [[nodiscard]] unsigned popcnt() const;
+  [[nodiscard]] constexpr unsigned active_count() const {
+    return static_cast<unsigned>(
+        std::ranges::count_if(val, [](uint8_t v) { return v != 0; }));
+  }
   /// To string operator. Print flags space separated.
   [[nodiscard]] std::string to_string() const;
   /// Type for storing list of flag values.

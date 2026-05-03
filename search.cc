@@ -135,7 +135,7 @@ void search() {
            << " delta: " << delta.str() << " ";
         steps.store(delta);
 
-        if (equal ? p_new.popcnt() < p.popcnt() : res_new < res) {
+        if (equal ? p_new.active_count() < p.active_count() : res_new < res) {
           p = p_new;
           res = res_new;
           o1 << "\nAlteration adopted: " << delta.str();

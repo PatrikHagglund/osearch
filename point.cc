@@ -9,11 +9,6 @@
 
 point_t::point_t() : val(conf.flags.size(), 0U) {}
 
-unsigned point_t::popcnt() const {
-  return static_cast<unsigned>(
-      std::ranges::count_if(val, [](uint8_t v) { return v != 0; }));
-}
-
 std::string point_t::to_string() const {
   std::string flags_str;
   for (auto const &i : val) {
