@@ -23,6 +23,8 @@ ninja -C build
 
   -i in_opts    extra options for compiling 'code_file'
   -s            optimize for binary size instead of execution time
+  -p            optimize for retired instruction count (via perf stat;
+                deterministic, requires 'perf')
   -l max_level  max number of options to alter at once (default 1)
   -Q n          quick mode: sample at most 'n' combinations per level
   -n samples    number of samples per measurement (take minimum, default 3)
@@ -181,5 +183,3 @@ to enforce zero-overhead C++ discipline:
 - Cross-benchmark aggregation script: run osearch `-j` on all benchmarks,
   rank flags by average improvement, and reorder the config file accordingly
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures
-- Add instruction-count measurement mode (via `perf stat -e instructions:u`)
-  for fully deterministic, noise-free optimization

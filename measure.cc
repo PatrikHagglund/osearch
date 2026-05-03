@@ -32,6 +32,24 @@ static int dummy_ =
 
 // END
 
+// BEGIN option handling for 'perf' (instruction count)
+
+/// Flag to tell if we optimize for retired instruction count.
+static bool opt_perf = false;
+
+/// Option helper function.
+static void opt_p() { opt_perf = true; }
+
+/// Option helper variable.
+static int dummy_p_ =
+    (opt_reg_t::append(
+         'p', opt_p, "p", "  [-p]",
+         "  -p \t\tuse retired instruction count (via perf stat) rather\n"
+         "  \t\tthan wall-clock time. Deterministic, but requires 'perf'\n"),
+     1);
+
+// END
+
 // BEGIN option handling for 'num_samples'
 
 /// Number of samples per measurement (take minimum). Default 3.
@@ -51,7 +69,10 @@ static int dummy_n_ =
 
 void summary_first_measure() {
   summary_first_compile();
-  o3 << "\nOptimized for: " << (opt_size ? "size" : "time (output value)");
+  o3 << "\nOptimized for: "
+     << (opt_size     ? "size"
+         : opt_perf   ? "retired instructions (perf)"
+                      : "time (output value)");
 }
 
 /// Compute the objective function (generated code size if opt_size,
@@ -71,15 +92,14 @@ static obj_t sample(pset_t pset) {
 
   tmp_file_t const &tmp_file = get_tmp_file(pset);
 
-  const std::string foo = std::string("size -A ") +
-                          std::string(tmp_file.get_path()) +
-                          " | grep .text | awk '{ print $2 }'";
-  const std::string bar = std::string(tmp_file.get_path());
-  const std::string cmd = opt_size ? foo : bar;
-
-  // string cmd = size ? string("size -A ") + tmp_file.path +
-  //                         " | grep .text | awk '{ print $2 }'"
-  //                   : tmp_file.path;
+  const std::string size_cmd = std::string("size -A ") +
+                               std::string(tmp_file.get_path()) +
+                               " | grep .text | awk '{ print $2 }'";
+  const std::string perf_cmd = std::string("perf stat -x, -e instructions:u ") +
+                               std::string(tmp_file.get_path()) +
+                               " 2>&1 | grep instructions:u | cut -d, -f1";
+  const std::string run_cmd = std::string(tmp_file.get_path());
+  const std::string cmd = opt_size ? size_cmd : opt_perf ? perf_cmd : run_cmd;
 
   const cmd_res_t cmd_res = execute(cmd);
   const obj_t obj = cmd_res.status == EXIT_SUCCESS
@@ -87,7 +107,8 @@ static obj_t sample(pset_t pset) {
                         : obj_t_inf;
 
   // For time measurements, take the minimum of num_samples runs.
-  if (opt_size || num_samples <= 1 || !obj.is_finite()) {
+  // Size and perf measurements are deterministic; a single sample is enough.
+  if (opt_size || opt_perf || num_samples <= 1 || !obj.is_finite()) {
     return obj;
   }
   obj_t best = obj;

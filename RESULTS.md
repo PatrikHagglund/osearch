@@ -69,9 +69,37 @@ Results are **100% reproducible** (deterministic binary size).
 ## Reproducibility
 
 - **Size (-s):** 100% reproducible — identical results across runs
+- **Instructions (-p):** ~100% reproducible at the measurement level
+  (perf counter variance is ~20 parts per billion); result flag sets are
+  close between runs, with minor differences when multiple flags give
+  similar savings
 - **Time (-n 3):** Values are stable within ~10%, but the greedy adoption
   path can diverge due to residual noise, leading to different flag sets.
   The minimum-of-3 strategy eliminates most outliers but cannot fully
   compensate for CPU frequency scaling and thermal effects.
-- **For deterministic time results:** use `-s` (size) or a future
-  instruction-count mode (`perf stat -e instructions:u`)
+
+## Instruction count (-p), Level 1 (full search)
+
+Uses `perf stat -e instructions:u` — deterministic measurement of retired
+user-space instructions. Results are highly reproducible.
+
+| Benchmark   | Instructions    | Best flags |
+|-------------|-----------------|------------|
+| almabench   | 341,808,229     | -Ofast -fno-align-functions -fno-align-loops -fno-move-loop-invariants -fno-reorder-functions -fno-strict-aliasing -fno-tree-slp-vectorize -march=native |
+| distbench   | 28,608,328      | -Ofast -fno-align-functions -fno-align-loops -march=native |
+| evobench    | 563,585,044     | -Ofast -fno-cse-follow-jumps -fno-code-hoisting -fno-caller-saves -fno-ivopts -fno-move-loop-invariants -march=native |
+| fftbench    | 160,110,259     | -Ofast -fno-code-hoisting -fno-align-loops -fno-peephole2 -fno-reorder-functions -fno-schedule-insns2 -fno-tree-loop-distribute-patterns -fno-tree-pre -fno-asynchronous-unwind-tables -march=native -flto |
+| huffbench   | 1,249,274,607   | -Ofast -fno-cse-follow-jumps -fno-code-hoisting -fno-align-functions -fno-ivopts -fno-optimize-sibling-calls -flto |
+| linbench    | 160,110,258     | -Ofast -fno-code-hoisting -fno-align-loops -fno-peephole2 -fno-reorder-functions -fno-schedule-insns2 -fno-tree-loop-distribute-patterns -fno-tree-pre -fno-asynchronous-unwind-tables -march=native -flto |
+| linsmall    | 161,742,820     | -Ofast -fno-caller-saves -fno-align-loops -fno-gcse -fno-crossjumping -fno-optimize-sibling-calls -fno-optimize-strlen -fno-peephole2 -fno-schedule-insns2 -fno-tree-pre -march=native |
+| mat1bench   | 78,968,760      | -Ofast -fno-reorder-functions -march=native |
+| treebench   | 853,281,585     | -Ofast -fno-caller-saves -fno-gcse -fno-move-loop-invariants -fno-reorder-functions -fno-tree-loop-distribute-patterns -fno-tree-loop-vectorize -fno-tree-slp-vectorize -fno-asynchronous-unwind-tables -march=native -flto |
+
+## Instruction count observations
+
+- `-Ofast -march=native` is the foundation for almost every benchmark
+- `-flto` helps several benchmarks (fft, lin, huff, tree)
+- `-fno-align-*` flags help by reducing padding (fewer icache misses)
+- `-fno-reorder-functions` consistently helps
+- For linbench/fftbench the results converge to near-identical flag sets
+  (both are numerical/FFT-like workloads)
