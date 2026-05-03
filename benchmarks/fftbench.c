@@ -1,211 +1,98 @@
 /*
     fftbench.c
 
-    Written by Scott Robert Ladd (scott@coyotegulch.com)
-    No rights reserved. This is public domain software, for use by anyone.
-
-    A number-crunching benchmark using LUP-decomposition to solve a large
-    linear equation.
-
-    The code herein is design for the purpose of testing computational
-    performance; error handling is minimal.
-    
-    In fact, this is a weak implementation of the FFT; unfortunately, all
-    of my really nifty FFTs are in commercial code, and I haven't had time
-    to write a new FFT routine for this benchmark. I may add a Hartley
-    transform to the seat, too.
-
-    Actual benchmark results can be found at:
-            http://www.coyotegulch.com
-
-    Please do not use this information or algorithm in any way that might
-    upset the balance of the universe or otherwise cause a disturbance in
-    the space-time continuum.
+    Radix-2 Cooley-Tukey FFT benchmark.
+    Iterative, in-place, decimation-in-time.
 */
 
 #ifndef LINK
 #include "main.ic"
 #endif
 
-#include <string.h>
-#include <stdlib.h>
 #include <math.h>
-#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
-// embedded random number generator; ala Park and Miller
-static       long seed = 1325;
-static const long IA   = 16807;
-static const long IM   = 2147483647;
-static const double AM = 4.65661287525E-10;
-static const long IQ   = 127773;
-static const long IR   = 2836;
-static const long MASK = 123459876;
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
-static double random_double()
-{
-    long k;
-    double result;
-    
-    seed ^= MASK;
-    k = seed / IQ;
-    seed = IA * (seed - k * IQ) - IR * k;
-    
-    if (seed < 0)
-        seed += IM;
-    
-    result = AM * seed;
-    seed ^= MASK;
-    
-    return result;
+// 2^N points. N=20 gives ~1M points, ~20M complex mults per FFT.
+#define LOG2N 20
+#define N     (1 << LOG2N)
+
+static double *re;
+static double *im;
+
+// Bit-reverse permutation: swap a[i] with a[reverse(i)] for i < reverse(i).
+static unsigned bit_reverse(unsigned x, unsigned bits) {
+    unsigned r = 0;
+    for (unsigned i = 0; i < bits; ++i) {
+        r = (r << 1) | (x & 1u);
+        x >>= 1;
+    }
+    return r;
 }
 
-static const int N   = 800;
-static const int NM1 = 799; // N - 1
-static const int NP1 = 801; // N + 1
+static void fft(double *re, double *im, unsigned n, unsigned log2n) {
+    // Bit-reverse permutation.
+    for (unsigned i = 0; i < n; ++i) {
+        unsigned j = bit_reverse(i, log2n);
+        if (j > i) {
+            double tr = re[i]; re[i] = re[j]; re[j] = tr;
+            double ti = im[i]; im[i] = im[j]; im[j] = ti;
+        }
+    }
 
-static int * lup_decompose(double ** a)
-{
-    int i, j, k, k2, t;
-    double p, temp;
-    
-    int * perm = (int *)malloc(sizeof(double) * N);
-    
-    for (i = 0; i < N; ++i)
-        perm[i] = i;
-    
-    for (k = 0; k < NM1; ++k)
-    {
-        p = 0.0;
-        
-        for (i = k; i < N; ++i)
-        {
-            temp = fabs(a[i][k]);
-            
-            if (temp > p)
-            {
-                p = temp;
-                k2 = i;  
+    // Butterflies. For each stage, len = 2, 4, 8, ..., n.
+    for (unsigned len = 2; len <= n; len <<= 1) {
+        unsigned half = len >> 1;
+        double theta = -2.0 * M_PI / (double)len;
+        double wpr = cos(theta);
+        double wpi = sin(theta);
+        for (unsigned i = 0; i < n; i += len) {
+            double wr = 1.0, wi = 0.0;
+            for (unsigned k = 0; k < half; ++k) {
+                unsigned a = i + k;
+                unsigned b = a + half;
+                double tr = wr * re[b] - wi * im[b];
+                double ti = wr * im[b] + wi * re[b];
+                re[b] = re[a] - tr;
+                im[b] = im[a] - ti;
+                re[a] += tr;
+                im[a] += ti;
+                // w *= (wpr + i wpi)
+                double nwr = wr * wpr - wi * wpi;
+                double nwi = wr * wpi + wi * wpr;
+                wr = nwr;
+                wi = nwi;
             }
         }
-        
-        // check for invalid a
-        if (p == 0.0)
-            return NULL;
-    
-        // exchange rows
-        t = perm[k];
-        perm[k] = perm[k2];
-        perm[k2] = t;
-
-        for (i = 0; i < N; ++i)
-        {
-            temp = a[k][i];
-            a[k][i] = a[k2][i];
-            a[k2][i] = temp;
-        }
-        
-        for (i = k + 1; i < N; ++i)
-        {
-            a[i][k] /= a[k][k];
-            
-            for (j = k + 1; j < N; ++j)
-                a[i][j] -= a[i][k] * a[k][j];
-        }
     }
-    
-    return perm;
 }
 
-static double * lup_solve(double ** a, int * perm, double * b)
-{
-    int i, j, j2;
-    double sum, u;
-    
-    double * y = (double *)malloc(sizeof(double) * N);
-    double * x = (double *)malloc(sizeof(double) * N);
-    
-    for (int i = 0; i < N; ++i)
-    {
-        y[i] = 0.0;
-        x[i] = 0.0;
-    }
-    
-    for (i = 0; i < N; ++i)
-    {
-        sum = 0.0;
-        j2 = 0;
-        
-        for (j = 1; j <= i; ++j)
-        {
-            sum += a[i][j2] * y[j2];
-            ++j2;
-        }
-        
-        y[i] = b[perm[i]] - sum;
-    }
-    
-    i = NM1;
-    
-    while (1)
-    {
-        sum = 0.0;
-        u   = a[i][i];
-        
-        for (j = i + 1; j < N; ++j)
-            sum += a[i][j] * x[j];
-        
-        x[i] = (y[i] - sum) / u;
-        
-        if (i == 0)
-            break;
-        
-        --i;
-    }
-    
-    free(y);
-    
-    return x;
-}
-
-static double ** a;
-static double * b;
-static int * p;
-static double * r;
-
-char const* name = " fftbench (Std. C)";
+char const* name = " fftbench (radix-2 Cooley-Tukey, N=2^20)";
 
 void init() {
-    // generate test data            
-    a = (double **)malloc(sizeof(double *) * N);
-    
-    for (unsigned i = 0; i < N; ++i)
-    {
-        a[i] = (double *)malloc(sizeof(double) * N);
-        
-        for (unsigned j = 0; j < N; ++j)
-            a[i][j] = random_double();
+    re = (double *)malloc(sizeof(double) * N);
+    im = (double *)malloc(sizeof(double) * N);
+    // Deterministic input: a mix of sines.
+    for (unsigned i = 0; i < N; ++i) {
+        double x = (double)i / (double)N;
+        re[i] = sin(2.0 * M_PI * 3.0 * x) + 0.5 * sin(2.0 * M_PI * 17.0 * x);
+        im[i] = 0.0;
     }
-    
-    b = (double *)malloc(sizeof(double) * N);
-    
-    for (unsigned i = 0; i < N; ++i)
-         b[i] = random_double();
-    
 }
 
 void run() {
-    // what we're timing
-    p = lup_decompose(a);
-    r = lup_solve(a,p,b);
+    fft(re, im, N, LOG2N);
 }
 
 void clean() {
-    // clean up
-    for (unsigned i = 0; i < N; ++i)
-        free(a[i]);
-    
-    free(a);
-    free(b);
-    free(p);
-    free(r);
+    // Prevent dead-code elimination: the volatile sink keeps fft()'s
+    // output live.
+    volatile double sink = re[0] + im[N / 2];
+    (void)sink;
+    free(re);
+    free(im);
 }
