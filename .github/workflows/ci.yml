@@ -19,7 +19,7 @@ jobs:
       - name: Install build dependencies
         run: |
           dnf install -y --setopt=install_weak_deps=False \
-            gcc-c++ cmake ninja-build expat-devel git
+            gcc-c++ cmake ninja-build expat-devel git gawk
           g++ --version
 
       - name: Checkout
@@ -45,3 +45,6 @@ jobs:
 
       - name: Integration smoke test (-l 2 -Q 5)
         run: ./build/osearch -l 2 -Q 5 -q config/gcc16-test.osearch benchmarks/fftbench.c
+
+      - name: Integration smoke test (-s size mode)
+        run: ./build/osearch -s -l 1 -Q 3 -q config/gcc16-test.osearch benchmarks/fftbench.c
