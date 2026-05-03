@@ -175,3 +175,4 @@ to enforce zero-overhead C++ discipline:
 - Add a clang/LLVM config file
 - Output results as JSON/CSV for analysis
 - Add unit tests for `measure` (requires a seam to inject fake `compile`/`execute`)
+- Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures
