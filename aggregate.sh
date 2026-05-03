@@ -3,19 +3,43 @@
 # by average improvement, and optionally reorder the config file.
 #
 # Usage:
-#   ./aggregate.sh [config_file]           # rank flags
-#   ./aggregate.sh --reorder [config_file] # reorder config file in place
+#   ./aggregate.sh [--mode=time|perf|size] [--reorder] [config_file]
+#
+#   --mode=time  (default) execution time
+#   --mode=perf  retired instructions (needs perf)
+#   --mode=size  binary .text size (deterministic)
 #
 # Requires: osearch built in ./build/, python3 for JSON parsing.
 set -e
 
+MODE=time
 REORDER=false
-if [ "$1" = "--reorder" ]; then
-  REORDER=true
-  shift
+CONFIG=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --mode=time) MODE=time ;;
+    --mode=perf) MODE=perf ;;
+    --mode=size) MODE=size ;;
+    --reorder)   REORDER=true ;;
+    --*)         echo "Unknown option: $arg" >&2; exit 1 ;;
+    *)           CONFIG="$arg" ;;
+  esac
+done
+
+# Default config depends on mode.
+if [ -z "$CONFIG" ]; then
+  case "$MODE" in
+    size) CONFIG="config/gcc16-size.osearch" ;;
+    *)    CONFIG="config/gcc16-test.osearch" ;;
+  esac
 fi
 
-CONFIG="${1:-config/gcc16-test.osearch}"
+case "$MODE" in
+  time) OSEARCH_MODE_FLAG="" ;;
+  perf) OSEARCH_MODE_FLAG="-p" ;;
+  size) OSEARCH_MODE_FLAG="-s" ;;
+esac
 OSEARCH="./build/osearch"
 BENCHMARKS="benchmarks/*.c"
 Q=20  # quick cap per level (enough to get past -O levels to actual flags)
@@ -28,12 +52,12 @@ fi
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-echo "Running osearch -j -l 1 -Q $Q on all benchmarks..." >&2
+echo "Running osearch -j -l 1 -Q $Q${OSEARCH_MODE_FLAG:+ $OSEARCH_MODE_FLAG} on all benchmarks (mode=$MODE)..." >&2
 
 for bench in $BENCHMARKS; do
   name=$(basename "$bench" .c)
   echo "  $name..." >&2
-  "$OSEARCH" -j -l 1 -Q "$Q" -q "$CONFIG" "$bench" > "$TMPDIR/$name.json" 2>/dev/null || true
+  "$OSEARCH" -j -l 1 -Q "$Q" $OSEARCH_MODE_FLAG -q "$CONFIG" "$bench" > "$TMPDIR/$name.json" 2>/dev/null || true
 done
 
 echo "" >&2
