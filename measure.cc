@@ -20,7 +20,6 @@
 static bool opt_size = false;
 
 /// Option helper function.
-/// \todo Possible to use lambda function?
 static void opt_s() { opt_size = true; }
 
 /// Option helper varaible.
@@ -29,6 +28,23 @@ static int dummy_ =
          's', opt_s, "s", "  [-s]",
          "  -s \t\tuse the size of the generated binary rather than\n"
          "  \t\tthe output (running time)\n"),
+     1);
+
+// END
+
+// BEGIN option handling for 'num_samples'
+
+/// Number of samples per measurement (take minimum). Default 1.
+static unsigned long num_samples = 1;
+
+/// Option helper function.
+static void opt_n() { num_samples = strtoul(optarg, nullptr, 0); }
+
+/// Option helper variable.
+static int dummy_n_ =
+    (opt_reg_t::append('n', opt_n, "n:", "  [-n samples]",
+                       "  -n samples \tnumber of samples per measurement "
+                       "(take minimum, default 1)\n"),
      1);
 
 // END
@@ -69,7 +85,19 @@ static obj_t sample(pset_t pset) {
   const obj_t obj = cmd_res.status == EXIT_SUCCESS
                         ? obj_t(std::stol(cmd_res.output))
                         : obj_t_inf;
-  return obj;
+
+  // For time measurements, take the minimum of num_samples runs.
+  if (opt_size || num_samples <= 1 || !obj.is_finite()) {
+    return obj;
+  }
+  obj_t best = obj;
+  for (unsigned long i = 1; i < num_samples; ++i) {
+    const cmd_res_t r = execute(cmd);
+    if (r.status != EXIT_SUCCESS) return obj_t_inf;
+    obj_t val(std::stol(r.output));
+    if (val < best) best = val;
+  }
+  return best;
 }
 
 /// Mapping of all results.

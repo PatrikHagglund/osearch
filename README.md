@@ -25,6 +25,7 @@ ninja -C build
   -s            optimize for binary size instead of execution time
   -l max_level  max number of options to alter at once (default 1)
   -Q n          quick mode: sample at most 'n' combinations per level
+  -n samples    number of samples per measurement (take minimum, default 1)
   -q            suppress progress output
   -j            output results as JSON
 ```
