@@ -88,6 +88,8 @@ public:
   void print() const;
   /// Print out the best and worst options found.
   void summary_exit() const;
+  /// Output results as JSON (if -j was given).
+  void json_exit() const;
 private:
   unsigned level{0};
   unsigned number_of_comb{0};

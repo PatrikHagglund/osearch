@@ -33,7 +33,21 @@ static int dummy_ =
 
 // END
 
-// BEGIN option handling for 'quick' (per-level sample cap)
+// BEGIN option handling for 'json'
+
+/// Output results as JSON.
+static bool opt_json_flag = false;
+
+/// Option helper function.
+static void opt_j() { opt_json_flag = true; }
+
+/// Option helper variable.
+static int dummy_j_ =
+    (opt_reg_t::append('j', opt_j, "j", "  [-j]",
+                       "  -j \t\toutput results as JSON to stdout\n"),
+     1);
+
+// END
 
 /// Quick mode: cap on the number of combinations sampled per level.
 /// 0 means "no cap" (full search). Set via -Q.
@@ -197,6 +211,20 @@ void steps_t::summary_exit() const {
   }
 
   o3 << "\n\n";
+}
+
+void steps_t::json_exit() const {
+  if (!opt_json_flag) return;
+  o3 << "[";
+  bool first = true;
+  for (auto const &i : done) {
+    if (!first) o3 << ",";
+    first = false;
+    o3 << "\n  {\"diff\":" << i.alt_diff().to_string()
+       << ",\"equal\":" << (i.equal ? "true" : "false")
+       << ",\"flags\":\"" << i.str() << "\"}";
+  }
+  o3 << "\n]\n";
 }
 
 bool steps_t::find_d_ind(const delta_ind_t &d_ind) const {

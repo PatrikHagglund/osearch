@@ -171,4 +171,5 @@ void summary_exit() {
   point_t const p = get_min_point();
   o3 << "\n" << measure(p).to_string() << " " << p.to_string() << "\n";
   steps.summary_exit();
+  steps.json_exit();
 }

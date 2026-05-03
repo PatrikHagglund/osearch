@@ -26,6 +26,7 @@ ninja -C build
   -l max_level  max number of options to alter at once (default 1)
   -Q n          quick mode: sample at most 'n' combinations per level
   -q            suppress progress output
+  -j            output results as JSON
 ```
 
 Example:
@@ -173,5 +174,4 @@ to enforce zero-overhead C++ discipline:
 
 - Full GCC 16 config with all 280 optimization flags
 - Add a clang/LLVM config file
-- Output results as JSON/CSV for analysis
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures
