@@ -122,8 +122,8 @@ steps_t::steps_t() noexcept = default;
 
 delta_ind_t steps_t::get_next(const point_t &p)
 {
-  contract_assert(done.size() <= number_of_comb);
-  if (done.size() == number_of_comb) {
+  contract_assert(dispatched <= number_of_comb);
+  if (dispatched == number_of_comb) {
     // search space exausted
     if (level > 0) {
       o1 << "\n### Search at level " << level << " completed. Result:";
@@ -150,6 +150,7 @@ delta_ind_t steps_t::get_next(const point_t &p)
     o1 << ")\n";
   }
   delta_info = delta_info_t::valid;
+  ++dispatched;
   return get_rand_delta();
 }
 

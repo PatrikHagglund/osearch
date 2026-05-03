@@ -1,8 +1,8 @@
-#ifndef ASSUME_HH
-#define ASSUME_HH
+#ifndef COMPAT_HH
+#define COMPAT_HH
 
 /// \file
-/// Language extensions, such as #NONNULL and #CONSTEXPR_STR.
+/// Compatibility macros: #NONNULL and #CONSTEXPR_STR.
 
 #ifdef __clang__
 #define NONNULL(type) type _Nonnull

@@ -1,7 +1,7 @@
 #ifndef READ_CONF_HH
 #define READ_CONF_HH
 
-#include "assume.hh"
+#include "compat.hh"
 
 #include <string>
 #include <string_view>

@@ -1,7 +1,7 @@
 #ifndef OBJ_HH
 #define OBJ_HH
 
-#include "assume.hh" // CONSTEXPR_STR
+#include "compat.hh" // CONSTEXPR_STR
 
 #include <compare> // std::strong_ordering
 #include <cstdint> // int64_t

@@ -1,5 +1,5 @@
 #include "getopts.hh"
-#include "assume.hh" // NONNULL
+#include "compat.hh" // NONNULL
 #ifdef DEBUG
 #include "print.hh"
 #endif

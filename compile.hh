@@ -2,6 +2,7 @@
 #define COMPILE_HH
 
 #include "point.hh"  // for point_t
+#include <span>      // for span
 #include <string>    // for string
 struct tmp_file_t;
 
@@ -47,6 +48,10 @@ point_t get_point(pset_t pset);
 
 /// Reset search. Scrap all compilations.
 void reset_compilations();
+
+/// Pre-compile a batch of points in parallel.
+/// Points already compiled are skipped.
+void compile_batch(std::span<const point_t> points);
 
 /// Print out the version of the compiler used.
 std::string get_compiler_version();

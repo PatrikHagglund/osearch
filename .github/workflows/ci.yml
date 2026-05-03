@@ -39,3 +39,9 @@ jobs:
 
       - name: DEBUG syntax check
         run: g++ -std=gnu++26 -DDEBUG -I $HOME/GSL/include -fsyntax-only *.cc
+
+      - name: Integration smoke test (-l 1 -Q 5)
+        run: ./build/osearch -l 1 -Q 5 -q config/gcc16-test.osearch benchmarks/fftbench.c
+
+      - name: Integration smoke test (-l 2 -Q 5)
+        run: ./build/osearch -l 2 -Q 5 -q config/gcc16-test.osearch benchmarks/fftbench.c

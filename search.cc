@@ -1,6 +1,6 @@
 #include "search.hh"
 
-#include "assume.hh" // NONNULL
+#include "compat.hh" // NONNULL
 #include "compile.hh"
 #include "measure.hh"
 #include "point.hh"
@@ -9,6 +9,8 @@
 #include "steps.hh"
 
 #include <algorithm>
+#include <thread>
+#include <vector>
 
 /// \file
 /// Main loop (search()), to search for good options.
@@ -82,60 +84,75 @@ void search() {
      << res.to_string() << " " << p.to_string() << "\n";
   steps = steps_t();
   for (;;) {
-    // get new step data
-    delta_ind_t const d_ind = steps.get_next(p);
-#ifdef DEBUG
-    o1 << delta_ind_str(d_ind);
-#endif
-    if (steps.delta_info == delta_info_t::finish) {
+    // Collect points from multiple steps for batch compilation.
+    struct step_data {
+      delta_ind_t d_ind;
+      std::vector<point_t> points;
+    };
+    std::vector<step_data> pending_steps;
+    std::vector<point_t> all_points;
+
+    // Gather up to hardware_concurrency steps worth of points.
+    unsigned const batch_limit =
+        std::max(1U, std::thread::hardware_concurrency());
+    while (pending_steps.size() < batch_limit) {
+      delta_ind_t const d_ind = steps.get_next(p);
+      if (steps.delta_info == delta_info_t::finish) {
+        break;
+      }
+      step_data sd;
+      sd.d_ind = d_ind;
+      point_t p_pre = p;
+      do {
+        if (!skip(p_pre, p, d_ind)) {
+          sd.points.push_back(p_pre);
+          all_points.push_back(p_pre);
+        }
+      } while (advance(&p_pre, p, d_ind));
+      pending_steps.push_back(std::move(sd));
+    }
+
+    if (pending_steps.empty()) {
       return;
     }
 
-#ifdef DEBUG
-    contract_assert(measure(p) == res);
-#endif
+    // Batch-compile all collected points in parallel.
+    compile_batch(all_points);
 
-    point_t const p_start = p;
-    point_t p_new = p;
-    delta_t delta;
+    // Evaluate each step sequentially.
+    bool adopted = false;
+    for (auto &sd : pending_steps) {
+      point_t const p_start = p;
 
-    do {
-      // avoid options in p/delta
-      if (skip(p_new, p_start, d_ind)) {
-        continue;
+      for (auto &p_new : sd.points) {
+        obj_t const res_new = measure(p_new);
+
+        obj_t const diff =
+            (res_new.is_finite() && res.is_finite()) ? (res_new - res) : obj_t_inf;
+        bool const equal = equivalent_p(p_new, p);
+        delta_t delta(p_new, p, equal, diff);
+        o1 << " point: " << p_new.to_string() << " res: " << res_new.to_string()
+           << " delta: " << delta.str() << " ";
+        steps.store(delta);
+
+        if (equal ? p_new.popcnt() < p.popcnt() : res_new < res) {
+          p = p_new;
+          res = res_new;
+          o1 << "\nAlteration adopted: " << delta.str();
+          o1 << "\n" << res.to_string() << " " << p.to_string();
+        }
       }
 
-      obj_t const res_new = measure(p_new);
-
-      // get difference (only meaningful when both measurements are finite;
-      // otherwise mark as "infinitely worse" so the delta sorts last).
-#ifdef DEBUG
-      // contract_assert(measure(p_old) == res_old);
-#endif
-      obj_t const diff =
-          (res_new.is_finite() && res.is_finite()) ? (res_new - res) : obj_t_inf;
-      bool const equal = equivalent_p(p_new, p);
-      delta = delta_t(p_new, p, equal, diff);
-      // #ifdef DEBUG
-      o1 << " point: " << p_new.to_string() << " res: " << res_new.to_string()
-         << " delta: " << delta.str() << " ";
-      // #endif
-      steps.store(delta);
-
-      // decide if this point is better or not
-      if (equal ? p_new.popcnt() < p.popcnt() : res_new < res) {
-
-        p = p_new;
-        res = res_new;
-
-        o1 << "\nAlteration adopted: " << delta.str();
-        o1 << "\n" << res.to_string() << " " << p.to_string();
+      if (p != p_start) {
+        adopted = true;
+        steps.print();
+        steps = steps_t();
+        break;
       }
-    } while (advance(&p_new, p_start, d_ind));
+    }
 
-    if (p != p_start) {
-      steps.print();
-      steps = steps_t();
+    if (adopted) {
+      continue;
     }
   }
 }

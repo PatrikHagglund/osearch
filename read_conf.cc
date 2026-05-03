@@ -2,7 +2,7 @@
 /// Use read_conf() to read in configuration file into the #conf variable.
 
 #include "read_conf.hh"
-#include "assume.hh"
+#include "compat.hh"
 #include "getopts.hh"
 #include "print.hh"
 

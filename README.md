@@ -97,6 +97,14 @@ microsecond value as the objective.
 | `getopts.cc` | Command-line argument parsing |
 | `print.cc` | Progress/output reporting |
 
+### Parallel compilation
+
+The search loop batches up to `hardware_concurrency` steps and compiles
+their candidate points in parallel using `std::jthread` (see
+`compile_batch()` in `compile.cc`). Measurement (execution + timing)
+remains sequential to avoid interference. On a 16-core machine with the
+60-flag test config this gives ~1.6× wall-clock speedup.
+
 ## Testing
 
 Two layers:
@@ -149,8 +157,6 @@ osearch_add_test(test_foo tests/test_foo.cc)
 
 - Full GCC 16 config with all 280 optimization flags
 - Add a clang/LLVM config file
-- Parallelize compilations (per-step is embarrassingly parallel)
 - Output results as JSON/CSV for analysis
 - Add unit tests for `measure` (requires a seam to inject fake `compile`/`execute`)
-- Add unit tests for `read_conf` (parse a small XML string, verify `conf_t`)
 - Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)

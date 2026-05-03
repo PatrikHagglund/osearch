@@ -8,7 +8,9 @@
 #include <iostream> // for cerr
 #include <map>      // for map
 #include <string>   // for string
+#include <thread>   // for jthread
 #include <utility>  // for pair
+#include <vector>   // for vector
 
 #include <cstdlib> // for EXIT_SUCCESS
 
@@ -215,6 +217,73 @@ pset_t compile(const point_t &p) {
   }
 
   return pset;
+}
+
+void compile_batch(std::span<const point_t> points) {
+  // Collect points that actually need compilation.
+  struct work_item {
+    const point_t *p;
+    tmp_file_t tmp;
+    std::string cmd;
+    cmd_res_t result{0, ""};
+  };
+  std::vector<work_item> work;
+  work.reserve(points.size());
+  for (auto &pt : points) {
+    if (!point_to_pset.contains(pt)) {
+      work_item w;
+      w.p = &pt;
+      w.cmd = point_to_cmd(pt, w.tmp.get_path());
+      work.push_back(std::move(w));
+    }
+  }
+
+  // Run compilations in parallel.
+  unsigned const hw = std::max(1U, std::thread::hardware_concurrency());
+  unsigned const n = static_cast<unsigned>(work.size());
+  auto worker = [&](unsigned start, unsigned end) {
+    for (unsigned i = start; i < end; ++i) {
+      work[i].result = execute(work[i].cmd);
+    }
+  };
+
+  if (n <= hw) {
+    // One thread per item.
+    std::vector<std::jthread> threads;
+    threads.reserve(n);
+    for (unsigned i = 0; i < n; ++i) {
+      threads.emplace_back(worker, i, i + 1);
+    }
+  } else {
+    // Distribute evenly across hw threads.
+    std::vector<std::jthread> threads;
+    threads.reserve(hw);
+    unsigned per = n / hw;
+    unsigned extra = n % hw;
+    unsigned start = 0;
+    for (unsigned t = 0; t < hw; ++t) {
+      unsigned end = start + per + (t < extra ? 1 : 0);
+      threads.emplace_back(worker, start, end);
+      start = end;
+    }
+  }
+
+  // Register results sequentially.
+  for (auto &w : work) {
+    if (w.result.status != EXIT_SUCCESS) {
+      std::cerr << "\nExectuion of '" << w.cmd
+                << "' failed with status code: " << w.result.status << "\n";
+      bugpoint(*w.p, w.result, w.tmp.get_path());
+      point_to_pset[*w.p] = pset_invalid;
+      continue;
+    }
+    pset_t const pset = get_pset(w.tmp.get_path());
+    point_to_pset[*w.p] = pset;
+    if (!exe_files.m().contains(pset)) {
+      exe_files.m().insert(std::pair<pset_t, tmp_file_t const &>(pset, w.tmp));
+      w.tmp.reset_path();
+    }
+  }
 }
 
 /// Reset the set of compiled files (exe_files).

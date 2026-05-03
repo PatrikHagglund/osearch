@@ -1,7 +1,7 @@
 #ifndef GETOPTS_HH
 #define GETOPTS_HH
 
-#include "assume.hh" // NONNULL
+#include "compat.hh" // NONNULL
 #ifdef DEBUG
 #include "print.hh"
 #endif
