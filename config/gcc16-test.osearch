@@ -13,28 +13,28 @@
   <baseline description="-march=native -Os" />
 
   <!-- Optimization levels -->
-  <flag type="simple" value="-O1" />
-  <flag type="simple" value="-O2" />
   <flag type="simple" value="-O3" />
-  <flag type="simple" value="-Os" />
   <flag type="simple" value="-Ofast" />
+  <flag type="simple" value="-O2" />
+  <flag type="simple" value="-Os" />
+  <flag type="simple" value="-fno-inline-functions" />
 
   <!-- Key O2 flags (disable to test impact) -->
-  <flag type="simple" value="-fno-align-functions" />
-  <flag type="simple" value="-fno-align-loops" />
-  <flag type="simple" value="-fno-caller-saves" />
-  <flag type="simple" value="-fno-code-hoisting" />
-  <flag type="simple" value="-fno-crossjumping" />
   <flag type="simple" value="-fno-cse-follow-jumps" />
-  <flag type="simple" value="-fno-devirtualize" />
+  <flag type="simple" value="-fno-code-hoisting" />
+  <flag type="simple" value="-fno-ipa-cp" />
+  <flag type="simple" value="-fno-align-functions" />
+  <flag type="simple" value="-fno-inline-small-functions" />
+  <flag type="simple" value="-fno-caller-saves" />
   <flag type="simple" value="-fno-expensive-optimizations" />
+  <flag type="simple" value="-fno-align-loops" />
   <flag type="simple" value="-fno-gcse" />
+  <flag type="simple" value="-fno-crossjumping" />
+  <flag type="simple" value="-O1" />
+  <flag type="simple" value="-fno-devirtualize" />
   <flag type="simple" value="-fno-hoist-adjacent-loads" />
   <flag type="simple" value="-fno-indirect-inlining" />
-  <flag type="simple" value="-fno-inline-functions" />
   <flag type="simple" value="-fno-inline-functions-called-once" />
-  <flag type="simple" value="-fno-inline-small-functions" />
-  <flag type="simple" value="-fno-ipa-cp" />
   <flag type="simple" value="-fno-ipa-icf" />
   <flag type="simple" value="-fno-ipa-sra" />
   <flag type="simple" value="-fno-ivopts" />

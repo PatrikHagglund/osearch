@@ -1,12 +1,19 @@
 #!/bin/sh
 # Cross-benchmark aggregation: run osearch on all benchmarks, rank flags
-# by average improvement, and print a reordered flag list.
+# by average improvement, and optionally reorder the config file.
 #
 # Usage:
-#   ./aggregate.sh [config_file]
+#   ./aggregate.sh [config_file]           # rank flags
+#   ./aggregate.sh --reorder [config_file] # reorder config file in place
 #
 # Requires: osearch built in ./build/, python3 for JSON parsing.
 set -e
+
+REORDER=false
+if [ "$1" = "--reorder" ]; then
+  REORDER=true
+  shift
+fi
 
 CONFIG="${1:-config/gcc16-test.osearch}"
 OSEARCH="./build/osearch"
@@ -84,3 +91,80 @@ for flag, diffs in ranked:
     avg = sum(diffs) / len(diffs)
     print(f"{flag}\t{avg:.0f}\t{len(diffs)}")
 PYTHON
+
+if [ "$REORDER" = true ]; then
+  echo "" >&2
+  echo "Reordering $CONFIG..." >&2
+  python3 - "$TMPDIR" "$CONFIG" <<'REORDER_PY'
+import json, sys, os, re
+from collections import defaultdict
+
+results_dir = sys.argv[1]
+config_path = sys.argv[2]
+
+# Collect flag rankings (same logic as above).
+flag_diffs = defaultdict(list)
+for fname in sorted(os.listdir(results_dir)):
+    if not fname.endswith('.json'):
+        continue
+    with open(os.path.join(results_dir, fname)) as f:
+        content = f.read()
+    if '[' not in content:
+        continue
+    try:
+        data = json.loads(content[content.rfind('['):])
+    except json.JSONDecodeError:
+        continue
+    for entry in data:
+        if entry.get('equal'):
+            continue
+        diff = entry.get('diff')
+        if diff is None:
+            continue
+        flags_field = entry.get('flags', '')
+        flag_name = re.sub(r'^-?\d+\s+', '', flags_field).strip()
+        if flag_name.startswith('!'):
+            flag_name = flag_name[1:]
+            diff = -diff
+        if flag_name:
+            flag_diffs[flag_name].append(diff)
+
+# Rank: highest average diff first (most impactful flags first).
+rank = {flag: sum(diffs)/len(diffs) for flag, diffs in flag_diffs.items()}
+
+# Read config, reorder <flag> lines by rank (unranked flags go last).
+with open(config_path) as f:
+    lines = f.readlines()
+
+flag_lines = []
+other_lines = []
+for line in lines:
+    if re.match(r'\s*<flag\s', line):
+        flag_lines.append(line)
+    else:
+        other_lines.append((len(flag_lines), line))
+
+def flag_sort_key(line):
+    m = re.search(r'value="([^"]+)"', line)
+    if m:
+        val = m.group(1)
+        return rank.get(val, 0)  # highest diff = most impactful
+    return 0
+
+flag_lines.sort(key=flag_sort_key, reverse=True)
+
+# Reconstruct: other lines in original positions, flags reordered.
+with open(config_path, 'w') as f:
+    fi = 0
+    for orig_fi, line in other_lines:
+        while fi < orig_fi and fi < len(flag_lines):
+            f.write(flag_lines[fi])
+            fi += 1
+        f.write(line)
+    while fi < len(flag_lines):
+        f.write(flag_lines[fi])
+        fi += 1
+
+print(f"Reordered {len(flag_lines)} flags in {config_path}", file=sys.stderr)
+REORDER_PY
+fi
