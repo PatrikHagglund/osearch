@@ -2,22 +2,7 @@
 #define ASSUME_HH
 
 /// \file
-/// Language extensions, such as #GNUC_BUILTIN_ASSUME and #NONNULL.
-
-#ifdef USE_CONTRACTS
-/// Use C++26 contract_assert for assumptions.
-#define GNUC_BUILTIN_ASSUME(cond) contract_assert(cond)
-#elif defined(__GNUC__)
-static constexpr bool my_id(bool cond) { return cond; }
-#if defined(__clang__) && 0
-#define GNUC_BUILTIN_ASSUME(cond) __builtin_assume(my_id(cond))
-#else
-#define GNUC_BUILTIN_ASSUME(cond) if (my_id(!(cond))) __builtin_unreachable()
-#endif
-#else
-/// Assert without any side effect. (Should be detected in UBSan or similar.)
-#define GNUC_BUILTIN_ASSUME(cond)
-#endif
+/// Language extensions, such as #NONNULL and #CONSTEXPR_STR.
 
 #ifdef __clang__
 #define NONNULL(type) type _Nonnull

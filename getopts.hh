@@ -1,7 +1,7 @@
 #ifndef GETOPTS_HH
 #define GETOPTS_HH
 
-#include "assume.hh" // GNUC_BUILTIN_ASSUME, NONNULL
+#include "assume.hh" // NONNULL
 #ifdef DEBUG
 #include "print.hh"
 #endif
@@ -88,7 +88,7 @@ struct opt_reg_t {
   o3 << u_syn << '\n';
   o3 << u_full << '\n';
 #endif
-  GNUC_BUILTIN_ASSUME(ind < opt_strs_t::arg_max);
+  contract_assert(ind < opt_strs_t::arg_max);
   opt_strs.arg_funs[ind] = fun;
   opt_strs.usage_short += u_syn;
   opt_strs.usage_long += u_full;

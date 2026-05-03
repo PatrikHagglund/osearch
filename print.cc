@@ -1,5 +1,4 @@
 #include "print.hh"
-#include "assume.hh"
 #include "getopts.hh"
 
 /// \file
@@ -29,7 +28,7 @@ void progress_t::tick(char sym, point_t const &p) {
 #else
 void progress_t::tick(char sym) {
 #endif
-  GNUC_BUILTIN_ASSUME(sym == '.' || sym == 'o' || sym == '*');
+  contract_assert(sym == '.' || sym == 'o' || sym == '*');
 
   ++cnts[sym];
 

@@ -1,5 +1,4 @@
 #include "measure.hh"
-#include "assume.hh"
 
 #include "compile.hh"
 #include "execute.hh"
@@ -96,7 +95,7 @@ obj_t measure(const point_t &p) {
   pset_t const pset = compile(p);
 
   for (; !result_sampled(pset);) {
-    GNUC_BUILTIN_ASSUME(!results.contains(pset));
+    contract_assert(!results.contains(pset));
     results[pset] = sample(pset);
   }
 

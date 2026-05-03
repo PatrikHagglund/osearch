@@ -166,7 +166,7 @@ static void end(void *data __attribute__((__unused__)),
 static void parse(const std::string &conf_file_buf) {
 
   XML_Parser parser = XML_ParserCreate(nullptr);
-  GNUC_BUILTIN_ASSUME(parser != nullptr);
+  contract_assert(parser != nullptr);
 
   XML_SetElementHandler(parser, start, end);
 

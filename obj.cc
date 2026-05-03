@@ -1,5 +1,4 @@
 #include "obj.hh"
-#include "assume.hh"
 
 /// \file
 /// For obj_t (objective function results).

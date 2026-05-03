@@ -37,7 +37,7 @@ struct flag_t {
 struct simple_t: flag_t {
   explicit simple_t(std::string v): value(std::move(v)) {}
   [[nodiscard]] std::string_view get_flag(unsigned num) const override {
-    GNUC_BUILTIN_ASSUME(num == 1);
+    contract_assert(num == 1);
     return value;
   }
   [[nodiscard]] size_t size() const override {
@@ -60,7 +60,7 @@ struct enum_t: flag_t {
   }
 
   [[nodiscard]] std::string_view get_flag(unsigned num) const override {
-    GNUC_BUILTIN_ASSUME(1 <= num && num < size());
+    contract_assert(1 <= num && num < size());
     return values[num-1];
   }
   [[nodiscard]] size_t size() const override {

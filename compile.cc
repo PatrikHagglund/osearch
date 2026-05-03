@@ -1,6 +1,5 @@
 #include "compile.hh"
 
-#include "assume.hh"    // for GNUC_BUILTIN_ASSUME
 #include "execute.hh"   // for cmd_res_t, tmp_file_t
 #include "getopts.hh"   // for opt_reg_t
 #include "print.hh"     // for o
@@ -105,7 +104,7 @@ using pset_to_point_t = std::map<pset_t, point_t>;
 static pset_to_point_t pset_to_point;
 
 point_t get_point(pset_t pset) {
-  GNUC_BUILTIN_ASSUME(pset_to_point.contains(pset));
+  contract_assert(pset_to_point.contains(pset));
   return pset_to_point[pset];
 }
 
@@ -115,7 +114,7 @@ using point_to_pset_t = std::map<point_t, pset_t>;
 static point_to_pset_t point_to_pset;
 
 bool equivalent_p(const point_t &p1, const point_t &p2) {
-  GNUC_BUILTIN_ASSUME(point_to_pset.contains(p1) &&
+  contract_assert(point_to_pset.contains(p1) &&
                       point_to_pset.contains(p2));
   return point_to_pset[p1] == point_to_pset[p2];
 }
@@ -170,7 +169,7 @@ static pset_t get_pset(const std::string_view tmp_path) {
 }
 
 tmp_file_t const &get_tmp_file(pset_t p) {
-  GNUC_BUILTIN_ASSUME(exe_files.m().contains(p));
+  contract_assert(exe_files.m().contains(p));
   return exe_files.m().find(p)->second;
 }
 
@@ -193,7 +192,7 @@ static void hard_compile(const point_t &p) {
 
   pset_t const pset = get_pset(tmp_file.get_path());
 
-  GNUC_BUILTIN_ASSUME(!point_to_pset.contains(p));
+  contract_assert(!point_to_pset.contains(p));
   point_to_pset[p] = pset;
 
   if (!exe_files.m().contains(pset)) {
@@ -207,7 +206,7 @@ pset_t compile(const point_t &p) {
     hard_compile(p);
   }
   pset_t const pset = point_to_pset[p];
-  GNUC_BUILTIN_ASSUME(exe_files.m().contains(pset));
+  contract_assert(exe_files.m().contains(pset));
 
   /// Update pset-to-point mapping as a side-effect.
   if (!pset_to_point.contains(pset) ||

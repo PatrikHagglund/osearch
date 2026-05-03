@@ -1,6 +1,6 @@
 #include "search.hh"
 
-#include "assume.hh"
+#include "assume.hh" // NONNULL
 #include "compile.hh"
 #include "measure.hh"
 #include "point.hh"
@@ -25,10 +25,10 @@ static bool skip(point_t p, point_t p_old, delta_ind_t const &d_ind) {
 //   o1 << // "normalize: %s %s %s\n", p.str().c_str(),
 //      p_old.str().c_str(), delta_ind_str(d_ind).c_str());
 // #endif
-//   GNUC_BUILTIN_ASSUME(p.val.size() == p_old.val.size());
+//   contract_assert(p.val.size() == p_old.val.size());
 //   for (auto const &i : d_ind)
 //   {
-//     GNUC_BUILTIN_ASSUME(i < p.val.size());
+//     contract_assert(i < p.val.size());
 //     if (p.val[i] == p_old.val[i])
 //       p.val[i] = (unsigned(p.val[i])+1u) % conf.flags[i]->size();
 //   }
@@ -92,7 +92,7 @@ void search() {
     }
 
 #ifdef DEBUG
-    GNUC_BUILTIN_ASSUME(measure(p) == res);
+    contract_assert(measure(p) == res);
 #endif
 
     point_t const p_start = p;
@@ -110,7 +110,7 @@ void search() {
       // get difference (only meaningful when both measurements are finite;
       // otherwise mark as "infinitely worse" so the delta sorts last).
 #ifdef DEBUG
-      // GNUC_BUILTIN_ASSUME(measure(p_old) == res_old);
+      // contract_assert(measure(p_old) == res_old);
 #endif
       obj_t const diff =
           (res_new.is_finite() && res.is_finite()) ? (res_new - res) : obj_t_inf;

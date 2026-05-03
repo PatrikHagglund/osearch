@@ -1,6 +1,5 @@
 #include "steps.hh"
 
-#include "assume.hh"
 #include "getopts.hh"   // opt_init_t
 #include "measure.hh"   // measure
 #include "my_rand.hh"   // my_rand()
@@ -65,8 +64,9 @@ std::string delta_ind_str(delta_ind_t const &d_ind) {
 #endif
 
 delta_t::delta_t(const point_t &p_, const point_t &p_p, bool e, obj_t d)
-    : p(p_), p_prev(p_p), equal(e), diff(d) {
-  GNUC_BUILTIN_ASSUME(p.val.size() == p_prev.val.size());
+    : p(p_), p_prev(p_p), equal(e), diff(d)
+{
+  contract_assert(p.val.size() == p_prev.val.size());
 }
 
 bool delta_t::operator<(delta_t const &delta) const {
@@ -120,8 +120,9 @@ static unsigned new_comb(unsigned level) {
 
 steps_t::steps_t() noexcept = default;
 
-delta_ind_t steps_t::get_next(const point_t &p) {
-  GNUC_BUILTIN_ASSUME(done.size() <= number_of_comb);
+delta_ind_t steps_t::get_next(const point_t &p)
+{
+  contract_assert(done.size() <= number_of_comb);
   if (done.size() == number_of_comb) {
     // search space exausted
     if (level > 0) {
@@ -215,7 +216,8 @@ bool steps_t::find_d_ind(const delta_ind_t &d_ind) const {
   return false;
 }
 
-delta_ind_t steps_t::get_rand_delta() const {
+delta_ind_t steps_t::get_rand_delta() const
+{
   delta_ind_t d_ind;
   do {
     d_ind.clear();
@@ -223,9 +225,8 @@ delta_ind_t steps_t::get_rand_delta() const {
       d_ind.insert(static_cast<unsigned>(my_rand()) %
                    static_cast<unsigned char>(conf.flags.size()));
     }
-    GNUC_BUILTIN_ASSUME(d_ind.size() <= level);
+    contract_assert(d_ind.size() <= level);
   } while (d_ind.size() < level || find_d_ind(d_ind));
-  GNUC_BUILTIN_ASSUME(d_ind.size() == level);
   return d_ind;
 }
 

@@ -1,7 +1,7 @@
 #ifndef OBJ_HH
 #define OBJ_HH
 
-#include "assume.hh" // GNUC_BUILTIN_ASSUME, CONSTEXPR_STR
+#include "assume.hh" // CONSTEXPR_STR
 
 #include <compare> // std::strong_ordering
 #include <cstdint> // int64_t
@@ -47,13 +47,15 @@ struct obj_t {
   }
 
   /// Subtraction is defined only for finite operands. Result is finite.
-  constexpr obj_t operator-(obj_t const& o) const {
-    GNUC_BUILTIN_ASSUME(finite_ && o.finite_);
+  constexpr obj_t operator-(obj_t const& o) const
+    pre(finite_ && o.finite_)
+  {
     return obj_t(val_ - o.val_);
   }
   /// Unary negation, defined only for finite values.
-  constexpr obj_t operator-() const {
-    GNUC_BUILTIN_ASSUME(finite_);
+  constexpr obj_t operator-() const
+    pre(finite_)
+  {
     return obj_t(-val_);
   }
 
