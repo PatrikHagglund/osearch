@@ -4,7 +4,8 @@
 #include "point.hh" // point_t
 #include "obj.hh" // obj_t
 
-#include <set>
+#include <algorithm>
+#include <inplace_vector>
 #include <utility>
 #include <vector>
 
@@ -13,7 +14,24 @@
 /// delta_t for details.
 
 /// List of option indices altered (from current point).
-using delta_ind_t = std::set<unsigned short>;
+/// Stored as a sorted inplace_vector (small, bounded by max_level).
+struct delta_ind_t {
+  static constexpr size_t max_cap = 16;
+  using vec_t = std::inplace_vector<unsigned short, max_cap>;
+
+  void insert(unsigned short v) {
+    auto it = std::ranges::lower_bound(data_, v);
+    if (it == data_.end() || *it != v)
+      data_.insert(it, v);
+  }
+  void clear() { data_.clear(); }
+  [[nodiscard]] size_t size() const { return data_.size(); }
+  [[nodiscard]] auto begin() const noexcept { return data_.begin(); }
+  [[nodiscard]] auto end() const noexcept { return data_.end(); }
+  bool operator==(delta_ind_t const &) const = default;
+private:
+  vec_t data_;
+};
 
 #ifdef DEBUG
 std::string delta_ind_str(delta_ind_t const &d_ind);

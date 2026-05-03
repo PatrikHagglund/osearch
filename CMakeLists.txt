@@ -97,7 +97,7 @@ get_target_property(_osearch_warn_opts osearch COMPILE_OPTIONS)
 function(osearch_add_test name)
   set(sources ${ARGN})
   add_executable(${name} ${sources})
-  target_include_directories(${name} PRIVATE ${GSL_INCLUDE_DIR})
+  target_include_directories(${name} PRIVATE ${GSL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR})
   target_compile_options(${name} PRIVATE ${_osearch_warn_opts})
   add_test(NAME ${name} COMMAND ${name})
 endfunction()
@@ -116,6 +116,9 @@ osearch_add_test(test_steps tests/test_steps.cc steps.cc point.cc contract.cc)
 # Runtime tests for measure(). Stubs compile/execute/progress; tests the
 # results-map logic (caching, get_min_point, reset).
 osearch_add_test(test_measure tests/test_measure.cc measure.cc point.cc contract.cc)
+
+# Runtime tests for flat_map.
+osearch_add_test(test_flat_map tests/test_flat_map.cc contract.cc)
 
 # Runtime tests for read_conf (flag types + XML parsing into conf_t).
 # Links read_conf.cc and getopts.cc; writes a temp XML file.
