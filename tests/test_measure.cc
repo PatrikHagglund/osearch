@@ -26,8 +26,12 @@ std::string input_file;
 
 // Stub state: compile() returns sequential pset_t values.
 static pset_t next_pset = 1;
+static pset_t compile_override = 0;
+static bool use_compile_override = false;
 
-pset_t compile(point_t const&) { return next_pset++; }
+pset_t compile(point_t const&) {
+  return use_compile_override ? compile_override : next_pset++;
+}
 
 // Provide a stub tmp_file_t constructor (real one calls mkstemp).
 tmp_file_t::tmp_file_t() { std::strncpy(&path[0], "/dev/null", sizeof(path)); }
@@ -43,8 +47,9 @@ point_t get_point(pset_t) { return point_t(); }
 // execute() returns a canned result. We control the "measurement" via
 // this global.
 static int64_t fake_measurement = 100;
+static int fake_exit_status = EXIT_SUCCESS;
 cmd_res_t execute(std::string) {
-  return cmd_res_t(EXIT_SUCCESS, std::to_string(fake_measurement));
+  return cmd_res_t(fake_exit_status, std::to_string(fake_measurement));
 }
 
 void summary_first_compile() {}
@@ -67,6 +72,9 @@ static void setup() {
   conf.flags.emplace_back(flag::simple_t{"-O1"});
   conf.flags.emplace_back(flag::simple_t{"-O2"});
   next_pset = 1;
+  compile_override = 0;
+  use_compile_override = false;
+  fake_exit_status = EXIT_SUCCESS;
   reset_measurements();
 }
 
@@ -131,6 +139,38 @@ static void test_reset_measurements() {
   CHECK_EQ(min_p.val.size(), size_t{2});
 }
 
+static void test_failed_compile_returns_inf() {
+  setup();
+  compile_override = pset_invalid;
+  use_compile_override = true;
+  fake_measurement = 42;
+  obj_t result = measure(point_t());
+  CHECK_EQ(result, obj_t_inf);
+}
+
+static void test_same_pset_uses_cache() {
+  setup();
+  compile_override = 5;
+  use_compile_override = true;
+  fake_measurement = 77;
+  obj_t r1 = measure(point_t());
+
+  // Second call with same pset should return cached value,
+  // even though fake_measurement changed.
+  fake_measurement = 999;
+  obj_t r2 = measure(point_t());
+  CHECK_EQ(r1, obj_t{77});
+  CHECK_EQ(r2, obj_t{77});
+}
+
+static void test_failed_execute_returns_inf() {
+  setup();
+  fake_exit_status = 1;
+  fake_measurement = 42;
+  obj_t result = measure(point_t());
+  CHECK_EQ(result, obj_t_inf);
+}
+
 // --- Driver -----------------------------------------------------------------
 
 int main() {
@@ -138,5 +178,8 @@ int main() {
   test_measure_caches_result();
   test_get_min_point();
   test_reset_measurements();
+  test_failed_compile_returns_inf();
+  test_same_pset_uses_cache();
+  test_failed_execute_returns_inf();
   return TEST_REPORT();
 }
