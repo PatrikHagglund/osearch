@@ -159,4 +159,3 @@ osearch_add_test(test_foo tests/test_foo.cc)
 - Add a clang/LLVM config file
 - Output results as JSON/CSV for analysis
 - Add unit tests for `measure` (requires a seam to inject fake `compile`/`execute`)
-- Verify zero-overhead code generation for embedded use (see EMBEDDED-CHECK.md)
