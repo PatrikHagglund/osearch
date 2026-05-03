@@ -12,13 +12,11 @@
   <baseline description="-march=native -O3 -ffast-math" />
   <baseline description="-march=native -Os" />
 
-  <!-- Optimization levels -->
-  <flag type="simple" value="-O3" />
+  <!-- Optimization levels: -Ofast as quick toggle, others as enum fallback -->
   <flag type="simple" value="-Ofast" />
   <flag type="simple" value="-march=native" />
   <flag type="simple" value="-flto" />
-  <flag type="simple" value="-O2" />
-  <flag type="simple" value="-Os" />
+  <flag type="enum" value="-O3|-O2|-Os|-O1" />
   <flag type="simple" value="-fno-inline-functions" />
 
   <!-- Key O2 flags (disable to test impact) -->
@@ -32,7 +30,6 @@
   <flag type="simple" value="-fno-align-loops" />
   <flag type="simple" value="-fno-gcse" />
   <flag type="simple" value="-fno-crossjumping" />
-  <flag type="simple" value="-O1" />
   <flag type="simple" value="-fno-devirtualize" />
   <flag type="simple" value="-fno-hoist-adjacent-loads" />
   <flag type="simple" value="-fno-indirect-inlining" />
@@ -79,6 +76,5 @@
   <flag type="simple" value="-fno-asynchronous-unwind-tables" />
   <flag type="simple" value="-fno-common" />
   <flag type="simple" value="-fno-toplevel-reorder" />
-  <flag type="simple" value="-ffast-math" />
 
 </osearch_config>

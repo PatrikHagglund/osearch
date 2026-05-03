@@ -9,7 +9,7 @@
   <baseline description="-Os -flto" />
   <baseline description="-Os -flto -march=native" />
 
-  <!-- Size-first foundations -->
+  <!-- Size-first foundations: -Os as quick toggle -->
   <flag type="simple" value="-Os" />
   <flag type="simple" value="-flto" />
   <flag type="simple" value="-march=native" />
@@ -29,11 +29,8 @@
   <flag type="simple" value="-fno-tree-loop-optimize" />
   <flag type="simple" value="-fno-tree-pre" />
 
-  <!-- Other optimization levels for comparison -->
-  <flag type="simple" value="-O1" />
-  <flag type="simple" value="-O2" />
-  <flag type="simple" value="-O3" />
-  <flag type="simple" value="-Ofast" />
+  <!-- Other optimization levels as enum fallback -->
+  <flag type="enum" value="-O1|-O2|-O3|-Ofast" />
 
   <!-- Size-oriented misc flags -->
   <flag type="simple" value="-fno-asynchronous-unwind-tables" />
@@ -80,6 +77,5 @@
   <flag type="simple" value="-ftree-loop-distribution" />
   <flag type="simple" value="-ftree-partial-pre" />
   <flag type="simple" value="-funswitch-loops" />
-  <flag type="simple" value="-ffast-math" />
 
 </osearch_config>
