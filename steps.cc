@@ -223,8 +223,13 @@ void steps_t::json_exit() const {
   for (auto const &i : done) {
     if (!first) o3 << ",";
     first = false;
-    o3 << "\n  {\"diff\":" << i.alt_diff().to_string()
-       << ",\"equal\":" << (i.equal ? "true" : "false")
+    auto diff = i.alt_diff();
+    o3 << "\n  {\"diff\":";
+    if (diff.is_finite())
+      o3 << diff.to_string();
+    else
+      o3 << "null";
+    o3 << ",\"equal\":" << (i.equal ? "true" : "false")
        << ",\"flags\":\"" << i.str() << "\"}";
   }
   o3 << "\n]\n";

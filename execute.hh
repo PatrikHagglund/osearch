@@ -38,8 +38,18 @@ struct tmp_file_t {
   // FIXME
   tmp_file_t(const tmp_file_t &) = default;
   tmp_file_t &operator=(tmp_file_t const& tmp_file) = default;
-  tmp_file_t(tmp_file_t&&) = default;
-  tmp_file_t& operator=(tmp_file_t&&) = default;
+  tmp_file_t(tmp_file_t&& o) noexcept {
+    std::memcpy(path, o.path, sizeof(path));
+    o.path[0] = '\0';
+  }
+  tmp_file_t& operator=(tmp_file_t&& o) noexcept {
+    if (this != &o) {
+      if (path[0] != '\0') unlink(&path[0]);
+      std::memcpy(path, o.path, sizeof(path));
+      o.path[0] = '\0';
+    }
+    return *this;
+  }
 private:
   static constexpr char templ[] = "/tmp/osearchXXXXXX";
   char path[sizeof(templ)] = "";
