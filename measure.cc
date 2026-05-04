@@ -215,6 +215,39 @@ point_t get_min_point() {
   return get_point(min_i->first);
 }
 
+point_t validate() {
+  point_t p = get_min_point();
+  obj_t res = measure(p);
+
+  o1 << "\n## Validation pass (trying to remove each adopted flag):\n"
+     << res.to_string() << " " << p.to_string() << "\n";
+
+  bool dropped_any = true;
+  while (dropped_any) {
+    dropped_any = false;
+    for (size_t i = 0; i < p.val.size(); ++i) {
+      if (p.val[i] == 0) continue;  // already inactive
+      point_t p_trial = p;
+      p_trial.val[i] = 0;
+      obj_t const res_trial = measure(p_trial);
+      // Drop if trial is not worse than current p (within threshold).
+      // !is_improvement(res, res_trial) means res does not significantly
+      // beat res_trial — i.e. the flag we'd remove is not helping.
+      if (!is_improvement(res, res_trial)) {
+        o1 << "\nValidation dropped flag at index " << i
+           << ", res " << res_trial.to_string()
+           << " (was " << res.to_string() << ")";
+        p = p_trial;
+        res = res_trial;
+        dropped_any = true;
+      }
+    }
+  }
+  o1 << "\n## After validation:\n"
+     << res.to_string() << " " << p.to_string() << "\n";
+  return p;
+}
+
 void reset_measurements() {
   results = results_t();
   bool const was_silent = progress.silent;

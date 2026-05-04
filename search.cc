@@ -167,8 +167,8 @@ void summary_exit() {
   o3 << "\nTotal number of compiliations and samples: " << progress.cnts['o']
      << ", " << progress.cnts['*'] << " ";
   o3 << "\n";
+  point_t const p = validate();
   o3 << "\nBest combination found:";
-  point_t const p = get_min_point();
   o3 << "\n" << measure(p).to_string() << " " << p.to_string() << "\n";
   steps.summary_exit();
   steps.json_exit();

@@ -202,7 +202,32 @@ this, in order:
    removing each adopted flag against the final baseline; drop any
    whose removal doesn't hurt beyond the threshold. Catches
    noise-driven false positives and flags that became redundant
-   after later adoptions. (Not yet implemented.)
+   after later adoptions. Always on; uses the same `-T` threshold.
+
+### Time-mode reproducibility
+
+Wall-clock time measurements are inherently noisy on shared/general-
+purpose hardware (laptops, VMs, containers) — CPU frequency scaling,
+thermal throttling, preemption, and memory traffic from other
+processes all inject variance.
+
+On the tested system the raw variance of a single compiled binary is
+~30% between runs (minimum ~52ms, maximum ~78ms for a fixed `-Ofast`
+build of fftbench). With that much noise, **no combination of `-n` and
+`-T` yields 100% reproducible flag sets** — the greedy adoption path
+diverges even at `-T 500` (50%), because single-flag "wins" driven by
+momentary slow baseline measurements can't be distinguished from real
+improvements.
+
+Practical guidance:
+
+- Prefer `-p` (retired instructions) for reproducible optimization.
+  Same optimization target for most CPU-bound code, fully deterministic.
+- Prefer `-s` (size) when optimizing for binary size.
+- Use time mode as a sanity check only. `-n 5 -T 20` reduces variance
+  but does not eliminate it. Pinning (`taskset`), disabling turbo, and
+  setting the CPU governor to `performance` help but don't fully fix
+  the issue on typical hardware.
 
 ### Perf speed
 
