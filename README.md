@@ -192,10 +192,11 @@ this, in order:
    that compile to the same binary share a measurement.
 
 2. **Adoption threshold** — `-T permille` option (units of 0.1%, so
-   `-T 5` = 0.5%). Only adopts a flag if improvement ≥ threshold.
-   With perf mode (`-p`), `-T 5` gives 100% reproducible flag sets across
-   runs on tested benchmarks. Defaults: 0 (strict `<`). Suggested:
-   `-T 5` with `-p`, `-T 20` (2%) with time.
+   `-T 3` = 0.3%). Only adopts a flag if improvement ≥ threshold.
+   With perf mode (`-p`), `-T 3` is the minimum that gives 100%
+   reproducible flag sets across runs on tested benchmarks (fft, lin,
+   tree, mat1). Defaults: 0 (strict `<`). Suggested:
+   `-T 3` with `-p`, `-T 20` (2%) with time.
 
 3. **Post-search validation pass** — after the main search, try
    removing each adopted flag against the final baseline; drop any
