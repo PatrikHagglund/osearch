@@ -16,23 +16,27 @@ Results are **100% reproducible** (deterministic binary size).
 
 | Benchmark   | .text (bytes) | Best flags |
 |-------------|---------------|------------|
-| almabench   | 409           | -Os -fno-reorder-functions -fno-tree-vrp -ffast-math -march=native -flto |
+| almabench   | 2104          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-caller-saves -fno-tree-loop-im |
 | distbench   | 694           | -Os -march=native -flto |
-| evobench    | 1376          | -Os -fno-caller-saves -fno-reorder-functions -fno-tree-tail-merge -fno-tree-vrp -march=native -flto |
-| fftbench    | 919           | -Os -flto -march=native -fno-reorder-functions -fno-caller-saves -fno-tree-loop-optimize |
-| huffbench   | 1709          | -Os -fno-move-loop-invariants -fno-reorder-functions -fno-schedule-insns2 -fno-tree-loop-im -fno-tree-vrp -flto |
-| linbench    | 1193          | -Os -fno-caller-saves -fno-move-loop-invariants -fno-reorder-functions -fno-tree-vrp -march=native -flto |
-| linsmall    | 1193          | -Os -fno-caller-saves -fno-move-loop-invariants -fno-reorder-functions -fno-tree-vrp -march=native -flto |
-| mat1bench   | 624           | -Os -fno-reorder-functions -fno-tree-loop-im -fno-tree-vrp -flto |
-| treebench   | 3838          | -Os -fno-code-hoisting -fno-caller-saves -fno-move-loop-invariants -fno-optimize-sibling-calls -fno-reorder-functions -fno-tree-loop-im -fno-tree-loop-optimize -fno-tree-pre -march=native -flto |
+| evobench    | 1386          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants -fno-inline-functions-called-once |
+| fftbench    | 919           | -Os -march=native -flto -fno-reorder-functions -fno-caller-saves -fno-tree-loop-optimize |
+| huffbench   | 1709          | -Os -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants -fno-tree-loop-im -fno-schedule-insns2 |
+| linbench    | 1193          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants -fno-caller-saves |
+| linsmall    | 1193          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants -fno-caller-saves |
+| mat1bench   | 624           | -Os -flto -fno-reorder-functions -fno-tree-vrp -fno-tree-loop-im |
+| treebench   | 3838          | -Os -march=native -flto -fno-reorder-functions -fno-move-loop-invariants -fno-caller-saves -fno-tree-loop-im -fno-tree-tail-merge -fno-code-hoisting -fno-optimize-sibling-calls -fno-tree-loop-optimize |
 
 ### Size observations
 
-- `-Os` is always the best base level for size (as expected)
-- `-flto` (link-time optimization) consistently reduces size
+- `-Os -march=native -flto` is the foundation for most benchmarks
 - `-fno-reorder-functions` and `-fno-tree-vrp` help size across most benchmarks
-- `-march=native` helps size too (more efficient instruction encoding)
 - `-fno-move-loop-invariants` reduces size (avoids code duplication)
+- huffbench and mat1bench don't benefit from `-march=native` (integer-heavy,
+  no vectorizable loops → AVX instruction encoding just adds size)
+- almabench grew from 409B (earlier, with `-ffast-math`) to 2104B since
+  `-ffast-math` was removed and the volatile sink now keeps the real
+  computation live (the earlier 409B measured code that was mostly
+  dead-code-eliminated)
 
 ## Instruction count (-p), Level 1 (full search)
 
@@ -42,20 +46,23 @@ variance ~20 parts per billion).
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
-| almabench   | 341,808,229     | -Ofast -fno-align-functions -fno-align-loops -fno-move-loop-invariants -fno-reorder-functions -fno-strict-aliasing -fno-tree-slp-vectorize -march=native |
-| distbench   | 28,608,328      | -Ofast -fno-align-functions -fno-align-loops -march=native |
-| evobench    | 563,585,044     | -Ofast -fno-cse-follow-jumps -fno-code-hoisting -fno-caller-saves -fno-ivopts -fno-move-loop-invariants -march=native |
-| fftbench    | 490,384,376     | -Ofast -march=native -fno-align-loops -fno-gcse -fno-tree-slp-vectorize |
-| huffbench   | 1,249,274,607   | -Ofast -fno-cse-follow-jumps -fno-code-hoisting -fno-align-functions -fno-ivopts -fno-optimize-sibling-calls -flto |
-| linbench    | 160,110,258     | -Ofast -fno-code-hoisting -fno-align-loops -fno-peephole2 -fno-reorder-functions -fno-schedule-insns2 -fno-tree-loop-distribute-patterns -fno-tree-pre -fno-asynchronous-unwind-tables -march=native -flto |
-| linsmall    | 161,742,820     | -Ofast -fno-caller-saves -fno-align-loops -fno-gcse -fno-crossjumping -fno-optimize-sibling-calls -fno-optimize-strlen -fno-peephole2 -fno-schedule-insns2 -fno-tree-pre -march=native |
-| mat1bench   | 78,968,760      | -Ofast -fno-reorder-functions -march=native |
-| treebench   | 853,281,585     | -Ofast -fno-caller-saves -fno-gcse -fno-move-loop-invariants -fno-reorder-functions -fno-tree-loop-distribute-patterns -fno-tree-loop-vectorize -fno-tree-slp-vectorize -fno-asynchronous-unwind-tables -march=native -flto |
+| almabench   | 341,808,230     | -Ofast -march=native -fno-align-functions -fno-align-loops -fno-move-loop-invariants -fno-peephole2 -fno-tree-slp-vectorize |
+| distbench   | 28,608,329      | -Ofast -march=native -fno-align-loops -fno-peephole2 |
+| evobench    | 563,585,042     | -Ofast -march=native -fno-code-hoisting -fno-caller-saves -fno-ivopts -fno-move-loop-invariants |
+| fftbench    | 490,384,382     | -Ofast -march=native -fno-align-functions -fno-align-loops -fno-gcse |
+| huffbench   | 1,249,274,564   | -flto -O3 -fno-code-hoisting -fno-ivopts -fno-move-loop-invariants -fno-tree-loop-vectorize |
+| linbench    | 160,110,284     | -Ofast -march=native -flto -fno-code-hoisting -fno-align-loops -fno-crossjumping -fno-peephole2 -fno-reorder-functions -fno-tree-loop-distribute-patterns -fno-tree-pre |
+| linsmall    | 160,110,264     | -Ofast -march=native -flto -fno-code-hoisting -fno-align-loops -fno-peephole2 -fno-reorder-functions -fno-tree-loop-distribute-patterns -fno-tree-pre |
+| mat1bench   | 79,171,242      | -Ofast -march=native -fno-align-functions -fno-expensive-optimizations |
+| treebench   | 852,882,319     | -march=native -flto -O3 -fno-cse-follow-jumps -fno-ipa-cp -fno-align-functions -fno-align-loops -fno-gcse -fno-ipa-sra -fno-schedule-insns2 -fno-tree-loop-distribute-patterns -fno-tree-loop-vectorize -fno-tree-slp-vectorize |
 
 ### Instruction count observations
 
-- `-Ofast -march=native` is the foundation for almost every benchmark
-- `-flto` helps several benchmarks (lin, huff, tree)
+- `-Ofast -march=native` is the foundation for most benchmarks
+- `-flto` helps lin*, huff, tree
+- **huffbench and treebench prefer `-O3` over `-Ofast`** — huffman coding
+  and tree walking are integer/pointer-heavy and don't benefit from the
+  unsafe math optimizations in `-Ofast`
 - `-fno-align-*` flags help by reducing padding (fewer icache misses)
 - `-fno-reorder-functions` consistently helps
 
@@ -66,15 +73,15 @@ thermal effects. Use `-n 5` or higher for more stable results.
 
 | Benchmark   | Time (µs) | Best flags |
 |-------------|-----------|------------|
-| almabench   | ~150,000  | (workload-dependent; see Size/Perf modes for reliable data) |
-| distbench   | 8231      | -Ofast -march=native |
-| evobench    | 343204    | -O3 -fno-ivopts |
-| fftbench    | 48142     | -march=native -Os -fno-gcse -fno-tree-vrp -fno-asynchronous-unwind-tables |
-| huffbench   | 90780     | -O3 -fno-expensive-optimizations -fno-tree-loop-optimize |
-| linbench    | 32008     | -Ofast -fno-inline-functions -fno-peephole2 |
-| linsmall    | 23244     | -Ofast -fno-inline-functions -fno-asynchronous-unwind-tables -march=native |
-| mat1bench   | 13833     | -Ofast -fno-inline-functions -fno-align-functions -fno-caller-saves -fno-gcse -fno-tree-pre |
-| treebench   | 148414    | -Ofast -fno-cse-follow-jumps |
+| almabench   | 39384     | -Ofast -march=native -fno-caller-saves |
+| distbench   | 7582      | -Ofast -march=native -fno-align-loops |
+| evobench    | 296869    | -march=native -flto -O2 -fno-caller-saves -fno-align-loops -fno-gcse -ftree-partial-pre |
+| fftbench    | 91771     | -Ofast -march=native |
+| huffbench   | 96019     | -O2 -fno-align-functions |
+| linbench    | 76833     | -Ofast -march=native -flto -fno-inline-functions -fno-align-loops |
+| linsmall    | 74533     | -Ofast -march=native -fno-inline-functions -fno-caller-saves -fno-align-loops -fno-gcse -fno-tree-pre |
+| mat1bench   | 20495     | -Ofast -march=native -fno-expensive-optimizations |
+| treebench   | 158942    | -Ofast -fno-code-hoisting -fno-ipa-cp |
 
 ### Level 2, Q=10 (10 flag-pair combinations sampled)
 
@@ -82,25 +89,25 @@ Shallower search; faster but may miss combinations that deep greedy search finds
 
 | Benchmark   | Time (µs) | Best flags |
 |-------------|-----------|------------|
-| almabench   | 0         | -Ofast |
-| distbench   | 17438     | -O3 -fno-inline-functions |
-| evobench    | 356740    | -Ofast -fno-ipa-cp |
-| fftbench    | 37504     | -O3 |
-| huffbench   | 103664    | -O2 |
-| linbench    | 32583     | -Ofast |
-| linsmall    | 32167     | -O3 -fno-inline-functions -fno-align-functions |
-| mat1bench   | 16529     | -Ofast |
-| treebench   | 163025    | -O3 -fno-cse-follow-jumps |
+| almabench   | 37857     | -Ofast -march=native |
+| distbench   | 7308      | -Ofast -march=native -flto |
+| evobench    | 141348    | -Ofast -march=native -fno-inline-functions -fno-cse-follow-jumps -fno-ipa-cp |
+| fftbench    | 67346     | -Ofast -march=native |
+| huffbench   | 101613    | -flto -O3 -fno-ipa-cp |
+| linbench    | 25656     | -march=native -O3 -fno-inline-functions |
+| linsmall    | 22435     | -Ofast -march=native -fno-inline-functions |
+| mat1bench   | 10171     | -Ofast -march=native |
+| treebench   | 168361    | -O3 |
 
 ### Time observations
 
-- `-Ofast` or `-O3` is the best base level for most benchmarks
-- `-march=native` consistently helps (enables AVX/SSE)
-- `-fno-inline-functions` and `-fno-align-functions` help several benchmarks
-  (smaller code → better icache behavior)
-- `-fno-caller-saves` helps compute-heavy benchmarks (fft, lin, dist)
-- Level 2 with Q=10 finds reasonable results quickly but misses some
-  flag combinations that level 1 discovers through greedy adoption
+- `-Ofast -march=native` is the most common winner (speed benchmarks)
+- `-O3` wins for integer-heavy workloads (huffbench, treebench, linbench-l2)
+- `-flto` helps several benchmarks (dist, lin, huff)
+- Level 2 with Q=10 can find simpler, comparable flag sets quickly —
+  when greedy adoption is noise-driven, the shorter search is more robust
+- evobench L1 time (296ms) is ~2× evobench L2 (141ms) — classic example
+  of noise sending the L1 greedy search down a wrong branch
 
 ## Reproducibility
 

@@ -11,8 +11,8 @@
 
   <!-- Size-first foundations: -Os as quick toggle -->
   <flag type="simple" value="-Os" />
-  <flag type="simple" value="-flto" />
   <flag type="simple" value="-march=native" />
+  <flag type="simple" value="-flto" />
 
   <!-- Top size-reducing flags (based on cross-benchmark -s results) -->
   <flag type="simple" value="-fno-reorder-functions" />
