@@ -67,6 +67,53 @@ static int dummy_n_ =
 
 // END
 
+// BEGIN option handling for 'threshold' (adoption threshold, permille)
+
+/// Adoption threshold in permille (1/1000). A flag is adopted only if
+/// its improvement is at least this fraction of the baseline. Default 0.
+static unsigned long opt_threshold_permille = 0;
+
+/// Option helper function.
+static void opt_T() { opt_threshold_permille = strtoul(optarg, nullptr, 0); }
+
+/// Option helper variable.
+static int dummy_T_ =
+    (opt_reg_t::append('T', opt_T, "T:", "  [-T permille]",
+                       "  -T permille \tadoption threshold in units of "
+                       "0.1%%; only adopt a flag\n"
+                       "  \t\tif improvement >= threshold (default 0, i.e. "
+                       "strict <)\n"),
+     1);
+
+// END
+
+/// Return true if `new_val` is a sufficient improvement over `baseline`
+/// to warrant adoption. Uses the `-T permille` threshold.
+bool is_improvement(obj_t new_val, obj_t baseline) {
+  if (!new_val.is_finite()) return false;
+  if (!baseline.is_finite()) return true;  // any finite beats inf
+  if (opt_threshold_permille == 0) return new_val < baseline;
+  // Require new_val <= baseline - threshold, where threshold is a
+  // fraction of the baseline magnitude (positive).
+  obj_t const delta = baseline - new_val;  // positive if improvement
+  if (!(obj_t() < delta)) return false;    // no improvement at all
+  // Compare delta * 1000 vs baseline * threshold_permille, using
+  // int64 arithmetic on the underlying values via subtraction.
+  // We need: delta >= baseline * threshold_permille / 1000.
+  // Using obj_t's operator- directly to avoid exposing internals:
+  // compute threshold_delta = baseline - (baseline * (1000 - T) / 1000).
+  // Simpler path: re-express using int64 via a helper.
+  // obj_t has no public multiplication; compute via the diff between
+  // two obj_t built from its to_string round-trip. That's ugly; instead
+  // we add a free friend approach. Here we just convert through string,
+  // which is correct but slow — but this is called O(flags) per step,
+  // negligible.
+  int64_t const base_i = std::stoll(baseline.to_string());
+  int64_t const delta_i = std::stoll(delta.to_string());
+  int64_t const min_delta = (base_i * static_cast<int64_t>(opt_threshold_permille)) / 1000;
+  return delta_i >= min_delta;
+}
+
 void summary_first_measure() {
   summary_first_compile();
   o3 << "\nOptimized for: "

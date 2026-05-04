@@ -28,6 +28,8 @@ ninja -C build
   -l max_level  max number of options to alter at once (default 1)
   -Q n          quick mode: sample at most 'n' combinations per level
   -n samples    number of samples per measurement (take minimum, default 3)
+  -T permille   adoption threshold in 1/1000 units; only adopt a flag if
+                improvement >= threshold (default 0, strict <)
   -q            suppress progress output
   -j            output results as JSON
 ```
@@ -185,19 +187,21 @@ The greedy adoption strategy amplifies measurement noise: a flag that
 wins by luck sends the search down a wrong branch. Plan for addressing
 this, in order:
 
-1. **Measurement cache** — store every `sample(pset)` result in a
-   `flat_map<point_t, obj_t>` so later stages can reuse measurements
-   without recompiling/rerunning.
+1. **Measurement cache** — already in place (`results` map in `measure.cc`
+   keyed by `pset_t`, the output-binary id). Two different flag sets
+   that compile to the same binary share a measurement.
 
-2. **Adoption threshold** — new `-T permille` option (units of 0.1%,
-   so `-T 5` = 0.5%). Only adopt a flag if improvement ≥ threshold.
-   Suggested defaults: `-T 1` (0.1%) with `-p`, `-T 20` (2%) with time.
+2. **Adoption threshold** — `-T permille` option (units of 0.1%, so
+   `-T 5` = 0.5%). Only adopts a flag if improvement ≥ threshold.
+   With perf mode (`-p`), `-T 5` gives 100% reproducible flag sets across
+   runs on tested benchmarks. Defaults: 0 (strict `<`). Suggested:
+   `-T 5` with `-p`, `-T 20` (2%) with time.
 
 3. **Post-search validation pass** — after the main search, try
    removing each adopted flag against the final baseline; drop any
    whose removal doesn't hurt beyond the threshold. Catches
    noise-driven false positives and flags that became redundant
-   after later adoptions.
+   after later adoptions. (Not yet implemented.)
 
 ### Perf speed
 

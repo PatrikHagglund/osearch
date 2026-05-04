@@ -26,4 +26,9 @@ obj_t measure(const point_t& p);
 /// \todo Make a member function of results(?).
 point_t get_min_point();
 
+/// Return true if `new_val` is a sufficient improvement over `baseline`
+/// to warrant adoption. Honours the `-T permille` threshold (if set,
+/// requires new_val <= baseline * (1 - threshold/1000)).
+bool is_improvement(obj_t new_val, obj_t baseline);
+
 #endif // MEASURE_HH
