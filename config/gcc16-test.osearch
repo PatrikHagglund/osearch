@@ -12,11 +12,10 @@
   <baseline description="-march=native -O3 -ffast-math" />
   <baseline description="-march=native -Os" />
 
-  <!-- Optimization levels: -Ofast as quick toggle, others as enum fallback -->
-  <flag type="simple" value="-Ofast" />
+  <!-- Optimization levels: -Ofast/-O3 as mutually exclusive enum -->
+  <flag type="enum" value="-Ofast|-O3" />
   <flag type="simple" value="-march=native" />
   <flag type="simple" value="-flto" />
-  <flag type="enum" value="-O3|-O2|-Os|-O1" />
   <flag type="simple" value="-fno-inline-functions" />
 
   <!-- Key O2 flags (disable to test impact) -->

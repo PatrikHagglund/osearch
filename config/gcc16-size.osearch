@@ -29,9 +29,6 @@
   <flag type="simple" value="-fno-tree-loop-optimize" />
   <flag type="simple" value="-fno-tree-pre" />
 
-  <!-- Other optimization levels as enum fallback -->
-  <flag type="enum" value="-O1|-O2|-O3|-Ofast" />
-
   <!-- Size-oriented misc flags -->
   <flag type="simple" value="-fno-asynchronous-unwind-tables" />
   <flag type="simple" value="-fno-common" />

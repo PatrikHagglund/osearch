@@ -41,7 +41,18 @@ case "$MODE" in
   size) OSEARCH_MODE_FLAG="-s" ;;
 esac
 OSEARCH="./build/osearch"
-BENCHMARKS="benchmarks/*.c"
+# Explicit benchmark order: FP-heavy first (benefits from -Ofast), then
+# integer-heavy at the end (prefers -O3). Within each group, sorted by
+# instruction count (ascending).
+BENCHMARKS="\
+benchmarks/distbench.c \
+benchmarks/mat1bench.c \
+benchmarks/almabench.c \
+benchmarks/fftbench.c \
+benchmarks/linbench.c \
+benchmarks/evobench.c \
+benchmarks/treebench.c \
+benchmarks/huffbench.c"
 Q=20  # quick cap per level (enough to get past -O levels to actual flags)
 
 if [ ! -x "$OSEARCH" ]; then

@@ -3,7 +3,7 @@ LDFLAGS=-lrt -lm
 CFLAGS=-O3 -ffast-math
 #CFLAGS=-g -DVERIFY
 
-ALL=almabench distbench evobench fftbench huffbench linbench linsmall mat1bench treebench
+ALL=almabench distbench evobench fftbench huffbench linbench mat1bench treebench
 
 all: $(ALL)
 
