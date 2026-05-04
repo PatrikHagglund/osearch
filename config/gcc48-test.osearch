@@ -5,17 +5,11 @@
 
   <prime command="gcc OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
-  <baseline description="-march=native" />
 
-  <baseline description="-march=native -O1" />
 
-  <baseline description="-march=native -O2" />
 
-  <baseline description="-march=native -O3" />
 
-  <baseline description="-march=native -O3 -ffast-math" />
 
-  <baseline description="-march=native -Os" />
 
   <flag type="simple" value="-O1" />
   <flag type="simple" value="-O2" />

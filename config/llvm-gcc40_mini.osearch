@@ -3,12 +3,6 @@
     <get_version value="llvm-gcc -dumpversion" />
     <prime command="llvm-gcc OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
-    <baseline description="-O1" />
-    <baseline description="-O2" />
-    <baseline description="-O3" />
-    <baseline description="-O3 -ffast-math" />
-    <baseline description="-Os" />
-    <baseline description="-O1 -fno-inline" />
 
     <flag type="simple" value="-O1" />
     <flag type="simple" value="-O2" />

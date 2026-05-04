@@ -5,12 +5,6 @@
 
   <prime command="gcc OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
-  <baseline description="-march=native" />
-  <baseline description="-march=native -O1" />
-  <baseline description="-march=native -O2" />
-  <baseline description="-march=native -O3" />
-  <baseline description="-march=native -O3 -ffast-math" />
-  <baseline description="-march=native -Os" />
 
   <!-- Optimization levels: -Ofast/-O3 as mutually exclusive enum -->
   <flag type="enum" value="-Ofast|-O3" />

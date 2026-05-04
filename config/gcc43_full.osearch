@@ -5,38 +5,22 @@
 
   <prime command="gcc OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
-  <baseline description="-march=native" />
 
-  <baseline description="-march=native -O1" />
 
-  <baseline description="-march=native -O2" />
 
-  <baseline description="-march=native -O3" />
 
-  <baseline description="-march=native -O3 -ffast-math" />
 
-  <baseline description="-march=native -Os" />
 
   <!--
-      <baseline description="-march=native -fno-align-loops -fno-argument-alias -fno-asynchronous-unwind-tables -fno-auto-inc-dec -fno-branch-count-reg -fno-common -fno-early-inlining -fno-eliminate-unused-debug-types -fno-emit-class-debug-always -fno-function-cse -fno-gcse-lm -fno-ident -fno-inline-functions-called-once -fno-ivopts -fno-keep-static-consts -fno-leading-underscore -fno-move-loop-invariants -fno-peephole -fno-reg-struct-return -fno-sched-interblock -fno-sched-spec -fno-sched-stalled-insns-dep -fno-show-column -fno-split-ivs-in-unroller -fno-toplevel-reorder -fno-tree-loop-im -fno-tree-loop-ivcanon -fno-tree-loop-optimize -fno-tree-reassoc -fno-tree-scev-cprop -fno-tree-vect-loop-version -fno-zero-initialized-in-bss" />
 
-      <baseline description="-march=native -O1 -fno-cprop-registers -fno-defer-pop -fno-guess-branch-probability -fno-if-conversion -fno-if-conversion2 -fno-ipa-pure-const -fno-ipa-reference -fno-merge-constants -fno-omit-frame-pointer -fno-split-wide-types -fno-tree-ccp -fno-tree-ch -fno-tree-copy-prop -fno-tree-copyrename -fno-tree-dce -fno-tree-dominator-opts -fno-tree-dse -fno-tree-fre -fno-tree-salias -fno-tree-sink -fno-tree-sra -fno-tree-ter -fno-unit-at-a-time" />
 
-      <baseline description="-march=native -fcprop-registers -fdefer-pop -fguess-branch-probability -fif-conversion -fif-conversion2 -fipa-pure-const -fipa-reference -fmerge-constants -fomit-frame-pointer -fsplit-wide-types -ftree-ccp -ftree-ch -ftree-copy-prop -ftree-copyrename -ftree-dce -ftree-dominator-opts -ftree-dse -ftree-fre -ftree-salias -ftree-sink -ftree-sra -ftree-ter -funit-at-a-time" />
 
-      <baseline description="-march=native -O2 -fno-align-jumps -fno-align-labels -falign-loops -fno-caller-saves -fno-crossjumping -fno-cse-follow-jumps -fno-delete-null-pointer-checks -fno-expensive-optimizations -fno-forward-propagate -fno-gcse -fno-ipa-type-escape -fno-optimize-register-move -fno-optimize-sibling-calls -fno-peephole2 -fno-regmove -fno-reorder-blocks -fno-reorder-functions -fno-schedule-insns2 -fno-strict-aliasing -fno-thread-jumps -fno-tree-pre -fno-tree-store-ccp -fno-tree-store-copy-prop -fno-tree-vrp" />
 
-      <baseline description="-march=native -O1 -falign-jumps -falign-labels -fno-align-loops -fcaller-saves -fcrossjumping -fcse-follow-jumps -fdelete-null-pointer-checks -fexpensive-optimizations -fforward-propagate -fgcse -fipa-type-escape -foptimize-register-move -foptimize-sibling-calls -fpeephole2 -fregmove -freorder-blocks -freorder-functions -fschedule-insns2 -fstrict-aliasing -fthread-jumps -ftree-pre -ftree-store-ccp -ftree-store-copy-prop -ftree-vrp" />
 
-      <baseline description="-march=native -O3 -fno-gcse-after-reload -fno-inline-functions -fno-predictive-commoning -fno-unswitch-loops" />
 
-      <baseline description="-march=native -O2 -fgcse-after-reload -finline-functions -fpredictive-commoning -funswitch-loops" />
 
-      <baseline description="-march=native -O2 -fno-align-jumps -fno-align-labels -falign-loops -finline-functions -fno-reorder-blocks -fno-tree-ch -fno-tree-pre" />
 
-      <baseline description="-march=native -O3 -fno-gcse-after-reload -fno-predictive-commoning -fno-unswitch-loops -fno-align-jumps -fno-align-labels -falign-loops -fno-reorder-blocks -fno-tree-ch -fno-tree-pre" />
 
-      <baseline description="-march=native -Os -fno-inline-functions -fno-align-loops" />
       -->
 
   <!-- A list of flags that will be combined by osearch (over 140 for gcc 4.3) -->

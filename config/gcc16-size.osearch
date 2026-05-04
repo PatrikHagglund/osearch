@@ -5,9 +5,6 @@
 
   <prime command="gcc OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
-  <baseline description="-Os" />
-  <baseline description="-Os -flto" />
-  <baseline description="-Os -flto -march=native" />
 
   <!-- Size-first foundations: -Os as quick toggle -->
   <flag type="simple" value="-Os" />

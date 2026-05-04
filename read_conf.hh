@@ -70,9 +70,6 @@ struct conf_t {
   explicit conf_t() = default;
   /// Compiler command template (used by search()).
   std::string prime_command;
-  using baselines_t = std::vector<std::string>;
-  /// Compiler baseline commands. Currently unused.
-  baselines_t baselines;
   using flags_t = std::vector<flag::flag_t>;
   /// List of compiler options (used by search()).
   flags_t flags;
@@ -83,11 +80,7 @@ struct conf_t {
     {
      std::ostringstream ss;
      ss << "prime command: " << prime_command << "\n"
-     << "baselines:\n";
-     for (auto const &i : baselines) {
-       ss << i << "\n";
-     }
-     ss << "flags:\n";
+     << "flags:\n";
      for (auto const &i : flags) {
        ss << std::setw(3) << &i - &*flags.cbegin() << ": ";
        for (size_t j = 1; j < flag::flag_size(i); ++j) {

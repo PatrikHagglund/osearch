@@ -8,30 +8,6 @@
     <prime command="llvm-gcc"
            flags="-lrt -lm -std=c99 ACOVEA_OPTIONS -o ACOVEA_OUTPUT ACOVEA_INPUT" />
 
-    <baseline description="-O1" 
-              command="llvm-gcc"
-              flags="-lrt -lm -std=c99 -O1 -o ACOVEA_OUTPUT ACOVEA_INPUT" />
-
-    <baseline description="-O2"
-              command="llvm-gcc"
-              flags="-lrt -lm -std=c99 -O2 -o ACOVEA_OUTPUT ACOVEA_INPUT" />
-
-    <baseline description="-O3"
-              command="llvm-gcc"
-              flags="-lrt -lm -std=c99 -O3 -o ACOVEA_OUTPUT ACOVEA_INPUT" />
-
-    <baseline description="-O3 -ffast-math"
-              command="llvm-gcc"
-              flags="-lrt -lm -std=c99 -O3 -ffast-math -o ACOVEA_OUTPUT ACOVEA_INPUT" />
-
-    <baseline description="-Os"
-              command="llvm-gcc"
-              flags="-lrt -lm -std=c99 -Os -o ACOVEA_OUTPUT ACOVEA_INPUT" />
-
-    <baseline description="-O1 -fno-inline"
-              command="llvm-gcc"
-              flags="-lrt -lm -std=c99 -O1 -fno-inline -o ACOVEA_OUTPUT ACOVEA_INPUT" />
-
     <!-- A list of flags that will be "evolved" by ACOVEA (85 for llvm-gcc 4.x!) -->
     <flags>
 
