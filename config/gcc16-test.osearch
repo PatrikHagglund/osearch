@@ -7,7 +7,8 @@
 
 
   <!-- Optimization levels: -Ofast/-O3 as mutually exclusive enum -->
-  <flag type="enum" value="-Ofast|-O3" />
+  <flag type="simple" value="-O3" />
+  <flag type="simple" value="-ffast-math" />
   <flag type="simple" value="-march=native" />
   <flag type="simple" value="-flto" />
   <flag type="simple" value="-fno-inline-functions" />

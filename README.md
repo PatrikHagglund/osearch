@@ -47,6 +47,8 @@ XML profiles in `config/` define available flags for different compilers:
 | Config | Description |
 |--------|-------------|
 | `gcc16-test.osearch` | GCC 16, key optimization flags (60 flags) |
+| `gcc16.osearch` | GCC 16, full flag set (213 flags) |
+| `clang22-test.osearch` | Clang/LLVM 22, key flags + LLVM pass control (56 flags) |
 | `gcc48-test.osearch` | GCC 4.8, small test set |
 | `gcc48.osearch` | GCC 4.8, full flag set |
 | `gcc43_full.osearch` | GCC 4.3, full flag set |
@@ -177,8 +179,6 @@ to enforce zero-overhead C++ discipline:
 
 ## TODO
 
-- Full GCC 16 config with all 280 optimization flags
-- Add a clang/LLVM config file
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures
 
 ### Noise-robust search
