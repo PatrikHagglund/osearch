@@ -180,6 +180,8 @@ to enforce zero-overhead C++ discipline:
 ## TODO
 
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures
+- Reduce `perf stat` startup overhead for short benchmarks (`perf stat -r N` or `perf_event_open()` in-harness)
+- Full Clang config (expand from 56 to all Clang optimization flags)
 
 ### Noise-robust search
 

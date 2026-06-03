@@ -118,7 +118,11 @@ static point_to_pset_t point_to_pset;
 bool equivalent_p(const point_t &p1, const point_t &p2) {
   contract_assert(point_to_pset.contains(p1) &&
                       point_to_pset.contains(p2));
-  return point_to_pset[p1] == point_to_pset[p2];
+  pset_t const ps1 = point_to_pset[p1];
+  pset_t const ps2 = point_to_pset[p2];
+  if (ps1 == pset_invalid || ps2 == pset_invalid)
+    return false;
+  return ps1 == ps2;
 }
 
 /// Compare the content of two output files.
@@ -208,6 +212,8 @@ pset_t compile(const point_t &p) {
     hard_compile(p);
   }
   pset_t const pset = point_to_pset[p];
+  if (pset == pset_invalid)
+    return pset_invalid;
   contract_assert(exe_files.m().contains(pset));
 
   /// Update pset-to-point mapping as a side-effect.

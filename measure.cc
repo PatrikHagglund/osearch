@@ -190,6 +190,9 @@ obj_t measure(const point_t &p) {
 
   pset_t const pset = compile(p);
 
+  if (pset == pset_invalid)
+    return obj_t_inf;
+
   for (; !result_sampled(pset);) {
     contract_assert(!results.contains(pset));
     results[pset] = sample(pset);
