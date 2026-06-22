@@ -1,5 +1,9 @@
 CC=gcc -std=c99
-LDFLAGS=-lrt -lm
+# Libraries go in LDLIBS (placed after the source by make's implicit link
+# rule) so libm.so's AS_NEEDED libmvec resolves the vectorized sin/cos
+# (_ZGVbN2v_*) that -O3 -ffast-math emits. In LDFLAGS they precede the
+# source and those symbols go undefined.
+LDLIBS=-lm -lrt
 CFLAGS=-O3 -ffast-math
 #CFLAGS=-g -DVERIFY
 
