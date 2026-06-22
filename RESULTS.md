@@ -2,10 +2,11 @@
 
 Config: `config/gcc16-test.osearch` (speed) / `config/gcc16-size.osearch` (size)
 
-Instruction-count (`-p`) tables re-measured 2026-06-22 with the in-harness
-`perf_event_open` counter (GCC 16.1.1, Clang 22.1.7). Size (`-s`) and time
-tables are from the earlier run (GCC 16.0.1, 2026-05-04) and are unaffected
-by the counter change.
+All tables measured 2026-06-22 with GCC 16.1.1 and Clang 22.1.7; `-p`
+instruction counts use the in-harness `perf_event_open` counter. Absolute
+size and time figures are larger than earlier revisions because the
+DCE-prevention sinks added to several benchmarks' `run()` contribute real
+code and work (see the per-benchmark `volatile` sinks).
 
 Benchmarks are grouped by workload type and sorted by instruction count:
 
@@ -22,22 +23,23 @@ Sections are ordered by measurement reliability:
 
 | Benchmark   | .text (bytes) | Best flags |
 |-------------|---------------|------------|
-| distbench   | 694           | -Os -march=native -flto |
-| mat1bench   | 624           | -Os -flto -fno-reorder-functions -fno-tree-vrp -fno-tree-loop-im |
-| almabench   | 2104          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-caller-saves -fno-tree-loop-im |
-| fftbench    | 919           | -Os -march=native -flto -fno-reorder-functions -fno-caller-saves -fno-tree-loop-optimize |
-| linbench    | 1193          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants -fno-caller-saves |
-| evobench    | 1386          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants -fno-inline-functions-called-once |
-| treebench   | 3838          | -Os -march=native -flto -fno-reorder-functions -fno-move-loop-invariants -fno-caller-saves -fno-tree-loop-im -fno-tree-tail-merge -fno-code-hoisting -fno-optimize-sibling-calls -fno-tree-loop-optimize |
-| huffbench   | 1709          | -Os -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants -fno-tree-loop-im -fno-schedule-insns2 |
+| distbench   | 1135          | -Os -march=native -flto |
+| mat1bench   | 1079          | -Os -flto -fno-reorder-functions -fno-tree-loop-im |
+| almabench   | 2506          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-caller-saves -fno-tree-loop-im -fno-gcse |
+| fftbench    | 1350          | -Os -march=native -flto -fno-reorder-functions -fno-move-loop-invariants -fno-caller-saves -fno-tree-loop-optimize |
+| linbench    | 1673          | -Os -march=native -flto -fno-reorder-functions -fno-tree-vrp -fno-move-loop-invariants |
+| evobench    | 1783          | -Os -march=native -flto -fno-reorder-functions -fno-move-loop-invariants |
+| treebench   | 4330          | -Os -flto -fno-reorder-functions -fno-move-loop-invariants -fno-tree-loop-im -fno-tree-tail-merge -fno-code-hoisting -fno-optimize-sibling-calls -fno-tree-loop-optimize |
+| huffbench   | 2128          | -Os -flto -fno-reorder-functions -fno-move-loop-invariants -fno-caller-saves -fno-tree-loop-im |
 
 ### Size observations
 
-- `-Os -flto` is the foundation; `-march=native` helps all except
-  mat1bench and huffbench (integer-heavy, AVX encoding wastes bytes)
-- `-fno-reorder-functions` helps every benchmark
-- `-fno-tree-vrp` and `-fno-move-loop-invariants` are also broadly useful
-- treebench is the largest (3838B) — recursive tree traversal has many code paths
+- `-Os -flto` is the foundation for every benchmark
+- `-march=native` helps the FP benchmarks (distbench, almabench, fftbench,
+  linbench, evobench) but not the integer ones (mat1bench, treebench,
+  huffbench — AVX encoding wastes bytes)
+- `-fno-reorder-functions` and `-fno-move-loop-invariants` help most benchmarks
+- treebench is the largest (4330 B) — recursive tree traversal has many code paths
 
 ## Instruction count (-p), Level 1 (full search)
 
@@ -112,14 +114,14 @@ flags:
 
 | Benchmark   | Time (µs) | Best flags |
 |-------------|-----------|------------|
-| distbench   | 7596      | -O3 -march=native |
-| mat1bench   | 8268      | -Ofast -march=native -fno-align-functions -fno-ivopts |
-| almabench   | 39367     | -Ofast -march=native -fno-inline-functions -fno-align-functions |
-| fftbench    | 53084     | -O3 -march=native -fno-optimize-sibling-calls |
-| linbench    | 22440     | -Ofast -march=native -fno-expensive-optimizations |
-| evobench    | 133646    | -Ofast -march=native -fno-inline-small-functions |
-| treebench   | 135146    | -O3 -fno-tree-loop-distribute-patterns |
-| huffbench   | 89432     | -O3 -fno-cse-follow-jumps -fno-ivopts |
+| distbench   | 10028     | -O3 -march=native |
+| mat1bench   | 13026     | -O3 -ffast-math -march=native -flto -fno-peephole2 |
+| almabench   | 51425     | -O3 -ffast-math -march=native -fno-caller-saves -fno-gcse -fno-move-loop-invariants -fno-tree-slp-vectorize |
+| fftbench    | 50725     | -O3 -ffast-math -flto -fno-align-functions -fno-align-loops -fno-optimize-sibling-calls -fno-optimize-strlen -fno-peephole2 |
+| linbench    | 33899     | -O3 -ffast-math -march=native -fno-code-hoisting -fno-caller-saves -fno-ivopts |
+| evobench    | 192824    | -O3 -ffast-math -march=native -fno-cse-follow-jumps -fno-code-hoisting -fno-caller-saves |
+| treebench   | 206701    | -O3 -ffast-math -march=native -flto -fno-cse-follow-jumps -fno-code-hoisting -fno-align-functions -fno-tree-loop-optimize |
+| huffbench   | 136957    | -O3 -ffast-math -fno-inline-functions -fno-code-hoisting -fno-ipa-cp -fno-align-functions -fno-tree-loop-vectorize -fno-tree-tail-merge -fno-tree-vrp |
 
 ### Level 2, Q=10
 
@@ -127,22 +129,24 @@ Shallower search; faster but may miss combinations that deep greedy search finds
 
 | Benchmark   | Time (µs) | Best flags |
 |-------------|-----------|------------|
-| distbench   | 8238      | -Ofast -march=native -flto -fno-inline-functions |
-| mat1bench   | 9555      | -Ofast -march=native -flto |
-| almabench   | 40711     | -Ofast -march=native -fno-inline-functions -fno-caller-saves |
-| fftbench    | 56067     | -O3 -fno-inline-functions |
-| linbench    | 22494     | -Ofast -march=native -flto -fno-inline-functions |
-| evobench    | 132824    | -Ofast -march=native -flto |
-| treebench   | 159705    | -Ofast -fno-cse-follow-jumps -fno-ipa-cp |
-| huffbench   | 97578     | -Ofast |
+| distbench   | 10015     | -O3 -march=native -fno-inline-functions |
+| mat1bench   | 13054     | -O3 -ffast-math -march=native |
+| almabench   | 53439     | -O3 -ffast-math -march=native -fno-align-functions |
+| fftbench    | 54334     | -O3 -ffast-math -march=native |
+| linbench    | 36771     | -O3 -ffast-math -march=native |
+| evobench    | 192941    | -O3 -ffast-math -march=native |
+| treebench   | 211958    | -O3 -flto |
+| huffbench   | 148791    | -O3 -ffast-math -flto |
 
 ### Time observations
 
-- `-Ofast -march=native` wins most speed benchmarks
-- `-O3` wins for integer-heavy (huff, tree) and occasionally others due to noise
-- `-flto` shows up inconsistently (time noise can hide/expose its benefit)
-- Level 2 Q=10 finds comparable or better results than Level 1 for evobench,
-  suggesting Level 1's greedy search went astray there
+- `-O3 -ffast-math` (equivalent to the old `-Ofast`) wins most benchmarks;
+  `-march=native` helps most
+- `-flto` shows up inconsistently — time noise can hide or expose its benefit
+- Level 1 and Level 2/Q10 reach similar best times (within time-mode noise);
+  L2's greedy search tends to adopt fewer flags
+- These are a single noisy snapshot (see Reproducibility) — treat the
+  absolute numbers and marginal flags with caution
 
 ## Reproducibility
 
@@ -250,42 +254,46 @@ the result now accumulated across all iterations, GCC wins almabench.)
 ## Clang 22 — Size optimization (-s), Level 1
 
 Config: `config/clang22-test.osearch`
-Compiler: Clang 22.1.6
-Date: 2026-05-31
+Compiler: Clang 22.1.7
+Date: 2026-06-22
 
 | Benchmark   | .text (bytes) | Best flags |
 |-------------|---------------|------------|
-| distbench   | 522           | -Oz -march=native -flto |
-| mat1bench   | 683           | -Oz -march=native -flto -fno-builtin |
-| fftbench    | 982           | -Os -march=native -flto -ffp-contract=fast |
-| linbench    | 1231          | -Oz -march=native -flto |
-| evobench    | 1434          | -Oz -march=native -flto -fno-inline-functions -fno-signed-zeros |
-| huffbench   | 1848          | -Oz -flto |
-| almabench   | 2311          | -Oz -march=native -flto -fno-slp-vectorize -ffp-contract=fast -ffinite-math-only -fno-omit-frame-pointer -fno-builtin |
-| treebench   | 3817          | -Oz -march=native -flto -fno-optimize-sibling-calls -mllvm -enable-gvn-hoist -mllvm -enable-newgvn |
+| distbench   | 1130          | -Oz -flto -ffp-contract=fast -fno-plt |
+| mat1bench   | 1117          | -Oz -flto |
+| fftbench    | 1388          | -Oz -march=native -flto -ffp-contract=fast -fno-builtin -mllvm -enable-newgvn |
+| linbench    | 1669          | -Oz -march=native -flto -ffinite-math-only |
+| evobench    | 1790          | -Oz -march=native -flto -fno-inline-functions -fno-signed-zeros -fno-builtin -mllvm -enable-newgvn |
+| huffbench   | 2214          | -Oz -flto -mllvm -enable-newgvn |
+| almabench   | 2735          | -Oz -march=native -flto -fno-slp-vectorize -ffp-contract=fast -ffinite-math-only -fno-omit-frame-pointer -fno-builtin -mllvm -enable-newgvn |
+| treebench   | 4205          | -Oz -march=native -flto -fno-inline-functions -fno-optimize-sibling-calls -mllvm -enable-gvn-hoist -mllvm -enable-newgvn |
 
 ### Clang 22 size observations
 
-- `-Oz` wins over `-Os` for all benchmarks except fftbench
-- `-Oz -march=native -flto` is the universal size baseline
-- `-fno-builtin` helps size on some benchmarks (avoids inlining libc)
-- `-mllvm -enable-gvn-hoist` and `-mllvm -enable-newgvn` help treebench size
-  (merging redundant code paths in recursive traversal)
+- `-Oz -flto` wins for every benchmark (fftbench now also picks `-Oz`)
+- `-march=native` helps the FP benchmarks but not the integer ones
+  (mat1bench, huffbench omit it)
+- `-mllvm -enable-newgvn` now helps size broadly (fftbench, evobench,
+  huffbench, almabench, treebench) — merging redundant code; `-enable-gvn-hoist`
+  additionally helps treebench
+- `-fno-builtin` helps a few benchmarks (avoids inlining libc)
 
 ### GCC 16 vs Clang 22 — Size (-s)
 
 | Benchmark | GCC 16 (.text) | Clang 22 (.text) | Winner | Δ |
 |-----------|----------------|------------------|--------|---|
-| distbench | 694 | 522 | Clang | −25% |
-| mat1bench | 624 | 683 | GCC | −9% |
-| fftbench | 919 | 982 | GCC | −6% |
-| linbench | 1193 | 1231 | GCC | −3% |
-| evobench | 1386 | 1434 | GCC | −3% |
-| huffbench | 1709 | 1848 | GCC | −8% |
-| almabench | 2104 | 2311 | GCC | −9% |
-| treebench | 3838 | 3817 | Clang | −0.5% |
+| distbench | 1135 | 1130 | Clang | −0.4% |
+| mat1bench | 1079 | 1117 | GCC | −3% |
+| fftbench | 1350 | 1388 | GCC | −3% |
+| linbench | 1673 | 1669 | Clang | −0.2% |
+| evobench | 1783 | 1790 | GCC | −0.4% |
+| huffbench | 2128 | 2214 | GCC | −4% |
+| almabench | 2506 | 2735 | GCC | −8% |
+| treebench | 4330 | 4205 | Clang | −3% |
 
-GCC wins 6 of 8 on code size. GCC's `-Os` produces tighter code overall,
-likely due to more aggressive function-level size heuristics. Clang wins
-on distbench (−25%, small FP kernel benefits from Clang's vectorizer even
-at `-Oz`) and treebench (marginal).
+GCC wins 5 of 8 on code size, but the races are close — most within a few
+percent. GCC's `-Os` is tightest on the larger benchmarks (almabench −8%,
+huffbench −4%); Clang's `-Oz` edges out the rest (distbench, linbench,
+treebench). The wide distbench gap from the earlier revision (−25%) is gone:
+the DCE-prevention sink now dominates that tiny benchmark's code, so the two
+compilers land within 0.4%.
