@@ -1,9 +1,42 @@
-#define _POSIX_C_SOURCE 200112L
+#if defined(__linux__)
+#  define _GNU_SOURCE
+#else
+#  define _POSIX_C_SOURCE 200112L
+#endif
 #include <time.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <string.h>
+
+#ifdef __linux__
+#include <unistd.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
+#include <linux/perf_event.h>
+
+/* glibc ships no wrapper for perf_event_open(2). */
+static long perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu,
+                            int group_fd, unsigned long flags) {
+    return syscall(SYS_perf_event_open, attr, pid, cpu, group_fd, flags);
+}
+
+/* Open a counter for retired user-space instructions on the calling thread.
+   Returned counter is disabled (ready for RESET+ENABLE). -1 on failure. */
+static int open_insn_counter(void) {
+    struct perf_event_attr attr;
+    memset(&attr, 0, sizeof(attr));
+    attr.type = PERF_TYPE_HARDWARE;
+    attr.size = sizeof(attr);
+    attr.config = PERF_COUNT_HW_INSTRUCTIONS;
+    attr.disabled = 1;
+    attr.exclude_kernel = 1; /* user-space only: matches 'instructions:u' */
+    attr.exclude_hv = 1;
+    /* pid=0, cpu=-1: count this thread wherever it runs. */
+    return (int)perf_event_open(&attr, 0, -1, -1, 0);
+}
+#endif
 
 extern char const* name;
 extern void init();
@@ -16,31 +49,83 @@ extern void clean();
 
 int main(int argc, char ** argv)
 {
-    // do we have verbose output?
-    bool verbose = argc > 1 && (strcmp(argv[1], "-v") == 0);
-    
+    /* -v: labelled output.  -p: report retired instructions for run()
+       (counted in-harness) instead of wall-clock time. */
+    bool verbose = false;
+    bool perf = false;
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-v") == 0) verbose = true;
+        else if (strcmp(argv[i], "-p") == 0) perf = true;
+    }
+
+    int perf_fd = -1;
+    if (perf) {
+#ifdef __linux__
+        perf_fd = open_insn_counter();
+        if (perf_fd == -1) {
+            fprintf(stderr,
+                    "%s: perf_event_open failed: %s\n"
+                    "(needs CONFIG_PERF_EVENTS and perf_event_paranoid <= 2)\n",
+                    argv[0], strerror(errno));
+            return 1;
+        }
+#else
+        fprintf(stderr, "%s: -p (instruction count) requires Linux\n", argv[0]);
+        return 1;
+#endif
+    }
+
     init();
 
-    // get starting time    
+    /* Bracket exactly run() — the same region the timer covers — so the
+       count excludes process startup, init(), clean(), and exit. */
     struct timespec start;
     clock_gettime(CLOCK, &start);
+#ifdef __linux__
+    if (perf_fd != -1) {
+        ioctl(perf_fd, PERF_EVENT_IOC_RESET, 0);
+        ioctl(perf_fd, PERF_EVENT_IOC_ENABLE, 0);
+    }
+#endif
 
     run();
 
-    // calculate run time
+#ifdef __linux__
+    if (perf_fd != -1)
+        ioctl(perf_fd, PERF_EVENT_IOC_DISABLE, 0);
+#endif
     struct timespec stop;
-    clock_gettime(CLOCK, &stop);  
-    // number of microseconds
+    clock_gettime(CLOCK, &stop);
+    /* number of microseconds */
     uint64_t run_time = (stop.tv_sec - start.tv_sec) * 1000000UL +
 	(stop.tv_nsec - start.tv_nsec) / 1000;
-    
+
+    uint64_t insns = 0;
+#ifdef __linux__
+    if (perf_fd != -1) {
+        bool ok = read(perf_fd, &insns, sizeof(insns)) == (ssize_t)sizeof(insns);
+        close(perf_fd);
+        if (!ok) {
+            fprintf(stderr, "%s: reading instruction counter failed\n", argv[0]);
+            clean();
+            return 1;
+        }
+    }
+#endif
+
     clean();
 
-    // report runtime
-    if (verbose)
-	printf("%s run time (us): ", name);
-    printf("%" PRIu64 "\n", run_time);
-    
-    // done
+    /* report objective */
+    if (perf) {
+	if (verbose)
+	    printf("%s retired instructions: ", name);
+	printf("%" PRIu64 "\n", insns);
+    } else {
+	if (verbose)
+	    printf("%s run time (us): ", name);
+	printf("%" PRIu64 "\n", run_time);
+    }
+
+    /* done */
     return 0;
 }

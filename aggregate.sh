@@ -6,7 +6,7 @@
 #   ./aggregate.sh [--mode=time|perf|size] [--reorder] [config_file]
 #
 #   --mode=time  (default) execution time
-#   --mode=perf  retired instructions (needs perf)
+#   --mode=perf  retired instructions (needs Linux perf_event support)
 #   --mode=size  binary .text size (deterministic)
 #
 # Requires: osearch built in ./build/, python3 for JSON parsing.

@@ -44,8 +44,10 @@ static void opt_p() { opt_perf = true; }
 static int dummy_p_ =
     (opt_reg_t::append(
          'p', opt_p, "p", "  [-p]",
-         "  -p \t\tuse retired instruction count (via perf stat) rather\n"
-         "  \t\tthan wall-clock time. Deterministic, but requires 'perf'\n"),
+         "  -p \t\tuse retired instruction count (counted in-harness via\n"
+         "  \t\tperf_event_open around run()) rather than wall-clock time.\n"
+         "  \t\tDeterministic; requires Linux perf_event support\n"
+         "  \t\t(perf_event_paranoid <= 2)\n"),
      1);
 
 // END
@@ -142,9 +144,11 @@ static obj_t sample(pset_t pset) {
   const std::string size_cmd = std::string("size -A ") +
                                std::string(tmp_file.get_path()) +
                                " | grep .text | awk '{ print $2 }'";
-  const std::string perf_cmd = std::string("perf stat -x, -e instructions:u ") +
-                               std::string(tmp_file.get_path()) +
-                               " 2>&1 | grep instructions:u | cut -d, -f1";
+  // The harness (main.ic) counts retired instructions for run() in-process
+  // via perf_event_open when passed -p, and prints the count like the time
+  // value. This excludes process startup, init(), clean(), and the perf
+  // tool's own fork+exec, which dominate the count for short benchmarks.
+  const std::string perf_cmd = std::string(tmp_file.get_path()) + " -p";
   const std::string run_cmd = std::string(tmp_file.get_path());
   const std::string cmd = opt_size ? size_cmd : opt_perf ? perf_cmd : run_cmd;
 

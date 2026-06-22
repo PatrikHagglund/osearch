@@ -23,8 +23,9 @@ ninja -C build
 
   -i in_opts    extra options for compiling 'code_file'
   -s            optimize for binary size instead of execution time
-  -p            optimize for retired instruction count (via perf stat;
-                deterministic, requires 'perf')
+  -p            optimize for retired instruction count (counted in-harness
+                via perf_event_open around run(); deterministic, requires
+                Linux perf_event support, perf_event_paranoid <= 2)
   -l max_level  max number of options to alter at once (default 1)
   -Q n          quick mode: sample at most 'n' combinations per level
   -n samples    number of samples per measurement (take minimum, default 3)
@@ -180,7 +181,6 @@ to enforce zero-overhead C++ discipline:
 ## TODO
 
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures
-- Reduce `perf stat` startup overhead for short benchmarks (`perf stat -r N` or `perf_event_open()` in-harness)
 - Full Clang config (expand from 56 to all Clang optimization flags)
 
 ### Noise-robust search
@@ -233,10 +233,20 @@ Practical guidance:
 
 ### Perf speed
 
-Each `perf stat` invocation has ~50ms startup overhead. For short
-benchmarks this dominates. Options to investigate:
-- `perf stat -r N` for built-in repeats (amortizes startup)
-- Use `rdpmc` / direct `perf_event_open()` from within the benchmark
-  harness (eliminates fork+exec per sample)
+Instruction counting is done in-harness: `main.ic` opens a
+`perf_event_open` counter for `PERF_COUNT_HW_INSTRUCTIONS` (user-space
+only) and brackets exactly `run()` with `RESET`/`ENABLE`/`DISABLE`,
+then prints the count just like the time value. This is what `-p`
+parses.
+
+Compared to spawning `perf stat <binary>` per sample, this:
+
+- Removes the ~50ms fork+exec startup of the `perf` tool per sample.
+- Excludes process startup, the dynamic loader, `init()`, `clean()`,
+  and exit from the count — for short benchmarks these fixed
+  instructions otherwise dominate and dilute the signal, exactly as
+  the timer already excludes them in time mode.
+
+Still open to investigate:
 - Sample multiple flag sets in parallel (extend `compile_batch()` to
-  cover measurement, but beware contention between measurements)
+  cover measurement, but beware contention between measurements).
