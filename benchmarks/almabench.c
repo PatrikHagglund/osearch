@@ -338,6 +338,7 @@ void run() {
     double jd[2];
     double pv[2][3];
     double position[3];
+    double acc = 0.0;
 
     // main loop
     for (unsigned i = 0; i < TEST_LOOPS; ++i)
@@ -348,17 +349,23 @@ void run() {
         for (unsigned n = 0; n < TEST_DAYS; ++n)
         {
             jd[0] += 1.0;
-            
+
             for (unsigned p = 0; p < 8; ++p)
             {
                 planetpv(jd,p,pv);
                 radecdist(pv,position);
+                acc += position[0] + position[1] + position[2];
             }
         }
     }
 
-    // Prevent dead-code elimination.
-    volatile double sink = position[0] + position[1] + position[2];
+    // Prevent dead-code elimination. Accumulating every day/planet result
+    // (not just the final position) is essential: position[] is overwritten
+    // each iteration, so observing only the last one lets the compiler
+    // eliminate all earlier planetpv()/radecdist() calls — which -ffast-math
+    // enables by making sin/cos/sqrt side-effect-free. With the weak sink,
+    // Clang computed only ~22% of the intended 160000 iterations.
+    volatile double sink = acc;
     (void)sink;
 }
 

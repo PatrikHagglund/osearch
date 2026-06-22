@@ -51,7 +51,7 @@ noise-level picks that vary between runs (use `-T 3` for a stable set).
 |-------------|-----------------|------------|
 | distbench   | 28,013,326      | -O3 -ffast-math -march=native -flto -fno-align-loops |
 | mat1bench   | 71,388,516      | -O3 -march=native -fno-inline-functions -fno-asynchronous-unwind-tables |
-| almabench   | 341,576,663     | -O3 -ffast-math -march=native -fno-align-loops -fno-move-loop-invariants -fno-schedule-insns2 -fno-tree-slp-vectorize -fno-asynchronous-unwind-tables |
+| almabench   | 351,675,664     | -O3 -ffast-math -march=native -fno-align-functions -fno-align-loops -fno-move-loop-invariants -fno-peephole2 -fno-reorder-functions -fno-tree-slp-vectorize |
 | fftbench    | 476,580,150     | -O3 -ffast-math -march=native -flto -fno-caller-saves -fno-align-loops -fno-optimize-sibling-calls -fno-asynchronous-unwind-tables |
 | linbench    | 146,559,925     | -O3 -ffast-math -march=native -flto -fno-align-functions -fno-peephole2 -fno-tree-loop-distribute-patterns -fno-tree-pre |
 | evobench    | 563,218,850     | -O3 -ffast-math -march=native -flto -fno-code-hoisting -fno-gcse -fno-ivopts |
@@ -80,7 +80,7 @@ Config: `config/gcc16.osearch`
 |-------------|-----------------|------------|
 | distbench   | 23,512,261      | -O3 -ffast-math -march=native -fno-align-functions -fno-caller-saves -fno-cprop-registers -fno-forward-propagate -fno-guess-branch-probability -funroll-all-loops |
 | mat1bench   | 28,962,062      | -O3 -ffast-math -march=native -flto -funroll-all-loops -ffp-contract=on (+ many marginal -fno-* flags) |
-| almabench   | 309,056,223     | -O3 -ffast-math -march=native -flto -fno-align-loops -fno-caller-saves -fno-code-hoisting -fno-peephole2 -fno-plt -fno-thread-jumps -fno-tree-dce -fno-tree-pre -fno-tree-sra -fira-loop-pressure -frename-registers |
+| almabench   | 318,972,713     | -O3 -ffast-math -march=native -flto -fno-caller-saves -fno-code-hoisting -fno-if-conversion -fno-plt -fno-tree-coalesce-vars -fno-tree-pre -frename-registers (+ many marginal -fno-* flags) |
 | fftbench    | 448,263,892     | -Os -march=native -fno-asynchronous-unwind-tables -fno-dse -fno-plt -fno-sched-dep-count-heuristic -freorder-blocks-algorithm=simple |
 | linbench    | 93,222,726      | -O3 -ffast-math -march=native -funroll-all-loops -fno-if-conversion -fno-tree-pre -fno-tree-coalesce-vars -flive-range-shrinkage -ffp-contract=on (+ many marginal -fno-* flags) |
 | evobench    | 561,052,637     | -O3 -ffast-math -march=native -flto -fno-if-conversion -fno-ivopts -fno-plt -fno-tree-dominator-opts -fsingle-precision-constant (+ marginal -fno-* flags) |
@@ -165,7 +165,7 @@ Date: 2026-06-22
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
 | distbench   | 39,092,625      | -O3 -ffast-math -march=native |
-| almabench   | 49,996,704      | -O3 -ffast-math -march=native -flto -fno-asynchronous-unwind-tables -fno-plt -mllvm -enable-newgvn |
+| almabench   | 646,256,576     | -Os -ffast-math -march=native -flto -fno-slp-vectorize -fno-plt -mllvm -unroll-threshold=200 |
 | mat1bench   | 55,116,556      | -O2 -ffast-math -march=native -flto |
 | linbench    | 109,626,776     | -O3 -ffast-math -march=native -fno-inline-functions -fno-strict-overflow -fno-asynchronous-unwind-tables -fno-plt -mllvm -unroll-threshold=800 |
 | fftbench    | 254,507,216     | -O2 -ffast-math -march=native -flto -fno-omit-frame-pointer -fno-plt -fno-builtin -mllvm -inline-threshold=300 |
@@ -175,17 +175,17 @@ Date: 2026-06-22
 
 ### Clang 22 observations
 
-- `-O3 -ffast-math -march=native -flto` is the common base for the FP
-  benchmarks (almabench, mat1bench, evobench). fftbench prefers `-O2` and
-  treebench `-Os` — lower `-O` levels minimise instruction count for those.
-- `-fno-plt` consistently helps (distbench, almabench, linbench, fftbench,
-  treebench): avoids PLT indirection on hot calls.
-- `-mllvm -enable-newgvn` helps almabench and treebench.
+- `-ffast-math -march=native -flto` is the universal base; the `-O` level
+  varies: evobench picks `-O3`, mat1bench/fftbench `-O2`, almabench/treebench
+  `-Os` — lower levels minimise instruction count for several kernels.
+- `-fno-plt` consistently helps (almabench, linbench, fftbench, treebench):
+  avoids PLT indirection on hot calls.
 - `-mllvm -enable-gvn-hoist` helps evobench and treebench (hoisting
-  redundant code in branch-heavy traversal).
+  redundant code in branch-heavy traversal); treebench also takes
+  `-enable-newgvn`.
 - `-mllvm -inline-threshold=1000` is critical for treebench (recursive
   workload); fftbench tunes a lower `-inline-threshold=300`.
-- `-mllvm -unroll-threshold=800` helps linbench.
+- `-mllvm -unroll-threshold` helps linbench (800) and almabench (200).
 
 ### GCC 16 vs Clang 22 — Instructions (-p)
 
@@ -193,17 +193,23 @@ Date: 2026-06-22
 |-----------|--------|----------|--------|---|
 | distbench | 28,013,326 | 39,092,625 | GCC | −28% |
 | mat1bench | 71,388,516 | 55,116,556 | Clang | −23% |
-| almabench | 341,576,663 | 49,996,704 | Clang | −85% |
+| almabench | 351,675,664 | 646,256,576 | GCC | −46% |
 | fftbench | 476,580,150 | 254,507,216 | Clang | −47% |
 | linbench | 146,559,925 | 109,626,776 | Clang | −25% |
 | evobench | 563,218,850 | 557,615,961 | Clang | −1.0% |
 | treebench | 852,135,816 | 783,642,592 | Clang | −8.0% |
 | huffbench | 1,096,625,613 | 1,190,829,141 | GCC | −7.9% |
 
-Clang 22 wins 6 of 8 benchmarks on instruction count, with the largest
-gaps on almabench (−85%) and fftbench (−47%): Clang's vectorizer and FP
-pipeline are markedly more effective on these FP kernels. GCC wins
-distbench (−28%) and huffbench (integer/branch-heavy, −7.9%).
+Clang 22 wins 5 of 8 benchmarks on instruction count; GCC wins distbench
+(−28%), almabench (−46%), and huffbench (−7.9%). Clang's largest win is
+fftbench (−47%); the benchmarks are otherwise close (mat1bench −23%,
+linbench −25%, treebench −8.0%, evobench −1.0%).
+
+(Note: the earlier revision of this table reported almabench as Clang
+−85%. That was a measurement artifact — almabench's run() overwrote a
+single `position[]` each iteration and only the last was observed, so
+under `-ffast-math` Clang eliminated ~89% of the 160000 iterations. With
+the result now accumulated across all iterations, GCC wins almabench.)
 
 ---
 
