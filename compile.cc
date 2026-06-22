@@ -202,8 +202,9 @@ static void hard_compile(const point_t &p) {
   point_to_pset[p] = pset;
 
   if (!exe_files.m().contains(pset)) {
-    exe_files.m().insert(std::pair<pset_t, tmp_file_t const &>(pset, tmp_file));
-    tmp_file.reset_path();
+    // Transfer ownership of the temp file into the map (move disarms the
+    // local, so its destructor won't unlink the now-kept file).
+    exe_files.m().insert({pset, std::move(tmp_file)});
   }
 }
 
@@ -286,8 +287,7 @@ void compile_batch(std::span<const point_t> points) {
     pset_t const pset = get_pset(w.tmp.get_path());
     point_to_pset[*w.p] = pset;
     if (!exe_files.m().contains(pset)) {
-      exe_files.m().insert(std::pair<pset_t, tmp_file_t const &>(pset, w.tmp));
-      w.tmp.reset_path();
+      exe_files.m().insert({pset, std::move(w.tmp)});
     }
   }
 }
