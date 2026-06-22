@@ -182,7 +182,6 @@ to enforce zero-overhead C++ discipline:
 ## TODO
 
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures (blocked on compiler support)
-- almabench: the outer `TEST_LOOPS` loop now runs once (the per-iteration accumulation made it vestigial) — remove it or raise `TEST_LOOPS`
 
 ### Noise-robust search
 

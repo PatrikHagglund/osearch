@@ -53,9 +53,6 @@ static const double R2H       = 12.0 / CALC_PI;
 static const double R2D       = 180.0 / CALC_PI;
 static const double GAUSSK    = 0.01720209895;
 
-// number of loops to perform
-static const int TEST_LOOPS  = 1;
-
 // number of days to include in test
 //static const int TEST_DAYS = 36525;
 static const int TEST_DAYS = 20000;
@@ -341,21 +338,18 @@ void run() {
     double acc = 0.0;
 
     // main loop
-    for (unsigned i = 0; i < TEST_LOOPS; ++i)
+    jd[0] = J2000;
+    jd[1] = 0.0;
+
+    for (unsigned n = 0; n < TEST_DAYS; ++n)
     {
-        jd[0] = J2000;
-        jd[1] = 0.0;
+        jd[0] += 1.0;
 
-        for (unsigned n = 0; n < TEST_DAYS; ++n)
+        for (unsigned p = 0; p < 8; ++p)
         {
-            jd[0] += 1.0;
-
-            for (unsigned p = 0; p < 8; ++p)
-            {
-                planetpv(jd,p,pv);
-                radecdist(pv,position);
-                acc += position[0] + position[1] + position[2];
-            }
+            planetpv(jd,p,pv);
+            radecdist(pv,position);
+            acc += position[0] + position[1] + position[2];
         }
     }
 
