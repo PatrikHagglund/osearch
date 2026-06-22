@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<osearch_config>
+  <description value="clang 22 (full)" />
+  <get_version value="clang -dumpversion" />
+
+  <prime command="clang OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
+
+  <!-- All flags validated against Clang 22: each is accepted by the driver
+       (no -Wignored-optimization-argument) and each -mllvm option exists in
+       this LLVM. enum state 0 means "absent", so the baseline is -O0. -->
+
+  <!-- Optimization level (mutually exclusive) -->
+  <flag type="enum" value="-O3|-O2|-Os|-Oz" />
+
+  <!-- Link-time optimization (mutually exclusive: full or thin) -->
+  <flag type="enum" value="-flto|-flto=thin" />
+
+  <flag type="simple" value="-march=native" />
+  <flag type="simple" value="-mtune=native" />
+
+  <!-- Floating-point relaxations (granular pieces of -ffast-math) -->
+  <flag type="simple" value="-ffast-math" />
+  <flag type="simple" value="-fno-math-errno" />
+  <flag type="simple" value="-ffinite-math-only" />
+  <flag type="simple" value="-fno-honor-infinities" />
+  <flag type="simple" value="-fno-honor-nans" />
+  <flag type="simple" value="-fno-signed-zeros" />
+  <flag type="simple" value="-fno-trapping-math" />
+  <flag type="simple" value="-fassociative-math" />
+  <flag type="simple" value="-freciprocal-math" />
+  <flag type="simple" value="-fapprox-func" />
+  <flag type="simple" value="-fno-rounding-math" />
+  <flag type="simple" value="-fno-strict-float-cast-overflow" />
+  <flag type="enum" value="-ffp-contract=fast|-ffp-contract=on|-ffp-contract=off" />
+
+  <!-- Vectorization (disable to test impact) -->
+  <flag type="simple" value="-fno-vectorize" />
+  <flag type="simple" value="-fno-slp-vectorize" />
+
+  <!-- Loop unrolling -->
+  <flag type="simple" value="-funroll-loops" />
+  <flag type="simple" value="-fno-unroll-loops" />
+
+  <!-- Inlining -->
+  <flag type="simple" value="-fno-inline-functions" />
+  <flag type="simple" value="-finline-hint-functions" />
+
+  <!-- Aliasing / UB-based optimization (disable to test impact) -->
+  <flag type="simple" value="-fno-strict-aliasing" />
+  <flag type="simple" value="-fno-strict-overflow" />
+  <flag type="simple" value="-fno-strict-enums" />
+  <flag type="simple" value="-fno-strict-return" />
+  <flag type="simple" value="-fno-delete-null-pointer-checks" />
+  <flag type="simple" value="-fstrict-vtable-pointers" />
+
+  <!-- Code generation -->
+  <flag type="simple" value="-fno-omit-frame-pointer" />
+  <flag type="simple" value="-fno-asynchronous-unwind-tables" />
+  <flag type="simple" value="-fno-unwind-tables" />
+  <flag type="simple" value="-fno-plt" />
+  <flag type="simple" value="-fno-semantic-interposition" />
+  <flag type="simple" value="-fno-direct-access-external-data" />
+  <flag type="simple" value="-ffunction-sections" />
+  <flag type="simple" value="-fdata-sections" />
+  <flag type="simple" value="-fno-common" />
+  <flag type="simple" value="-fmerge-all-constants" />
+  <flag type="simple" value="-fno-addrsig" />
+  <flag type="simple" value="-fno-optimize-sibling-calls" />
+  <flag type="simple" value="-fno-jump-tables" />
+  <flag type="simple" value="-fno-builtin" />
+  <flag type="simple" value="-fcf-protection=none" />
+  <flag type="simple" value="-fno-stack-protector" />
+  <flag type="simple" value="-fvisibility=hidden" />
+  <flag type="simple" value="-fvisibility-inlines-hidden" />
+
+  <!-- Target-specific (x86) -->
+  <flag type="simple" value="-mavx" />
+  <flag type="simple" value="-mavx2" />
+  <flag type="simple" value="-mavx512f" />
+  <flag type="simple" value="-mfma" />
+  <flag type="simple" value="-mbmi" />
+  <flag type="simple" value="-mbmi2" />
+  <flag type="simple" value="-mpopcnt" />
+  <flag type="simple" value="-mlzcnt" />
+  <flag type="simple" value="-mf16c" />
+  <flag type="simple" value="-mno-vzeroupper" />
+  <flag type="enum" value="-mprefer-vector-width=256|-mprefer-vector-width=512" />
+
+  <!-- LLVM vectorizer tuning (-mllvm) -->
+  <flag type="simple" value="-mllvm -vectorize-loops=true" />
+  <flag type="simple" value="-mllvm -vectorize-slp=true" />
+  <flag type="simple" value="-mllvm -enable-epilogue-vectorization" />
+  <flag type="simple" value="-mllvm -enable-masked-interleaved-mem-accesses" />
+  <flag type="simple" value="-mllvm -enable-interleaved-mem-accesses" />
+  <flag type="simple" value="-mllvm -vectorizer-maximize-bandwidth" />
+  <flag type="simple" value="-mllvm -extra-vectorizer-passes" />
+  <flag type="simple" value="-mllvm -slp-vectorize-hor" />
+  <flag type="simple" value="-mllvm -slp-vectorize-hor-store" />
+  <flag type="enum" value="-mllvm -force-vector-width=4|-mllvm -force-vector-width=8" />
+
+  <!-- LLVM loop passes (-mllvm) -->
+  <flag type="simple" value="-mllvm -enable-loop-distribute" />
+  <flag type="simple" value="-mllvm --enable-loopinterchange" />
+  <flag type="simple" value="-mllvm -enable-unroll-and-jam" />
+  <flag type="simple" value="-mllvm -enable-loop-flatten" />
+  <flag type="simple" value="-mllvm -enable-loop-versioning-licm" />
+  <flag type="simple" value="-mllvm -enable-loop-simplifycfg-term-folding" />
+  <flag type="simple" value="-mllvm -enable-matrix" />
+  <flag type="simple" value="-mllvm -unroll-runtime" />
+  <flag type="simple" value="-mllvm -unroll-allow-partial" />
+  <flag type="simple" value="-mllvm -disable-licm-promotion" />
+
+  <!-- LLVM inlining / unrolling thresholds (-mllvm, one of N) -->
+  <flag type="enum" value="-mllvm -inline-threshold=300|-mllvm -inline-threshold=500|-mllvm -inline-threshold=1000" />
+  <flag type="enum" value="-mllvm -unroll-threshold=200|-mllvm -unroll-threshold=400|-mllvm -unroll-threshold=800" />
+
+  <!-- LLVM GVN / memory / value-numbering (-mllvm) -->
+  <flag type="simple" value="-mllvm -enable-load-pre" />
+  <flag type="simple" value="-mllvm -enable-load-in-loop-pre" />
+  <flag type="simple" value="-mllvm -enable-gvn-memdep" />
+  <flag type="simple" value="-mllvm -enable-gvn-hoist" />
+  <flag type="simple" value="-mllvm -enable-gvn-sink" />
+  <flag type="simple" value="-mllvm -enable-newgvn" />
+  <flag type="simple" value="-mllvm -enable-pre" />
+  <flag type="simple" value="-mllvm -enable-split-backedge-in-load-pre" />
+  <flag type="simple" value="-mllvm -enable-dfa-jump-thread" />
+  <flag type="simple" value="-mllvm -aggressive-ext-opt" />
+  <flag type="simple" value="-mllvm -enable-constraint-elimination" />
+
+  <!-- LLVM block placement / layout / outlining (-mllvm) -->
+  <flag type="simple" value="-mllvm -enable-ext-tsp-block-placement" />
+  <flag type="simple" value="-mllvm --enable-tail-merge" />
+  <flag type="simple" value="-mllvm -enable-machine-outliner" />
+  <flag type="simple" value="-mllvm -hot-cold-split" />
+  <flag type="simple" value="-mllvm -mergefunc-use-aliases" />
+  <flag type="simple" value="-mllvm -enable-chr" />
+
+  <!-- LLVM scheduling / codegen (-mllvm) -->
+  <flag type="simple" value="-mllvm -enable-misched" />
+  <flag type="simple" value="-mllvm -enable-post-misched" />
+  <flag type="simple" value="-mllvm -enable-shrink-wrap" />
+  <flag type="simple" value="-mllvm -enable-pipeliner" />
+  <flag type="simple" value="-mllvm -x86-cmov-converter" />
+  <flag type="simple" value="-mllvm -instcombine-code-sinking" />
+
+</osearch_config>

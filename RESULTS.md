@@ -187,6 +187,40 @@ Date: 2026-06-22
   workload); fftbench tunes a lower `-inline-threshold=300`.
 - `-mllvm -unroll-threshold` helps linbench (800) and almabench (200).
 
+## Clang 22 — Instruction count (-p), Full config (103 flags)
+
+Config: `config/clang22.osearch`
+Compiler: Clang 22.1.7
+Date: 2026-06-22
+
+| Benchmark   | Instructions    | Best flags |
+|-------------|-----------------|------------|
+| distbench   | 39,092,624      | -O3 -march=native -ffast-math -fno-plt |
+| mat1bench   | 54,306,103      | -O3 -flto -march=native -ffast-math -fno-asynchronous-unwind-tables -fno-plt -mllvm -force-vector-width=8 |
+| almabench   | 646,096,419     | -Os -flto=thin -march=native -ffast-math -fno-omit-frame-pointer -fno-plt -mno-vzeroupper -mllvm -unroll-threshold=200 |
+| fftbench    | 254,507,216     | -O3 -flto -march=native -ffast-math -fno-plt -fno-builtin -mllvm -inline-threshold=300 |
+| linbench    | 109,930,033     | -O3 -flto=thin -march=native -ffast-math -ffp-contract=on -fno-strict-overflow -fno-delete-null-pointer-checks -fno-plt |
+| evobench    | 557,312,659     | -O3 -flto=thin -march=native -ffast-math -ffp-contract=on -fvisibility=hidden -mno-vzeroupper -mllvm -enable-gvn-hoist |
+| treebench   | 782,312,747     | -Os -march=native -fno-slp-vectorize -fno-plt -fno-optimize-sibling-calls -fno-builtin -mno-vzeroupper -mllvm -extra-vectorizer-passes -mllvm -force-vector-width=8 -mllvm -inline-threshold=1000 -mllvm -unroll-threshold=200 -mllvm -enable-gvn-hoist |
+| huffbench   | 1,190,827,231   | -O3 -flto=thin -march=native -fno-omit-frame-pointer -fno-plt |
+
+### Full config observations
+
+Unlike GCC — where the full config beat the test config by up to −59% — the
+103-flag Clang config barely improves on the 56-flag test config: best case
+mat1bench −1.5%, most within ±0.2%, and linbench is even slightly *worse*
+(109.93M vs 109.63M — the greedy search diverges with the larger flag set).
+This reflects Clang's design: `-O3` already enables nearly all optimization
+passes, most extra `-mllvm` toggles are already-on defaults, and the granular
+FP flags are subsumed by `-ffast-math`. The flags that do show up beyond the
+test config's picks:
+
+- `-flto=thin` matches or beats full `-flto` on almabench, linbench,
+  evobench, and huffbench (and links faster).
+- `-mllvm -force-vector-width=8` helps mat1bench and treebench.
+- `-ffp-contract=on` helps linbench and evobench.
+- `-mno-vzeroupper` recurs (avoids `vzeroupper` insertion overhead).
+
 ### GCC 16 vs Clang 22 — Instructions (-p)
 
 | Benchmark | GCC 16 | Clang 22 | Winner | Δ |
