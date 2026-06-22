@@ -124,6 +124,29 @@ void summary_first_measure() {
                       : "time (output value)");
 }
 
+/// The first time a perf-mode run fails because the in-harness counter
+/// could not be opened, print a clear diagnostic. Without this the user
+/// only sees every measurement come back as `inf` with no explanation,
+/// because the benchmark's stderr is captured and discarded. Detected via
+/// the harness's "perf_event_open" message (see main.ic).
+static void warn_if_perf_unavailable(std::string const &output) {
+  static bool warned = false;
+  if (warned || output.find("perf_event_open") == std::string::npos) return;
+  warned = true;
+  std::string::size_type const nl = output.find('\n');
+  std::cerr << "\nWARNING: -p instruction counting failed; every measurement "
+               "will be 'inf'.\n"
+               "The benchmark could not open a hardware instruction counter. "
+               "Check that the\n"
+               "kernel has CONFIG_PERF_EVENTS and perf_event_paranoid <= 2, "
+               "and that a container\n"
+               "(if any) is not blocking perf_event_open via seccomp (e.g. run "
+               "with\n"
+               "--security-opt seccomp=unconfined).\n"
+               "Underlying error: "
+            << output.substr(0, nl) << "\n";
+}
+
 /// Compute the objective function (generated code size if opt_size,
 /// otherwise execution time) for a given pset_t.
 /// \param pset pset_t
@@ -153,6 +176,8 @@ static obj_t sample(pset_t pset) {
   const std::string cmd = opt_size ? size_cmd : opt_perf ? perf_cmd : run_cmd;
 
   const cmd_res_t cmd_res = execute(cmd);
+  if (opt_perf && cmd_res.status != EXIT_SUCCESS)
+    warn_if_perf_unavailable(cmd_res.output);
   const obj_t obj = cmd_res.status == EXIT_SUCCESS
                         ? obj_t(std::stol(cmd_res.output))
                         : obj_t_inf;
