@@ -32,11 +32,19 @@ void progress_t::tick(char sym) {
 
   ++cnts[sym];
 
-#ifdef DEBUG
-  (void)p; // FIXME
-#endif
   if (!silent) {
+#ifdef DEBUG
+    // Light progress visualization: the tick symbol followed by a compact
+    // map of the point being worked on — one character per flag ('.' for
+    // off, otherwise its value) — so the search's walk through the option
+    // space is visible as the pattern evolves.
+    *o << sym << ' ';
+    for (uint8_t v : p.val)
+      *o << (v == 0 ? '.' : (v < 10 ? static_cast<char>('0' + v) : '#'));
+    *o << '\n';
+#else
     *o << sym;
+#endif
     o->flush();
   }
 }
