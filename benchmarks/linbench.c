@@ -192,6 +192,17 @@ void run() {
     // what we're timing
     p = lup_decompose(a);
     r = lup_solve(a,p,b);
+
+    // Prevent dead-code elimination: observe the solution vector. Without
+    // this, r's contents are only freed (never read) and the solve elides.
+    if (r)
+    {
+        double sum = 0.0;
+        for (unsigned i = 0; i < N; ++i)
+            sum += r[i];
+        volatile double sink = sum;
+        (void)sink;
+    }
 }
 
 void clean() {

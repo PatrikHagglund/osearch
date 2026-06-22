@@ -50,10 +50,10 @@ noise-level picks that vary between runs (use `-T 3` for a stable set).
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
 | distbench   | 28,013,326      | -O3 -ffast-math -march=native -flto -fno-align-loops |
-| mat1bench   | 70,270,251      | -O3 -ffast-math -march=native -fno-caller-saves -fno-peephole2 |
+| mat1bench   | 71,388,516      | -O3 -march=native -fno-inline-functions -fno-asynchronous-unwind-tables |
 | almabench   | 341,576,663     | -O3 -ffast-math -march=native -fno-align-loops -fno-move-loop-invariants -fno-schedule-insns2 -fno-tree-slp-vectorize -fno-asynchronous-unwind-tables |
 | fftbench    | 476,580,150     | -O3 -ffast-math -march=native -flto -fno-caller-saves -fno-align-loops -fno-optimize-sibling-calls -fno-asynchronous-unwind-tables |
-| linbench    | 146,560,138     | -O3 -ffast-math -march=native -fno-code-hoisting -fno-caller-saves -fno-align-loops -fno-optimize-strlen -fno-peephole2 -fno-tree-pre -fno-tree-slp-vectorize |
+| linbench    | 146,559,925     | -O3 -ffast-math -march=native -flto -fno-align-functions -fno-peephole2 -fno-tree-loop-distribute-patterns -fno-tree-pre |
 | evobench    | 563,218,850     | -O3 -ffast-math -march=native -flto -fno-code-hoisting -fno-gcse -fno-ivopts |
 | treebench   | 852,135,816     | -O3 -ffast-math -march=native -flto -fno-cse-follow-jumps -fno-code-hoisting -fno-ipa-cp -fno-align-loops -fno-gcse -fno-optimize-sibling-calls -fno-tree-loop-distribute-patterns -fno-tree-loop-vectorize -fno-tree-slp-vectorize |
 | huffbench   | 1,096,625,613   | -O3 -ffast-math -flto -fno-align-functions -fno-inline-small-functions -fno-move-loop-invariants -fno-peephole2 -fno-tree-pre -fno-tree-vrp |
@@ -79,10 +79,10 @@ Config: `config/gcc16.osearch`
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
 | distbench   | 23,512,261      | -O3 -ffast-math -march=native -fno-align-functions -fno-caller-saves -fno-cprop-registers -fno-forward-propagate -fno-guess-branch-probability -funroll-all-loops |
-| mat1bench   | 28,943,154      | -O3 -march=native -fno-expensive-optimizations -fno-forward-propagate -fno-guess-branch-probability -fno-sched-dep-count-heuristic -funroll-all-loops -ffp-contract=on |
+| mat1bench   | 28,962,062      | -O3 -ffast-math -march=native -flto -funroll-all-loops -ffp-contract=on (+ many marginal -fno-* flags) |
 | almabench   | 309,056,223     | -O3 -ffast-math -march=native -flto -fno-align-loops -fno-caller-saves -fno-code-hoisting -fno-peephole2 -fno-plt -fno-thread-jumps -fno-tree-dce -fno-tree-pre -fno-tree-sra -fira-loop-pressure -frename-registers |
 | fftbench    | 448,263,892     | -Os -march=native -fno-asynchronous-unwind-tables -fno-dse -fno-plt -fno-sched-dep-count-heuristic -freorder-blocks-algorithm=simple |
-| linbench    | 93,943,242      | -O3 -ffast-math -march=native -funroll-all-loops -fno-if-conversion -fno-if-conversion2 -fno-tree-pre -fno-tree-coalesce-vars -finline-stringops -fira-region=all (+ marginal -fno-* flags) |
+| linbench    | 93,222,726      | -O3 -ffast-math -march=native -funroll-all-loops -fno-if-conversion -fno-tree-pre -fno-tree-coalesce-vars -flive-range-shrinkage -ffp-contract=on (+ many marginal -fno-* flags) |
 | evobench    | 561,052,637     | -O3 -ffast-math -march=native -flto -fno-if-conversion -fno-ivopts -fno-plt -fno-tree-dominator-opts -fsingle-precision-constant (+ marginal -fno-* flags) |
 | treebench   | 848,010,023     | -O3 -flto -fno-if-conversion -fno-ipa-cp -fno-tree-loop-distribute-patterns -fno-tree-loop-vectorize (+ many marginal -fno-* flags) |
 | huffbench   | 897,288,212     | -O3 -march=native -flto -fno-if-conversion -fno-tree-ch -finline-stringops -ftracer (+ many marginal -fno-* flags) |
@@ -166,8 +166,8 @@ Date: 2026-06-22
 |-------------|-----------------|------------|
 | distbench   | 39,092,625      | -O3 -ffast-math -march=native |
 | almabench   | 49,996,704      | -O3 -ffast-math -march=native -flto -fno-asynchronous-unwind-tables -fno-plt -mllvm -enable-newgvn |
-| mat1bench   | 55,084,149      | -O3 -ffast-math -march=native -flto |
-| linbench    | 109,626,663     | -O3 -ffast-math -march=native -fno-inline-functions -fno-strict-overflow -fno-asynchronous-unwind-tables -fno-optimize-sibling-calls -fno-plt -ffunction-sections -mllvm -unroll-threshold=800 |
+| mat1bench   | 55,116,556      | -O2 -ffast-math -march=native -flto |
+| linbench    | 109,626,776     | -O3 -ffast-math -march=native -fno-inline-functions -fno-strict-overflow -fno-asynchronous-unwind-tables -fno-plt -mllvm -unroll-threshold=800 |
 | fftbench    | 254,507,216     | -O2 -ffast-math -march=native -flto -fno-omit-frame-pointer -fno-plt -fno-builtin -mllvm -inline-threshold=300 |
 | evobench    | 557,615,961     | -O3 -ffast-math -march=native -flto -mllvm -enable-gvn-hoist |
 | treebench   | 783,642,592     | -Os -march=native -fno-vectorize -fno-slp-vectorize -fno-delete-null-pointer-checks -fno-asynchronous-unwind-tables -fno-optimize-sibling-calls -fno-plt -mllvm -inline-threshold=1000 -mllvm -enable-gvn-hoist -mllvm -enable-newgvn |
@@ -192,10 +192,10 @@ Date: 2026-06-22
 | Benchmark | GCC 16 | Clang 22 | Winner | Δ |
 |-----------|--------|----------|--------|---|
 | distbench | 28,013,326 | 39,092,625 | GCC | −28% |
-| mat1bench | 70,270,251 | 55,084,149 | Clang | −22% |
+| mat1bench | 71,388,516 | 55,116,556 | Clang | −23% |
 | almabench | 341,576,663 | 49,996,704 | Clang | −85% |
 | fftbench | 476,580,150 | 254,507,216 | Clang | −47% |
-| linbench | 146,560,138 | 109,626,663 | Clang | −25% |
+| linbench | 146,559,925 | 109,626,776 | Clang | −25% |
 | evobench | 563,218,850 | 557,615,961 | Clang | −1.0% |
 | treebench | 852,135,816 | 783,642,592 | Clang | −8.0% |
 | huffbench | 1,096,625,613 | 1,190,829,141 | GCC | −7.9% |
