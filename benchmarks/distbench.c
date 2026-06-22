@@ -98,10 +98,19 @@ void run() {
     for (int i = 0; i < ARRAY_SIZE; ++i)
     {
         r[i] = 0.0;
-        
+
         for (int j = 0; j < ARRAY_SIZE; ++j)
             r[i] += distance(v1[i], v2[j]);
     }
+
+    // Prevent dead-code elimination: observe every result. Without this,
+    // Clang sees that the static array r[] is never read and eliminates
+    // the whole loop nest.
+    double sum = 0.0;
+    for (int i = 0; i < ARRAY_SIZE; ++i)
+        sum += r[i];
+    volatile double sink = sum;
+    (void)sink;
 }
 
 void clean() {

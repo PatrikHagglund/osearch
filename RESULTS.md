@@ -49,7 +49,7 @@ noise-level picks that vary between runs (use `-T 3` for a stable set).
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
-| distbench   | 28,012,061      | -O3 -march=native -fno-align-loops -fno-gcse |
+| distbench   | 28,013,326      | -O3 -ffast-math -march=native -flto -fno-align-loops |
 | mat1bench   | 70,270,251      | -O3 -ffast-math -march=native -fno-caller-saves -fno-peephole2 |
 | almabench   | 341,576,663     | -O3 -ffast-math -march=native -fno-align-loops -fno-move-loop-invariants -fno-schedule-insns2 -fno-tree-slp-vectorize -fno-asynchronous-unwind-tables |
 | fftbench    | 476,580,150     | -O3 -ffast-math -march=native -flto -fno-caller-saves -fno-align-loops -fno-optimize-sibling-calls -fno-asynchronous-unwind-tables |
@@ -78,7 +78,7 @@ Config: `config/gcc16.osearch`
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
-| distbench   | 23,511,558      | -O3 -ffast-math -march=native -fno-early-inlining -fno-guess-branch-probability -funroll-all-loops |
+| distbench   | 23,512,261      | -O3 -ffast-math -march=native -fno-align-functions -fno-caller-saves -fno-cprop-registers -fno-forward-propagate -fno-guess-branch-probability -funroll-all-loops |
 | mat1bench   | 28,943,154      | -O3 -march=native -fno-expensive-optimizations -fno-forward-propagate -fno-guess-branch-probability -fno-sched-dep-count-heuristic -funroll-all-loops -ffp-contract=on |
 | almabench   | 309,056,223     | -O3 -ffast-math -march=native -flto -fno-align-loops -fno-caller-saves -fno-code-hoisting -fno-peephole2 -fno-plt -fno-thread-jumps -fno-tree-dce -fno-tree-pre -fno-tree-sra -fira-loop-pressure -frename-registers |
 | fftbench    | 448,263,892     | -Os -march=native -fno-asynchronous-unwind-tables -fno-dse -fno-plt -fno-sched-dep-count-heuristic -freorder-blocks-algorithm=simple |
@@ -164,7 +164,7 @@ Date: 2026-06-22
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
-| distbench   | 29 ⚠️           | -O3 -fno-plt |
+| distbench   | 39,092,625      | -O3 -ffast-math -march=native |
 | almabench   | 49,996,704      | -O3 -ffast-math -march=native -flto -fno-asynchronous-unwind-tables -fno-plt -mllvm -enable-newgvn |
 | mat1bench   | 55,084,149      | -O3 -ffast-math -march=native -flto |
 | linbench    | 109,626,663     | -O3 -ffast-math -march=native -fno-inline-functions -fno-strict-overflow -fno-asynchronous-unwind-tables -fno-optimize-sibling-calls -fno-plt -ffunction-sections -mllvm -unroll-threshold=800 |
@@ -172,14 +172,6 @@ Date: 2026-06-22
 | evobench    | 557,615,961     | -O3 -ffast-math -march=native -flto -mllvm -enable-gvn-hoist |
 | treebench   | 783,642,592     | -Os -march=native -fno-vectorize -fno-slp-vectorize -fno-delete-null-pointer-checks -fno-asynchronous-unwind-tables -fno-optimize-sibling-calls -fno-plt -mllvm -inline-threshold=1000 -mllvm -enable-gvn-hoist -mllvm -enable-newgvn |
 | huffbench   | 1,190,829,141   | -O3 -march=native -flto -fno-omit-frame-pointer |
-
-> ⚠️ **distbench (29 instructions):** Clang's optimizer eliminates
-> distbench's `run()` body as dead code — its result never escapes, and
-> with run()-only counting (vs the old whole-process method, which hid
-> this behind ~520K startup instructions) the elimination is exposed. The
-> figure is not a meaningful workload measurement; distbench needs a
-> `volatile` sink to defeat Clang DCE (as was done for almabench). GCC
-> does not eliminate it (28M).
 
 ### Clang 22 observations
 
@@ -199,7 +191,7 @@ Date: 2026-06-22
 
 | Benchmark | GCC 16 | Clang 22 | Winner | Δ |
 |-----------|--------|----------|--------|---|
-| distbench | 28,012,061 | 29 (DCE) | — | n/a |
+| distbench | 28,013,326 | 39,092,625 | GCC | −28% |
 | mat1bench | 70,270,251 | 55,084,149 | Clang | −22% |
 | almabench | 341,576,663 | 49,996,704 | Clang | −85% |
 | fftbench | 476,580,150 | 254,507,216 | Clang | −47% |
@@ -208,11 +200,10 @@ Date: 2026-06-22
 | treebench | 852,135,816 | 783,642,592 | Clang | −8.0% |
 | huffbench | 1,096,625,613 | 1,190,829,141 | GCC | −7.9% |
 
-Excluding distbench (eliminated by Clang DCE — see the warning above),
-Clang 22 wins 6 of 7 comparisons on instruction count, with the largest
+Clang 22 wins 6 of 8 benchmarks on instruction count, with the largest
 gaps on almabench (−85%) and fftbench (−47%): Clang's vectorizer and FP
-pipeline are markedly more effective on these FP kernels. GCC wins only
-huffbench (integer/branch-heavy, −7.9%).
+pipeline are markedly more effective on these FP kernels. GCC wins
+distbench (−28%) and huffbench (integer/branch-heavy, −7.9%).
 
 ---
 
