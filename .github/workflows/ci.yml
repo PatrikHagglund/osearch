@@ -19,8 +19,9 @@ jobs:
       - name: Install build dependencies
         run: |
           dnf install -y --setopt=install_weak_deps=False \
-            gcc-c++ cmake ninja-build expat-devel git gawk
+            gcc-c++ clang cmake ninja-build expat-devel git gawk
           g++ --version
+          clang --version
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -48,3 +49,35 @@ jobs:
 
       - name: Integration smoke test (-s size mode)
         run: ./build/osearch -s -l 1 -Q 3 -q config/gcc16-test.osearch benchmarks/fftbench.c
+
+      - name: Integration smoke test (Clang, -l 1 -Q 5)
+        run: ./build/osearch -l 1 -Q 5 -q config/clang22-test.osearch benchmarks/fftbench.c
+
+      - name: Integration smoke test (Clang full config, -l 1 -Q 3)
+        run: ./build/osearch -l 1 -Q 3 -q config/clang22.osearch benchmarks/fftbench.c
+
+      - name: Integration smoke test (-p perf mode, if available)
+        run: |
+          # Probe whether this environment permits perf_event_open for a
+          # user-space hardware counter (same as the in-harness measurement).
+          # CI containers usually block it via seccomp, so skip cleanly there.
+          cat > /tmp/probe.c <<'EOF'
+          #define _GNU_SOURCE
+          #include <linux/perf_event.h>
+          #include <sys/syscall.h>
+          #include <unistd.h>
+          #include <string.h>
+          int main(void) {
+            struct perf_event_attr a; memset(&a, 0, sizeof a);
+            a.type = PERF_TYPE_HARDWARE; a.size = sizeof a;
+            a.config = PERF_COUNT_HW_INSTRUCTIONS;
+            a.disabled = 1; a.exclude_kernel = 1; a.exclude_hv = 1;
+            return syscall(SYS_perf_event_open, &a, 0, -1, -1, 0) < 0 ? 1 : 0;
+          }
+          EOF
+          if gcc -O2 -o /tmp/probe /tmp/probe.c && /tmp/probe; then
+            echo "perf_event_open available — running -p smoke test"
+            ./build/osearch -p -l 1 -Q 3 -q config/gcc16-test.osearch benchmarks/fftbench.c
+          else
+            echo "perf_event_open unavailable (likely container seccomp) — skipping -p smoke test"
+          fi

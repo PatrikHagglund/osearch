@@ -182,8 +182,6 @@ to enforce zero-overhead C++ discipline:
 ## TODO
 
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures (blocked on compiler support)
-- CI: exercise the Clang configs (`clang22-test.osearch`) — CI currently only runs GCC, so regressions in the Clang configs go uncaught
-- CI: add a `-p` (perf instruction count) smoke test, guarded to skip where `perf_event_open` is unavailable (e.g. containers without `--security-opt seccomp=unconfined`)
 - Clean up stale `FIXME`s in `print.cc` and `execute.hh`
 - almabench: the outer `TEST_LOOPS` loop now runs once (the per-iteration accumulation made it vestigial) — remove it or raise `TEST_LOOPS`
 
