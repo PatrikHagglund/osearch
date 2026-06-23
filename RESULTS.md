@@ -27,13 +27,22 @@ code and work to several benchmarks' `run()`.
   to −59% (`-funroll-all-loops`, `-fno-if-conversion`); Clang's 103-flag config
   barely helps (≤1.5%) because `-O3` already enables nearly all passes.
 
-## Workload groups
+## Benchmarks
 
-- **FP / vectorizable** (prefer `-O3 -ffast-math`): distbench, mat1bench, almabench, fftbench, linbench, evobench
-- **Integer / branch-heavy** (prefer `-O3`): treebench, huffbench
+| Benchmark | Workload | Group |
+|-----------|----------|-------|
+| distbench | 3D point-distance sums, brute-force O(n²) `sqrt` | FP / vectorizable |
+| mat1bench | dense N×N matrix multiply | FP / vectorizable |
+| almabench | planetary ephemeris (`sin`/`cos`/`atan2`/`sqrt`) | FP / vectorizable |
+| fftbench  | radix-2 Cooley–Tukey FFT, N = 2²⁰ | FP / vectorizable |
+| linbench  | LU decomposition + solve | FP / vectorizable |
+| evobench  | genetic-algorithm function optimizer | FP / vectorizable |
+| treebench | B-tree insert / find / remove | integer / branch |
+| huffbench | Huffman compress + decompress | integer / branch |
 
-Every table below lists benchmarks in this canonical order (FP-heavy first,
-then integer-heavy), matching `aggregate.sh`.
+FP benchmarks prefer `-O3 -ffast-math`; the integer/branch ones prefer plain
+`-O3`. Every table below uses this order (FP-heavy first, then integer-heavy),
+matching `aggregate.sh`.
 
 ## Size optimization (-s), Level 1 (full search)
 
@@ -108,7 +117,7 @@ Config: `config/gcc16.osearch`
 | treebench   | 848,010,023     | -O3 -flto -fno-if-conversion -fno-ipa-cp -fno-tree-loop-distribute-patterns -fno-tree-loop-vectorize (+ many marginal -fno-* flags) |
 | huffbench   | 897,288,212     | -O3 -march=native -flto -fno-if-conversion -fno-tree-ch -finline-stringops -ftracer (+ many marginal -fno-* flags) |
 
-### Full config observations
+### GCC full config observations
 
 The 214-flag config beats the 57-flag test config on every benchmark
 (largest gains: mat1bench −59%, linbench −36%, huffbench −18%). Notable
@@ -225,7 +234,7 @@ Config: `config/clang22.osearch` (103 flags)
 | treebench   | 782,312,747     | -Os -march=native -fno-slp-vectorize -fno-plt -fno-optimize-sibling-calls -fno-builtin -mno-vzeroupper -mllvm -extra-vectorizer-passes -mllvm -force-vector-width=8 -mllvm -inline-threshold=1000 -mllvm -unroll-threshold=200 -mllvm -enable-gvn-hoist |
 | huffbench   | 1,190,827,231   | -O3 -flto=thin -march=native -fno-omit-frame-pointer -fno-plt |
 
-### Full config observations
+### Clang full config observations
 
 Unlike GCC — where the full config beat the test config by up to −59% — the
 103-flag Clang config barely improves on the 56-flag test config: best case
@@ -242,7 +251,9 @@ test config's picks:
 - `-ffp-contract=on` helps linbench and evobench.
 - `-mno-vzeroupper` recurs (avoids `vzeroupper` insertion overhead).
 
-### GCC 16 vs Clang 22 — Instructions (-p)
+## GCC 16 vs Clang 22 — Instructions (-p)
+
+Δ is the winner's reduction relative to the other compiler.
 
 | Benchmark | GCC 16 | Clang 22 | Winner | Δ |
 |-----------|--------|----------|--------|---|
@@ -285,7 +296,7 @@ Config: `config/clang22-test.osearch` (56 flags)
 
 ### Clang 22 size observations
 
-- `-Oz -flto` wins for every benchmark (fftbench now also picks `-Oz`)
+- `-Oz -flto` wins for every benchmark (including fftbench)
 - `-march=native` helps the FP benchmarks but not the integer ones
   (mat1bench, huffbench omit it)
 - `-mllvm -enable-newgvn` now helps size broadly (fftbench, evobench,
@@ -293,7 +304,9 @@ Config: `config/clang22-test.osearch` (56 flags)
   additionally helps treebench
 - `-fno-builtin` helps a few benchmarks (avoids inlining libc)
 
-### GCC 16 vs Clang 22 — Size (-s)
+## GCC 16 vs Clang 22 — Size (-s)
+
+Δ is the winner's reduction relative to the other compiler.
 
 | Benchmark | GCC 16 (.text) | Clang 22 (.text) | Winner | Δ |
 |-----------|----------------|------------------|--------|---|
