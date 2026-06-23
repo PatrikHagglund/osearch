@@ -1,25 +1,43 @@
 # Benchmark Results
 
-Config: `config/gcc16-test.osearch` (speed) / `config/gcc16-size.osearch` (size)
+## Environment
 
-All tables measured 2026-06-22 with GCC 16.1.1 and Clang 22.1.7; `-p`
-instruction counts use the in-harness `perf_event_open` counter. Absolute
-size and time figures are larger than earlier revisions because the
-DCE-prevention sinks added to several benchmarks' `run()` contribute real
-code and work (see the per-benchmark `volatile` sinks).
+- **CPU:** AMD EPYC 9354 (Zen 4) — AVX-512 + AVX2; `-march=native` ⇒ `znver4`
+- **OS:** Fedora Linux 44 (container)
+- **Compilers:** GCC 16.1.1, Clang 22.1.7
+- **Date:** 2026-06-22
+- **Configs:** `gcc16-test` (57 flags) / `gcc16` (214) / `gcc16-size` (56);
+  `clang22-test` (56) / `clang22` (103) — all under `config/`
 
-Benchmarks are grouped by workload type and sorted by instruction count:
+`-p` counts are user-space retired instructions for `run()` only, via the
+in-harness `perf_event_open` counter. Absolute size/time figures are larger
+than pre-2026-06 revisions because DCE-prevention `volatile` sinks added real
+code and work to several benchmarks' `run()`.
 
-- **FP/vectorizable** (prefers `-Ofast`): distbench, mat1bench, almabench, fftbench, linbench, evobench
-- **Integer/branch-heavy** (prefers `-O3`): treebench, huffbench
+## Summary
 
-Sections are ordered by measurement reliability:
+- **For reproducible optimization use `-s` (size) or `-p` (instructions)** —
+  both are deterministic. Wall-clock time is noisy and its flag picks diverge.
+- **GCC vs Clang, instructions:** Clang 22 wins 5 of 8, GCC 3 (distbench,
+  almabench, huffbench). Biggest gaps: fftbench (Clang −47%), almabench
+  (GCC −46%). See [comparison](#gcc-16-vs-clang-22--instructions--p).
+- **GCC vs Clang, size:** GCC wins 5 of 8, but most races are within a few
+  percent. See [comparison](#gcc-16-vs-clang-22--size--s).
+- **Full vs test config:** GCC's 214-flag config beats its 57-flag set by up
+  to −59% (`-funroll-all-loops`, `-fno-if-conversion`); Clang's 103-flag config
+  barely helps (≤1.5%) because `-O3` already enables nearly all passes.
 
-1. **Size (-s)** — 100% deterministic
-2. **Instructions (-p)** — deterministic (in-harness `perf_event_open`)
-3. **Time (default)** — wall-clock time; noisy
+## Workload groups
+
+- **FP / vectorizable** (prefer `-O3 -ffast-math`): distbench, mat1bench, almabench, fftbench, linbench, evobench
+- **Integer / branch-heavy** (prefer `-O3`): treebench, huffbench
+
+Every table below lists benchmarks in this canonical order (FP-heavy first,
+then integer-heavy), matching `aggregate.sh`.
 
 ## Size optimization (-s), Level 1 (full search)
+
+Config: `config/gcc16-size.osearch` (56 flags)
 
 | Benchmark   | .text (bytes) | Best flags |
 |-------------|---------------|------------|
@@ -43,11 +61,12 @@ Sections are ordered by measurement reliability:
 
 ## Instruction count (-p), Level 1 (full search)
 
-Counts user-space retired instructions for `run()` only, via an
-in-harness `perf_event_open` counter. The total is reproducible to
-~1 ppm across runs; the `-fno-*` flags beyond the `-O`/`-march` base are
-adopted at the default `-T 0` threshold and include marginal,
-noise-level picks that vary between runs (use `-T 3` for a stable set).
+Config: `config/gcc16-test.osearch` (57 flags)
+
+The total is reproducible to ~1 ppm across runs; the `-fno-*` flags beyond
+the `-O`/`-march` base are adopted at the default `-T 0` threshold and
+include marginal, noise-level picks that vary between runs (use `-T 3` for
+a stable set).
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
@@ -91,12 +110,12 @@ Config: `config/gcc16.osearch`
 
 ### Full config observations
 
-The 214-flag config beats the 60-flag test config on every benchmark
+The 214-flag config beats the 57-flag test config on every benchmark
 (largest gains: mat1bench −59%, linbench −36%, huffbench −18%). Notable
 flags:
 
 - **`-funroll-all-loops`** — large win on linbench (93.9M, −36% vs the
-  60-flag config), plus mat1bench and distbench. Off by default even at `-O3`.
+  57-flag config), plus mat1bench and distbench. Off by default even at `-O3`.
 - **`-fno-if-conversion`** (and `-fno-if-conversion2`) — helps the
   branch-sensitive benchmarks (linbench, evobench, treebench, huffbench);
   keeping branches lets the predictor work.
@@ -109,6 +128,8 @@ flags:
   beating `-O3` on instruction count — smaller, tighter code paths win here.
 
 ## Time (default), Level 1 (full search, -n 3)
+
+Config: `config/gcc16-test.osearch` (57 flags)
 
 **Noisy** — results vary between runs. Use `-n 5` or higher for more stable results.
 
@@ -162,17 +183,15 @@ Shallower search; faster but may miss combinations that deep greedy search finds
 
 ## Clang 22 — Instruction count (-p), Level 1
 
-Config: `config/clang22-test.osearch`
-Compiler: Clang 22.1.7
-Date: 2026-06-22
+Config: `config/clang22-test.osearch` (56 flags)
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
 | distbench   | 39,092,625      | -O3 -ffast-math -march=native |
-| almabench   | 646,256,576     | -Os -ffast-math -march=native -flto -fno-slp-vectorize -fno-plt -mllvm -unroll-threshold=200 |
 | mat1bench   | 55,116,556      | -O2 -ffast-math -march=native -flto |
-| linbench    | 109,626,776     | -O3 -ffast-math -march=native -fno-inline-functions -fno-strict-overflow -fno-asynchronous-unwind-tables -fno-plt -mllvm -unroll-threshold=800 |
+| almabench   | 646,256,576     | -Os -ffast-math -march=native -flto -fno-slp-vectorize -fno-plt -mllvm -unroll-threshold=200 |
 | fftbench    | 254,507,216     | -O2 -ffast-math -march=native -flto -fno-omit-frame-pointer -fno-plt -fno-builtin -mllvm -inline-threshold=300 |
+| linbench    | 109,626,776     | -O3 -ffast-math -march=native -fno-inline-functions -fno-strict-overflow -fno-asynchronous-unwind-tables -fno-plt -mllvm -unroll-threshold=800 |
 | evobench    | 557,615,961     | -O3 -ffast-math -march=native -flto -mllvm -enable-gvn-hoist |
 | treebench   | 783,642,592     | -Os -march=native -fno-vectorize -fno-slp-vectorize -fno-delete-null-pointer-checks -fno-asynchronous-unwind-tables -fno-optimize-sibling-calls -fno-plt -mllvm -inline-threshold=1000 -mllvm -enable-gvn-hoist -mllvm -enable-newgvn |
 | huffbench   | 1,190,829,141   | -O3 -march=native -flto -fno-omit-frame-pointer |
@@ -193,9 +212,7 @@ Date: 2026-06-22
 
 ## Clang 22 — Instruction count (-p), Full config (103 flags)
 
-Config: `config/clang22.osearch`
-Compiler: Clang 22.1.7
-Date: 2026-06-22
+Config: `config/clang22.osearch` (103 flags)
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
@@ -253,20 +270,18 @@ the result now accumulated across all iterations, GCC wins almabench.)
 
 ## Clang 22 — Size optimization (-s), Level 1
 
-Config: `config/clang22-test.osearch`
-Compiler: Clang 22.1.7
-Date: 2026-06-22
+Config: `config/clang22-test.osearch` (56 flags)
 
 | Benchmark   | .text (bytes) | Best flags |
 |-------------|---------------|------------|
 | distbench   | 1130          | -Oz -flto -ffp-contract=fast -fno-plt |
 | mat1bench   | 1117          | -Oz -flto |
+| almabench   | 2735          | -Oz -march=native -flto -fno-slp-vectorize -ffp-contract=fast -ffinite-math-only -fno-omit-frame-pointer -fno-builtin -mllvm -enable-newgvn |
 | fftbench    | 1388          | -Oz -march=native -flto -ffp-contract=fast -fno-builtin -mllvm -enable-newgvn |
 | linbench    | 1669          | -Oz -march=native -flto -ffinite-math-only |
 | evobench    | 1790          | -Oz -march=native -flto -fno-inline-functions -fno-signed-zeros -fno-builtin -mllvm -enable-newgvn |
-| huffbench   | 2214          | -Oz -flto -mllvm -enable-newgvn |
-| almabench   | 2735          | -Oz -march=native -flto -fno-slp-vectorize -ffp-contract=fast -ffinite-math-only -fno-omit-frame-pointer -fno-builtin -mllvm -enable-newgvn |
 | treebench   | 4205          | -Oz -march=native -flto -fno-inline-functions -fno-optimize-sibling-calls -mllvm -enable-gvn-hoist -mllvm -enable-newgvn |
+| huffbench   | 2214          | -Oz -flto -mllvm -enable-newgvn |
 
 ### Clang 22 size observations
 
@@ -284,12 +299,12 @@ Date: 2026-06-22
 |-----------|----------------|------------------|--------|---|
 | distbench | 1135 | 1130 | Clang | −0.4% |
 | mat1bench | 1079 | 1117 | GCC | −3% |
+| almabench | 2506 | 2735 | GCC | −8% |
 | fftbench | 1350 | 1388 | GCC | −3% |
 | linbench | 1673 | 1669 | Clang | −0.2% |
 | evobench | 1783 | 1790 | GCC | −0.4% |
-| huffbench | 2128 | 2214 | GCC | −4% |
-| almabench | 2506 | 2735 | GCC | −8% |
 | treebench | 4330 | 4205 | Clang | −3% |
+| huffbench | 2128 | 2214 | GCC | −4% |
 
 GCC wins 5 of 8 on code size, but the races are close — most within a few
 percent. GCC's `-Os` is tightest on the larger benchmarks (almabench −8%,
