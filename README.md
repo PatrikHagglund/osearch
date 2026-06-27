@@ -182,8 +182,63 @@ to enforce zero-overhead C++ discipline:
 ## TODO
 
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures (blocked on compiler support)
-- Optional per-flag hints in the config (e.g. `hint="size"` / `hint="speed"`) used to **delay** options whose hint doesn't match the current objective — chiefly so the `-Q n` per-level sample cap spends its budget on matching options first (and, optionally, to bias exploration order in general). A soft ordering signal only: non-matching options are still eventually tried, so cross-objective wins aren't lost
-- Escape greedy local optima: multiple random restarts (keep the best), or a non-greedy search (simulated annealing / genetic, as in the ACOVEA ancestor). The `-l 1` greedy can't reach optima that need a coordinated multi-flag move — e.g. almabench `-p`, where `-flto` only helps in a specific co-set (see RESULTS.md "Search limitations"). `-l 2` explores pairs but is impractically slow on a ~100-flag config
+- Deeper search to escape greedy local optima: a non-greedy search (simulated annealing / genetic, as in the ACOVEA ancestor). The `-l 1` greedy can't reach optima needing a coordinated multi-flag move — e.g. almabench `-p`, where `-flto` only helps in a specific co-set (see RESULTS.md "Search limitations"). The ranked-restart plan below is the lighter near-term mitigation
+
+### Effectiveness-ranked options (planned)
+
+Each compiler now has a single config serving both speed and size
+(`gcc16-test`, `clang22-test`, via an `-O` enum spanning `-O3…-Os`). The next
+step is to annotate each option with its *assumed/mean effectiveness for size
+and for speed separately*, and let that ranking drive the search. This unifies
+three earlier ideas — config "hints", quick-mode ordering, and restart seeding
+— and lets the full config subsume the curated "test" config.
+
+**Why it fits the current search.** At `-l 1`/`-l 2` the search already
+explores options in config order (`steps.cc`), and `-Q n` caps each level to
+the first `n`. So an effectiveness-ordered config already makes `-Q n` search
+the top-`n` options. The only gap: a single *physical* order can be optimal for
+just one objective, and we now want one config for both.
+
+**Model.** One annotated full config per compiler. Each option carries a
+per-objective weight, e.g.:
+
+    <flag value="-funroll-all-loops" w_speed="9" w_size="-3" />
+
+(positive = usually helps that objective, negative = usually hurts, default 0 =
+neutral). The search orders each level's candidates by the *active* objective's
+weight before any cap. One rank set does triple duty:
+
+- **Subset selection / quick mode.** A new `-k n` restricts the search to the
+  `n` highest-ranked options for the active objective; no cap = exhaustive.
+  This replaces the separate `*-test` configs: "quick" is `-k n` on the full
+  config, "thorough"/audit is the same file with no cap. (`-Q n` already does
+  this at `-l 1`, but `-k` composes cleanly with `-l 2`/`-r`, where `-Q` caps
+  *pairs*, not options.)
+- **Restart seeding (`-r`).** Bias `random_point()` so an option's on-probability
+  rises with its rank, so restarts begin near promising regions instead of a
+  coin-flip ~50%-on point (pure-random restart proved impractically slow). This
+  is the proper form of the multi-restart escape for greedy local optima.
+- **Base search.** At `-T 0` the order already steers greedy adoption, so an
+  effectiveness order improves the plain `-l 1` search too.
+
+**Keep it soft.** Weights only *order* and *bias* — never exclude. Mean
+effectiveness is a prior; per-benchmark it varies (`-march=native` helps FP,
+hurts integer size), so the search must still reach every option to find
+cross-objective surprises.
+
+**Populate from data.** Extend `aggregate.sh` to emit per-objective weights (it
+already measures per-flag average improvement per `--mode`), so they are
+regenerated rather than hand-curated, and refreshed as compilers change.
+
+**Implementation steps.**
+1. Rank annotations: XML attrs + loader (`read_conf`) + sort level-1/2
+   candidates by the active objective's weight. Improves `-Q` and base search.
+2. `-k n` option: restrict to the top-`n` ranked options (composes with `-l`).
+3. Weight `random_point()` by rank — completes `-r` (supersedes pure random).
+4. Reconcile + retire `*-test`: make `gcc16`/`clang22` ordered, annotated
+   supersets (e.g. add `-O2` to `gcc16`'s `-O` enum, fold in any test-only
+   flags); delete the `*-test` configs; regenerate RESULTS (tables = `-k N`,
+   audit = no cap); update README/CI/`aggregate.sh`.
 
 ### Noise-robust search
 
