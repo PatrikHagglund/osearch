@@ -27,12 +27,9 @@ for arg in "$@"; do
   esac
 done
 
-# Default config depends on mode.
+# Default config: gcc16-test serves all modes (its -O enum spans -O3..-Os).
 if [ -z "$CONFIG" ]; then
-  case "$MODE" in
-    size) CONFIG="config/gcc16-size.osearch" ;;
-    *)    CONFIG="config/gcc16-test.osearch" ;;
-  esac
+  CONFIG="config/gcc16-test.osearch"
 fi
 
 case "$MODE" in

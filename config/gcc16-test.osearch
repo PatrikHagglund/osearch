@@ -5,9 +5,9 @@
 
   <prime command="gcc OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
-
-  <!-- Optimization levels: -Ofast/-O3 as mutually exclusive enum -->
-  <flag type="simple" value="-O3" />
+  <!-- Optimization level (mutually exclusive). Spans speed (-O3) and size
+       (-Os) so this one config serves -p/time and -s; enum state 0 = -O0. -->
+  <flag type="enum" value="-O3|-O2|-Os" />
   <flag type="simple" value="-ffast-math" />
   <flag type="simple" value="-march=native" />
   <flag type="simple" value="-flto" />
@@ -65,6 +65,64 @@
   <flag type="simple" value="-ftree-loop-distribution" />
   <flag type="simple" value="-ftree-partial-pre" />
   <flag type="simple" value="-funswitch-loops" />
+
+  <!-- Promoted from the full config (config/gcc16.osearch): flags that only
+       won once the full flag set was searched. Kept here so this config
+       reproduces the full-config results without needing to run it. -->
+  <flag type="simple" value="-funroll-all-loops" />
+  <flag type="simple" value="-ffp-contract=on" />
+  <flag type="simple" value="-fno-if-conversion" />
+  <flag type="simple" value="-fno-if-conversion2" />
+  <flag type="simple" value="-fno-plt" />
+  <flag type="simple" value="-fno-tree-coalesce-vars" />
+  <flag type="simple" value="-fno-tree-dominator-opts" />
+  <flag type="simple" value="-fno-tree-ch" />
+  <flag type="simple" value="-finline-stringops" />
+  <flag type="simple" value="-ftracer" />
+  <flag type="simple" value="-frename-registers" />
+  <flag type="simple" value="-flive-range-shrinkage" />
+  <flag type="simple" value="-fno-cprop-registers" />
+  <flag type="simple" value="-fno-forward-propagate" />
+  <flag type="simple" value="-fno-guess-branch-probability" />
+  <flag type="simple" value="-fno-sched-dep-count-heuristic" />
+  <flag type="simple" value="-fno-dse" />
+  <flag type="simple" value="-fno-tree-dce" />
+  <flag type="simple" value="-fno-tree-sra" />
+  <flag type="simple" value="-fno-thread-jumps" />
+  <flag type="simple" value="-fno-early-inlining" />
+  <flag type="simple" value="-freorder-blocks-algorithm=simple" />
+
+  <!-- Round 2 promotions: full-config winners, mostly size (-s) and the
+       linbench/huffbench -p gaps. -fno-tree-sink/-ter recur across -s. -->
+  <flag type="simple" value="-fno-tree-sink" />
+  <flag type="simple" value="-fno-tree-ter" />
+  <flag type="simple" value="-fno-ssa-phiopt" />
+  <flag type="simple" value="-fno-tree-ccp" />
+  <flag type="simple" value="-fno-tree-forwprop" />
+  <flag type="simple" value="-fno-tree-reassoc" />
+  <flag type="simple" value="-fno-tree-fre" />
+  <flag type="simple" value="-fno-tree-scev-cprop" />
+  <flag type="simple" value="-fno-dce" />
+  <flag type="simple" value="-fno-ree" />
+  <flag type="simple" value="-fno-shrink-wrap" />
+  <flag type="simple" value="-fno-shrink-wrap-separate" />
+  <flag type="simple" value="-fno-omit-frame-pointer" />
+  <flag type="simple" value="-fno-align-jumps" />
+  <flag type="simple" value="-fno-gcse-after-reload" />
+  <flag type="simple" value="-fno-ipa-modref" />
+  <flag type="simple" value="-fno-ipa-ra" />
+  <flag type="simple" value="-fno-ipa-bit-cp" />
+  <flag type="simple" value="-fno-ira-share-spill-slots" />
+  <flag type="simple" value="-fno-move-loop-stores" />
+  <flag type="simple" value="-fira-region=all" />
+  <flag type="simple" value="-fschedule-insns" />
+  <flag type="simple" value="-fgraphite" />
+
+  <!-- Granular FP relaxations: help -s by dropping math error/exception
+       paths without full -ffast-math (which can bloat via vectorization). -->
+  <flag type="simple" value="-fno-math-errno" />
+  <flag type="simple" value="-ffinite-math-only" />
+  <flag type="simple" value="-fno-trapping-math" />
 
   <!-- Other useful flags -->
   <flag type="simple" value="-fno-asynchronous-unwind-tables" />

@@ -47,7 +47,7 @@ XML profiles in `config/` define available flags for different compilers:
 
 | Config | Description |
 |--------|-------------|
-| `gcc16-test.osearch` | GCC 16, key optimization flags (57 flags) |
+| `gcc16-test.osearch` | GCC 16, curated flags for speed *and* size (105 flags) |
 | `gcc16.osearch` | GCC 16, full flag set (214 flags) |
 | `clang22-test.osearch` | Clang/LLVM 22, key flags + LLVM pass control (56 flags) |
 | `clang22.osearch` | Clang/LLVM 22, full flag set + LLVM pass control (103 flags) |
@@ -182,6 +182,8 @@ to enforce zero-overhead C++ discipline:
 ## TODO
 
 - Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures (blocked on compiler support)
+- Optional per-flag hints in the config (e.g. `hint="size"` / `hint="speed"`) used to **delay** options whose hint doesn't match the current objective — chiefly so the `-Q n` per-level sample cap spends its budget on matching options first (and, optionally, to bias exploration order in general). A soft ordering signal only: non-matching options are still eventually tried, so cross-objective wins aren't lost
+- Escape greedy local optima: multiple random restarts (keep the best), or a non-greedy search (simulated annealing / genetic, as in the ACOVEA ancestor). The `-l 1` greedy can't reach optima that need a coordinated multi-flag move — e.g. almabench `-p`, where `-flto` only helps in a specific co-set (see RESULTS.md "Search limitations"). `-l 2` explores pairs but is impractically slow on a ~100-flag config
 
 ### Noise-robust search
 
