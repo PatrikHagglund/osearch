@@ -22,6 +22,8 @@ static bool opt_size = false;
 /// Option helper function.
 static void opt_s() { opt_size = true; }
 
+bool objective_is_size() { return opt_size; }
+
 /// Option helper varaible.
 static int dummy_ =
     (opt_reg_t::append(

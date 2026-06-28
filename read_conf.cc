@@ -116,22 +116,42 @@ static void start(void *data __attribute__((__unused__)), const char *el,
     }
   }
 
-  // parse simple flags
+  // parse flags. Attributes are scanned by name (not position) so optional
+  // effectiveness weights (w_speed / w_size) may appear in any order.
   if (strcmp(el, "flag") == 0) {
+    gsl::czstring type = nullptr;
+    gsl::czstring value = nullptr;
+    weight_t weight;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (strcmp(attr[0], "type") == 0 && strcmp(attr[1], "simple") == 0 &&
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        strcmp(attr[2], "value") == 0) {
+    for (int i = 0; attr[i] != nullptr; i += 2) {
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-      conf.flags.emplace_back(flag::simple_t(attr[3]));
+      gsl::czstring name = attr[i];
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+      gsl::czstring val = attr[i + 1];
+      if (strcmp(name, "type") == 0) {
+        type = val;
+      } else if (strcmp(name, "value") == 0) {
+        value = val;
+      } else if (strcmp(name, "w_speed") == 0) {
+        weight.speed = atoi(val);
+      } else if (strcmp(name, "w_size") == 0) {
+        weight.size = atoi(val);
+      }
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (strcmp(attr[0], "type") == 0 && strcmp(attr[1], "enum") == 0 &&
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        strcmp(attr[2], "value") == 0) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-      conf.flags.emplace_back(flag::enum_t(attr[3]));
+    bool added = false;
+    if (type != nullptr && value != nullptr) {
+      if (strcmp(type, "simple") == 0) {
+        conf.flags.emplace_back(flag::simple_t(value));
+        added = true;
+      } else if (strcmp(type, "enum") == 0) {
+        conf.flags.emplace_back(flag::enum_t(value));
+        added = true;
+      }
+    }
+    if (added) {
+      // Keep #weights aligned 1:1 with #flags.
+      conf.weights.push_back(weight);
     }
   }
 

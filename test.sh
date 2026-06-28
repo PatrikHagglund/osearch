@@ -47,7 +47,7 @@ fi
 
 echo ""
 echo "=== Test: -q (quiet mode) ==="
-OUT=$($OSEARCH -q config/gcc16-test.osearch benchmarks/fftbench.c)
+OUT=$($OSEARCH -q config/gcc16.osearch benchmarks/fftbench.c)
 if echo "$OUT" | grep -q "^Progress indicators"; then
   echo "FAIL: -q did not suppress progress output" >&2; exit 1
 fi
@@ -55,27 +55,35 @@ echo "OK: progress output suppressed"
 
 echo ""
 echo "=== Test: -Q (quick mode cap) ==="
-OUT=$($OSEARCH -q -Q 5 config/gcc16-test.osearch benchmarks/fftbench.c)
+OUT=$($OSEARCH -q -Q 5 config/gcc16.osearch benchmarks/fftbench.c)
 if ! echo "$OUT" | grep -q "capped from"; then
   echo "FAIL: -Q did not produce 'capped from' message" >&2; exit 1
 fi
 echo "OK: -Q cap applied"
 
 echo ""
+echo "=== Test: -k (top-ranked subset) ==="
+if $OSEARCH -q -k 10 config/gcc16.osearch benchmarks/fftbench.c >/dev/null 2>&1; then
+  echo "OK: -k ran"
+else
+  echo "FAIL: -k run errored" >&2; exit 1
+fi
+
+echo ""
 echo "=== Test: default (single flag search) ==="
-$OSEARCH config/gcc16-test.osearch benchmarks/fftbench.c
+$OSEARCH config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== Test: -l 2 (flag pair search) ==="
-$OSEARCH -l 2 config/gcc16-test.osearch benchmarks/fftbench.c
+$OSEARCH -l 2 config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== Test: -s (optimize for size) ==="
-$OSEARCH -s config/gcc16-test.osearch benchmarks/fftbench.c
+$OSEARCH -s config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== Test: -i (extra compile options) ==="
-$OSEARCH -i "-march=native" config/gcc16-test.osearch benchmarks/fftbench.c
+$OSEARCH -i "-march=native" config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== ALL PASS ==="

@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include <algorithm>
+#include <numeric> // std::iota
 
 /// \file
 /// Store (in #steps) the steps currently searched. See steps_t and
@@ -65,6 +66,60 @@ static int dummy_Q_ =
      1);
 
 // END
+
+// BEGIN option handling for 'top_k' (subset of highest-ranked options)
+
+/// Restrict the search to the 'top_k' highest-ranked options for the active
+/// objective (see search order below). 0 means "all options". Set via -k.
+/// Unlike -Q (which caps combinations per level), -k caps the number of
+/// *options*, so it composes cleanly with -l 2 (pairs among the top-k).
+static unsigned long top_k = 0;
+
+/// Option helper function.
+static void opt_k() { top_k = strtoul(optarg, nullptr, 0); }
+
+/// Option helper variable.
+static int dummy_k_ =
+    (opt_reg_t::append('k', opt_k, "k:", "  [-k n]",
+                       "  -k n \t\trestrict the search to the 'n' "
+                       "highest-ranked options\n  \t\tfor the active objective "
+                       "(0 = all, default)\n"),
+     1);
+
+// END
+
+/// Number of options the search may touch: all of them, or just the top-k
+/// (when -k is in effect).
+static unsigned option_count() {
+  unsigned const n = static_cast<unsigned>(conf.flags.size());
+  if (top_k != 0 && top_k < n) {
+    return static_cast<unsigned>(top_k);
+  }
+  return n;
+}
+
+/// Search order: option indices sorted by descending effectiveness weight for
+/// the active objective (size or speed). Ties keep config-file order (stable).
+/// A config with no weights yields the identity order, i.e. plain config order
+/// — so behaviour is unchanged for unannotated configs. Computed once.
+static const std::vector<unsigned> &search_order() {
+  static std::vector<unsigned> order;
+  if (order.size() != conf.flags.size()) {
+    order.resize(conf.flags.size());
+    std::iota(order.begin(), order.end(), 0U);
+    bool const size_obj = objective_is_size();
+    auto weight = [&](unsigned i) {
+      if (i >= conf.weights.size()) {
+        return 0; // unannotated/short config: treat as neutral
+      }
+      return size_obj ? conf.weights[i].size : conf.weights[i].speed;
+    };
+    std::ranges::stable_sort(order, [&](unsigned a, unsigned b) {
+      return weight(a) > weight(b);
+    });
+  }
+  return order;
+}
 
 #ifdef DEBUG
 std::string delta_ind_str(delta_ind_t const &d_ind) {
@@ -124,9 +179,10 @@ obj_t delta_t::alt_diff() const {
 /// New combinations compared to the previous level.
 /// \todo Document better.
 static unsigned new_comb(unsigned level) {
+  unsigned const n = option_count();
   unsigned res = 1;
   for (unsigned j = 0; j < level; ++j) {
-    res *= conf.flags.size() - j;
+    res *= n - j;
     res /= j + 1;
   }
   return res;
@@ -255,33 +311,36 @@ bool steps_t::find_d_ind(const delta_ind_t &d_ind) const {
 
 delta_ind_t steps_t::get_next_delta() const
 {
-  // Sequential exploration in config-file order.
-  // seq_index tracks position within the current level.
-  unsigned const n = static_cast<unsigned>(conf.flags.size());
+  // Exploration follows the effectiveness order (search_order()), capped to the
+  // top-k options when -k is set. seq_index tracks position within the level.
+  // For an unannotated config the order is identity, so this is plain
+  // config-file order.
+  std::vector<unsigned> const &order = search_order();
+  unsigned const n = option_count();
   delta_ind_t d_ind;
 
   if (level == 1) {
-    d_ind.insert(static_cast<unsigned short>(seq_index % n));
+    d_ind.insert(static_cast<unsigned short>(order[seq_index % n]));
   } else if (level == 2) {
-    // Map seq_index to combination (i, j) where i < j.
+    // Map seq_index to a pair of ranks (i, j), i < j, then to option indices.
     unsigned idx = 0;
     for (unsigned i = 0; i < n; ++i) {
       for (unsigned j = i + 1; j < n; ++j) {
         if (idx == seq_index) {
-          d_ind.insert(static_cast<unsigned short>(i));
-          d_ind.insert(static_cast<unsigned short>(j));
+          d_ind.insert(static_cast<unsigned short>(order[i]));
+          d_ind.insert(static_cast<unsigned short>(order[j]));
           return d_ind;
         }
         ++idx;
       }
     }
   } else {
-    // For level >= 3, fall back to random.
+    // For level >= 3, fall back to random (among the top-k options).
     do {
       d_ind.clear();
       for (unsigned i = 0; i < level; ++i) {
-        d_ind.insert(static_cast<unsigned>(my_rand()) %
-                     static_cast<unsigned char>(n));
+        d_ind.insert(order[static_cast<unsigned>(my_rand()) %
+                           static_cast<unsigned char>(n)]);
       }
       contract_assert(d_ind.size() <= level);
     } while (d_ind.size() < level || find_d_ind(d_ind));

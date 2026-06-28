@@ -38,6 +38,10 @@ int16_t my_rand() {
 }
 #pragma GCC diagnostic pop
 
+// search_order() (in steps.cc) needs the active objective; these tests never
+// build a search order, so a trivial stub suffices.
+bool objective_is_size() { return false; }
+
 // --- Fixture ----------------------------------------------------------------
 
 static void setup_conf() {

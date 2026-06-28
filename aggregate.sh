@@ -9,6 +9,9 @@
 #   --mode=perf  retired instructions (needs Linux perf_event support)
 #   --mode=size  binary .text size (deterministic)
 #
+# To turn this ranking into the per-flag w_speed/w_size weights stored in the
+# config (used by the search order and -k/-Q/-r), see ./annotate.sh.
+#
 # Requires: osearch built in ./build/, python3 for JSON parsing.
 set -e
 
@@ -27,9 +30,11 @@ for arg in "$@"; do
   esac
 done
 
-# Default config: gcc16-test serves all modes (its -O enum spans -O3..-Os).
+# Default config: the single annotated gcc 16 config serves all modes (its -O
+# enum spans -O3..-Os). Quick mode is achieved with -Q/-k; this ranking pass
+# keeps the -Q cap to stay fast.
 if [ -z "$CONFIG" ]; then
-  CONFIG="config/gcc16-test.osearch"
+  CONFIG="config/gcc16.osearch"
 fi
 
 case "$MODE" in

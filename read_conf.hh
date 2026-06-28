@@ -64,6 +64,15 @@ using flag_t = std::variant<simple_t, enum_t>;
 }
 }
 
+/// Per-flag effectiveness weights (a prior on how strongly an option helps
+/// each objective). Positive = usually helps, negative = usually hurts, 0 =
+/// neutral/unknown. Used only to *order* and *bias* the search (never to
+/// exclude); see the "Effectiveness-ranked options" notes in README.
+struct weight_t {
+  int speed = 0; ///< prior effect on speed (time / retired instructions)
+  int size = 0;  ///< prior effect on generated code size
+};
+
 /// Type to store all configuration data (in #conf), from the configuration
 /// file (by read_conf()). Then used to explore compiler options (by search()).
 struct conf_t {
@@ -73,6 +82,8 @@ struct conf_t {
   using flags_t = std::vector<flag::flag_t>;
   /// List of compiler options (used by search()).
   flags_t flags;
+  /// Effectiveness weights, one per entry in #flags (same index).
+  std::vector<weight_t> weights;
   /// Compiler command to get its version (used by get_compiler_version()).
   std::string get_version;
 #ifdef DEBUG

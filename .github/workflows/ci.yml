@@ -42,19 +42,19 @@ jobs:
         run: g++ -std=gnu++26 -DDEBUG -I $HOME/GSL/include -fsyntax-only *.cc
 
       - name: Integration smoke test (-l 1 -Q 5)
-        run: ./build/osearch -l 1 -Q 5 -q config/gcc16-test.osearch benchmarks/fftbench.c
+        run: ./build/osearch -l 1 -Q 5 -q config/gcc16.osearch benchmarks/fftbench.c
 
       - name: Integration smoke test (-l 2 -Q 5)
-        run: ./build/osearch -l 2 -Q 5 -q config/gcc16-test.osearch benchmarks/fftbench.c
+        run: ./build/osearch -l 2 -Q 5 -q config/gcc16.osearch benchmarks/fftbench.c
+
+      - name: Integration smoke test (-k quick mode, top-ranked subset)
+        run: ./build/osearch -l 1 -k 12 -q config/gcc16.osearch benchmarks/fftbench.c
 
       - name: Integration smoke test (-s size mode)
-        run: ./build/osearch -s -l 1 -Q 3 -q config/gcc16-test.osearch benchmarks/fftbench.c
+        run: ./build/osearch -s -l 1 -Q 3 -q config/gcc16.osearch benchmarks/fftbench.c
 
       - name: Integration smoke test (Clang, -l 1 -Q 5)
-        run: ./build/osearch -l 1 -Q 5 -q config/clang22-test.osearch benchmarks/fftbench.c
-
-      - name: Integration smoke test (Clang full config, -l 1 -Q 3)
-        run: ./build/osearch -l 1 -Q 3 -q config/clang22.osearch benchmarks/fftbench.c
+        run: ./build/osearch -l 1 -Q 5 -q config/clang22.osearch benchmarks/fftbench.c
 
       - name: Integration smoke test (-p perf mode, if available)
         run: |
@@ -77,7 +77,7 @@ jobs:
           EOF
           if gcc -O2 -o /tmp/probe /tmp/probe.c && /tmp/probe; then
             echo "perf_event_open available — running -p smoke test"
-            ./build/osearch -p -l 1 -Q 3 -q config/gcc16-test.osearch benchmarks/fftbench.c
+            ./build/osearch -p -l 1 -Q 3 -q config/gcc16.osearch benchmarks/fftbench.c
           else
             echo "perf_event_open unavailable (likely container seccomp) — skipping -p smoke test"
           fi

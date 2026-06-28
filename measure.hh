@@ -11,6 +11,11 @@
 /// Print out what we measure.
 void summary_first_measure();
 
+/// True when the active objective is generated code size (`-s`); false when
+/// it is speed (wall-clock time or, with `-p`, retired instructions). Used to
+/// pick which per-flag effectiveness weight steers the search order.
+bool objective_is_size();
+
 // results
 
 /// Reset search. Scrap all measurment results (and progress printouts).
