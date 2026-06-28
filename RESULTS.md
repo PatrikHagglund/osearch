@@ -128,12 +128,14 @@ Two benchmarks are worth calling out:
 - **huffbench `-p`** (quick 1.00B) is the widest gap. Its best flag set is
   *specific to that workload* (e.g. `-fipa-cp-clone`, `-fsplit-paths`,
   `-finline-stringops`), so those options rank low on the cross-benchmark
-  weights. This is mostly greedy *path-dependence*, not coverage: widening to
-  `-k 130` only nudges it to 0.98B, because a smaller, hand-chosen space (the
-  former curated config, ~0.89B) happened to steer the hill-climb down a better
-  path. It is the clearest price of replacing a hand-curated set with
-  data-driven weights — and the kind of case `-l 2` or a non-greedy search
-  (README TODO) would address.
+  weights. This is greedy *path-dependence*, not coverage: widening to `-k 130`
+  only nudges it to 0.98B, and even an uncapped audit over all 226 flags (with
+  `-finline-stringops` among its picks) reaches just 0.98B — so the flags are
+  reachable; greedy simply doesn't take that path from the full space. A
+  smaller, hand-chosen space (the former curated config, ~0.89B) happened to
+  steer the hill-climb down a better path. It is the clearest price of replacing
+  a hand-curated set with data-driven weights — and the kind of case `-l 2` or a
+  non-greedy search (README TODO) would address.
 - **almabench `-p`** is a true greedy local optimum that no `-k` escapes (see
   below).
 
