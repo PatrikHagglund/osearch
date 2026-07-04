@@ -7,7 +7,7 @@
 - **Compilers:** GCC 16.1.1, Clang 22.1.7
 - **Date:** 2026-06-28
 - **Configs:** one annotated file per compiler — `gcc16` (226 flags) and
-  `clang22` (105 flags), under `config/`. Each carries per-flag `w_speed` /
+  `clang22` (106 flags), under `config/`. Each carries per-flag `w_speed` /
   `w_size` weights; a *quick* run restricts to the top-ranked options
   (`-k n` / `-Q n`), an *audit* run uncaps and reaches every option. The tables
   below are quick runs; an audit matches them within ~1–2% except where a
@@ -16,8 +16,15 @@
 
 `-p` counts are user-space retired instructions for `run()` only, via the
 in-harness `perf_event_open` counter. Absolute size/time figures are larger
-than pre-2026-06 revisions because DCE-prevention `volatile` sinks added real
-code and work to several benchmarks' `run()`.
+than pre-2026-06 revisions because DCE-prevention sinks added real code and
+work to several benchmarks' `run()`.
+
+Every benchmark folds its full computed output into a checksum
+(`bench_result` in `main.ic`) that is printed under `-v`, so no compiler at
+any optimization level may dead-code-eliminate the intended computation —
+and the checksums double as a correctness check: all eight are bit-identical
+between GCC 16 and Clang 22 at `-O2` (strict FP), and agree to ≥10
+significant digits under `-O3 -march=native -ffast-math -flto`.
 
 ## Summary
 
@@ -29,9 +36,11 @@ code and work to several benchmarks' `run()`.
   carry per-flag effectiveness weights, so a quick `-k n` run searches the
   top-ranked options and an uncapped audit reaches the rest. The former
   separate "curated" and "full" configs are now one file each.
-- **GCC vs Clang, instructions:** GCC 16 wins 5 of 8, Clang 3 (fftbench,
-  evobench, treebench). Biggest gaps: mat1bench (GCC −47%), fftbench (Clang
-  −43%). See [comparison](#gcc-16-vs-clang-22--instructions--p).
+- **GCC vs Clang, instructions:** 4–4. Biggest gaps: mat1bench (GCC −47%),
+  fftbench (Clang −43%) — each root-caused to a single hot-loop codegen
+  decision, see [Why the big gaps](#why-the-big-gaps). One former "GCC −46%"
+  (almabench) was a missing `-fveclib=libmvec` in the Clang config, not a
+  compiler gap. See [comparison](#gcc-16-vs-clang-22--instructions--p).
 - **GCC vs Clang, size:** GCC wins 7 of 8 (all but treebench), several by
   ~2–14%. See [comparison](#gcc-16-vs-clang-22--size--s).
 
@@ -99,13 +108,13 @@ includes marginal picks that vary between runs (use `-T 3` for a stable set).
 
 ### Clang 22 — instructions
 
-Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`), greedy `-l 1`.
+Config: `config/clang22.osearch` (106 flags), quick mode (`-k 80`), greedy `-l 1`.
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
 | distbench   | 39,092,624      | -O2 -march=native -ffast-math |
 | mat1bench   | 54,306,100      | -O3 -flto -march=native -ffast-math -fno-asynchronous-unwind-tables -fno-plt -mllvm -force-vector-width=8 |
-| almabench   | 646,096,405     | -Os -flto=thin -march=native -ffast-math -fno-omit-frame-pointer -fno-asynchronous-unwind-tables -fno-plt -fvisibility=hidden -mno-vzeroupper -mllvm -unroll-threshold=200 |
+| almabench   | 215,973,084     | -Os -flto=thin -march=native -ffast-math -fveclib=libmvec -fno-omit-frame-pointer -fno-asynchronous-unwind-tables -fno-plt -fvisibility=hidden -mno-vzeroupper -mllvm -unroll-threshold=200 |
 | fftbench    | 254,507,208     | -O3 -flto -march=native -ffast-math -fno-asynchronous-unwind-tables -fno-plt -fno-builtin -mllvm -inline-threshold=300 |
 | linbench    | 109,869,645     | -O3 -flto -march=native -ffast-math -ffp-contract=on -fno-plt -mno-vzeroupper -mllvm -inline-threshold=1000 -mllvm -unroll-threshold=800 |
 | evobench    | 557,312,655     | -O3 -flto=thin -march=native -ffast-math -ffp-contract=on -fno-asynchronous-unwind-tables -fno-optimize-sibling-calls -mno-vzeroupper -mllvm -enable-gvn-hoist |
@@ -135,24 +144,73 @@ Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`), greedy `-l 1
 |-----------|--------|----------|--------|---|
 | distbench | 23,512,262 | 39,092,624 | GCC | −40% |
 | mat1bench | 28,962,065 | 54,306,100 | GCC | −47% |
-| almabench | 347,361,650 | 646,096,405 | GCC | −46% |
+| almabench | 347,361,650 | 215,973,084 | Clang | −38% |
 | fftbench | 448,263,887 | 254,507,208 | Clang | −43% |
 | linbench | 96,244,522 | 109,869,645 | GCC | −12% |
 | evobench | 571,153,955 | 557,312,655 | Clang | −2% |
 | treebench | 845,933,030 | 770,321,839 | Clang | −9% |
 | huffbench | 1,003,034,388 | 1,190,827,257 | GCC | −16% |
 
-GCC 16 wins 5 of 8 on instruction count (distbench −40%, mat1bench −47%,
-almabench −46%, linbench −12%, huffbench −16%); Clang wins fftbench (−43%),
-treebench (−9%), and evobench (−2%).
+It's 4–4: GCC wins distbench (−40%), mat1bench (−47%), linbench (−12%), and
+huffbench (−16%); Clang wins fftbench (−43%), almabench (−38%), treebench
+(−9%), and evobench (−2%). (Almabench flipped from "GCC −46%" when
+`-fveclib=libmvec` was added to the Clang config — see
+[Why the big gaps](#why-the-big-gaps).)
 
 (Both columns are the single annotated config in quick mode (`-k 80`), so this
 is an apples-to-apples comparison. Earlier revisions measured GCC with a weaker
 speed-only config and reported "Clang wins 5/8" — that was the config, not the
-compiler. Two quick-mode caveats narrow GCC's lead here: GCC almabench is the
-`-l 1` result of ~347M (the reachable 319.6M would widen GCC's lead) and GCC
+compiler. Two quick-mode caveats: GCC almabench is the `-l 1` result of ~347M
+(the reachable 319.6M would narrow Clang's almabench win to −32%) and GCC
 huffbench quick lands at 1.00B, ~13% above the best the former hand-curated set
 found — a greedy path-dependence, see [Quick vs audit](#quick-vs-audit).)
+
+#### Why the big gaps
+
+Each ≥40% delta was root-caused from the winning binaries' disassembly. The
+checksums (see top) verify both compilers compute the same result in every
+case — none of these gaps is dead-code elimination.
+
+- **distbench (GCC −40%).** Both compilers vectorize 8-wide (zmm), but GCC
+  vectorizes the *outer* `i` loop: it transposes 8 `v1[i]` points into
+  registers once, then each `j` iteration broadcasts `v2[j]`'s three scalars
+  and computes 8 distances with zero shuffles — ~1.4 instructions per
+  distance. Clang vectorizes the *inner* `j` loop, so it loads interleaved
+  `{x,y,z}` structs and pays 24 `vpermt2pd` de-interleave shuffles per 32
+  distances — ~2.8 instructions per distance.
+- **mat1bench (GCC −47%).** GCC interchanges the `j`/`k` loops into the
+  classic broadcast-FMA GEMM microkernel: `c[i][j..j+7]` lives in a zmm
+  accumulator across the entire `k` loop, rows of `b` stream unit-stride,
+  9× unrolled — 0.30 instructions per multiply-add. Clang keeps the
+  dot-product order as written (LLVM's LoopInterchange pass is off by
+  default, and `-mllvm -enable-loopinterchange` doesn't fire on this nest),
+  so `b[k][j]` is a strided *column* access costing `vgatherqpd` +
+  `kxnorb` mask reset + `vxorpd` per 8 elements — 0.60 instructions per
+  multiply-add.
+- **almabench (was "GCC −46%") — a config artifact, not a compiler gap.**
+  GCC auto-vectorizes `sin`/`cos` calls into glibc's vector math library
+  (libmvec, `_ZGVeN8v_sin/cos`) under `-ffast-math`; Clang only uses libmvec
+  when told to via `-fveclib=libmvec`, which the config didn't offer. Adding
+  the flag (an exact no-op on the other benchmarks) drops Clang from 646M to
+  216M — flipping the winner to Clang by a wide margin. The option is now in
+  `clang22.osearch`, and the tables above reflect the re-run.
+- **fftbench (Clang −43%).** Split by measuring the two phases separately:
+  - *Bit-reverse permutation — 75% of the gap.* Clang recognizes the
+    shift/or loop in `bit_reverse()` as the `llvm.bitreverse` idiom and,
+    with znver4's GFNI, lowers it to `vgf2p8affineqb` + `bswap` + `bextr`:
+    16.2M instructions for the whole pass. GCC has no bit-reverse idiom
+    recognition and keeps the 20-iteration loop — 161.0M instructions (it
+    doesn't even fully unroll it: the default
+    `max-completely-peel-times=16` is below the 20 iterations).
+  - *Butterfly stages — 25% of the gap.* 287.3M (GCC) vs 238.3M (Clang):
+    both emit scalar FMA butterflies (the twiddle recurrence is a loop
+    dependence neither can vectorize), but Clang unrolls the innermost loop
+    2× with slightly denser code.
+
+The pattern: the remaining big deltas are single hot-loop codegen decisions
+(outer-loop vectorization, loop interchange, idiom recognition), not broad
+code-quality differences — and one "compiler win" was really a missing
+config flag.
 
 ## Code size (-s)
 
@@ -184,7 +242,7 @@ Config: `config/gcc16.osearch` (226 flags), quick mode (`-k 80`), greedy `-l 1`.
 
 ### Clang 22 — size
 
-Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`), greedy `-l 1`.
+Config: `config/clang22.osearch` (106 flags), quick mode (`-k 80`), greedy `-l 1`.
 
 | Benchmark   | .text (bytes) | Best flags |
 |-------------|---------------|------------|
@@ -301,3 +359,9 @@ improvements). Two effects surface in the tables:
 - **Time (default):** too noisy on this shared host to optimize on — the
   greedy search even adopts `-Os` for compute-bound FP benchmarks. Use `-s`
   or `-p` instead (see [Time](#time-default)).
+- **Rebuilding a winner by hand:** use the flags *exactly* as the harness
+  does — `gcc <flags> bench.c -lm -lrt` with no `-std=`. Adding `-std=c99`
+  puts GCC in strict-ISO mode, which turns off FP contraction
+  (`-ffp-contract=off` instead of `fast`) when `-ffast-math` isn't among
+  the winning flags: e.g. the fftbench GCC winner measures 448.3M as
+  searched but 490.2M with `-std=c99` (+9%, the un-contracted butterflies).

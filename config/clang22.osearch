@@ -35,6 +35,10 @@
 
   <!-- Vectorization (disable to test impact) -->
   <flag type="simple" value="-fno-vectorize" w_speed="-2" w_size="1" />
+  <!-- Vectorized libm (glibc libmvec): GCC uses it automatically under
+       -ffast-math, Clang only when asked. Decisive on sin/cos-heavy code
+       (almabench -p: 646M -> 216M) and an exact no-op elsewhere. -->
+  <flag type="simple" value="-fveclib=libmvec" w_speed="4" w_size="0" />
   <flag type="simple" value="-fno-slp-vectorize" w_speed="1" w_size="1" />
 
   <!-- Loop unrolling -->
