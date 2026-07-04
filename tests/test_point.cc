@@ -7,8 +7,8 @@
 /// definition of `conf` here and populate it with a handful of dummy
 /// simple_t flags.
 
-#include "../point.hh"
-#include "../read_conf.hh" // conf_t, flag::simple_t
+#include "point.hh"
+#include "read_conf.hh" // conf_t, flag::simple_t
 #include "check.hh"
 
 // One-definition of the global `conf`. This replaces the definition in

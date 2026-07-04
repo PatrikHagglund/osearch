@@ -39,7 +39,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: DEBUG syntax check
-        run: g++ -std=gnu++26 -DDEBUG -I $HOME/GSL/include -fsyntax-only *.cc
+        run: g++ -std=gnu++26 -DDEBUG -I $HOME/GSL/include -fsyntax-only src/*.cc
 
       - name: Integration smoke test (-l 1 -Q 5)
         run: ./build/osearch -l 1 -Q 5 -q config/gcc16.osearch benchmarks/fftbench.c

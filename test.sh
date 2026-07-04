@@ -31,7 +31,7 @@ ctest --test-dir build --output-on-failure
 
 echo ""
 echo "=== Verify DEBUG build compiles ==="
-g++ -std=gnu++26 -DDEBUG -I ~/GSL/include -fsyntax-only *.cc
+g++ -std=gnu++26 -DDEBUG -I ~/GSL/include -fsyntax-only src/*.cc
 echo "DEBUG build: OK"
 
 if [ "$MODE" = fast ]; then

@@ -5,7 +5,7 @@
 /// exists so CTest can register the file as a test; the real "test" is
 /// that the translation unit compiles.
 
-#include "../obj.hh"
+#include "obj.hh"
 
 // --- construction & default value ---
 static_assert(obj_t{}.is_finite());

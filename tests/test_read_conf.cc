@@ -5,9 +5,9 @@
 /// invokes get_opts() to set the config_file path, then calls read_conf()
 /// and verifies the resulting conf global.
 
-#include "../read_conf.hh"
-#include "../getopts.hh"
-#include "../print.hh"
+#include "read_conf.hh"
+#include "getopts.hh"
+#include "print.hh"
 
 #include "check.hh"
 

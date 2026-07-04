@@ -5,12 +5,12 @@
 /// and uses the progress global. We provide stubs that return canned
 /// values so we can test the results-map logic in isolation.
 
-#include "../measure.hh"
-#include "../compile.hh"
-#include "../execute.hh"
-#include "../point.hh"
-#include "../print.hh"
-#include "../read_conf.hh"
+#include "measure.hh"
+#include "compile.hh"
+#include "execute.hh"
+#include "point.hh"
+#include "print.hh"
+#include "read_conf.hh"
 
 #include "check.hh"
 

@@ -8,13 +8,13 @@
 /// is avoided (it formats via conf.flags), leaving alt_diff() and
 /// operator< as the interesting targets.
 
-#include "../steps.hh"
+#include "steps.hh"
 
-#include "../measure.hh" // obj_t, measure() decl
-#include "../my_rand.hh" // my_rand() decl
-#include "../point.hh"
-#include "../print.hh" // progress_t
-#include "../read_conf.hh" // conf_t, flag::simple_t
+#include "measure.hh" // obj_t, measure() decl
+#include "my_rand.hh" // my_rand() decl
+#include "point.hh"
+#include "print.hh" // progress_t
+#include "read_conf.hh" // conf_t, flag::simple_t
 
 #include "check.hh"
 

@@ -14,11 +14,11 @@ find_path(GSL_INCLUDE_DIR gsl/gsl
   REQUIRED)
 
 add_executable(osearch
-  main.cc my_rand.cc obj.cc point.cc compile.cc
-  execute.cc getopts.cc measure.cc print.cc
-  read_conf.cc search.cc steps.cc contract.cc)
+  src/main.cc src/my_rand.cc src/obj.cc src/point.cc src/compile.cc
+  src/execute.cc src/getopts.cc src/measure.cc src/print.cc
+  src/read_conf.cc src/search.cc src/steps.cc src/contract.cc)
 
-target_include_directories(osearch PRIVATE ${GSL_INCLUDE_DIR})
+target_include_directories(osearch PRIVATE ${GSL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(osearch PRIVATE EXPAT::EXPAT)
 target_link_options(osearch PRIVATE -Wl,--no-eh-frame-hdr)
 
@@ -97,33 +97,33 @@ get_target_property(_osearch_warn_opts osearch COMPILE_OPTIONS)
 function(osearch_add_test name)
   set(sources ${ARGN})
   add_executable(${name} ${sources})
-  target_include_directories(${name} PRIVATE ${GSL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR})
+  target_include_directories(${name} PRIVATE ${GSL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src)
   target_compile_options(${name} PRIVATE ${_osearch_warn_opts})
   add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
 # Compile-time-only tests for obj_t. "Passing" == "compiles".
-osearch_add_test(test_obj_static tests/test_obj_static.cc contract.cc)
+osearch_add_test(test_obj_static tests/test_obj_static.cc src/contract.cc)
 
 # Runtime tests for point_t. Defines its own `conf` global, so read_conf.cc
 # is intentionally NOT linked in.
-osearch_add_test(test_point tests/test_point.cc point.cc contract.cc)
+osearch_add_test(test_point tests/test_point.cc src/point.cc src/contract.cc)
 
 # Runtime tests for steps_t / delta_t. Stubs out conf, progress, measure(),
 # and my_rand(); never calls any method that would touch them.
-osearch_add_test(test_steps tests/test_steps.cc steps.cc point.cc contract.cc)
+osearch_add_test(test_steps tests/test_steps.cc src/steps.cc src/point.cc src/contract.cc)
 
 # Runtime tests for measure(). Stubs compile/execute/progress; tests the
 # results-map logic (caching, get_min_point, reset).
-osearch_add_test(test_measure tests/test_measure.cc measure.cc point.cc contract.cc)
+osearch_add_test(test_measure tests/test_measure.cc src/measure.cc src/point.cc src/contract.cc)
 
 # Runtime tests for flat_map.
-osearch_add_test(test_flat_map tests/test_flat_map.cc contract.cc)
+osearch_add_test(test_flat_map tests/test_flat_map.cc src/contract.cc)
 
 # Runtime tests for read_conf (flag types + XML parsing into conf_t).
 # Links read_conf.cc and getopts.cc; writes a temp XML file.
-add_executable(test_read_conf tests/test_read_conf.cc read_conf.cc getopts.cc contract.cc)
-target_include_directories(test_read_conf PRIVATE ${GSL_INCLUDE_DIR})
+add_executable(test_read_conf tests/test_read_conf.cc src/read_conf.cc src/getopts.cc src/contract.cc)
+target_include_directories(test_read_conf PRIVATE ${GSL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(test_read_conf PRIVATE EXPAT::EXPAT)
 target_compile_options(test_read_conf PRIVATE ${_osearch_warn_opts})
 add_test(NAME test_read_conf COMMAND test_read_conf)
