@@ -359,9 +359,12 @@ improvements). Two effects surface in the tables:
 - **Time (default):** too noisy on this shared host to optimize on — the
   greedy search even adopts `-Os` for compute-bound FP benchmarks. Use `-s`
   or `-p` instead (see [Time](#time-default)).
-- **Rebuilding a winner by hand:** use the flags *exactly* as the harness
-  does — `gcc <flags> bench.c -lm -lrt` with no `-std=`. Adding `-std=c99`
-  puts GCC in strict-ISO mode, which turns off FP contraction
-  (`-ffp-contract=off` instead of `fast`) when `-ffast-math` isn't among
-  the winning flags: e.g. the fftbench GCC winner measures 448.3M as
-  searched but 490.2M with `-std=c99` (+9%, the un-contracted butterflies).
+- **Rebuilding a winner by hand:** match the harness invocation —
+  `gcc -std=gnu23 <flags> bench.c -lm -lrt` (both configs pin
+  `-std=gnu23` in their prime command). The `gnu` part matters, not the
+  year: any strict-ISO mode (`-std=c99`, `-std=c23`, …) restricts GCC's
+  FP contraction when `-ffast-math` isn't among the winning flags — e.g.
+  the fftbench GCC winner measures 448.3M under `gnu23` (identical to the
+  gnu-mode default) but 490.2M under `c23` or `c99` (+9%, the
+  un-contracted butterflies). `gnu23` is also what GCC 16 defaults to;
+  pinning it aligns Clang (default `gnu17`) to the same language mode.

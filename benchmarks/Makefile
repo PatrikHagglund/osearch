@@ -1,4 +1,4 @@
-CC=gcc -std=c99
+CC=gcc -std=gnu23
 # Libraries go in LDLIBS (placed after the source by make's implicit link
 # rule) so libm.so's AS_NEEDED libmvec resolves the vectorized sin/cos
 # (_ZGVbN2v_*) that -O3 -ffast-math emits. In LDFLAGS they precede the

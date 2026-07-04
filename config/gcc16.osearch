@@ -3,7 +3,7 @@
   <description value="gcc 16 (full)" />
   <get_version value="gcc -dumpversion" />
 
-  <prime command="gcc OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
+  <prime command="gcc -std=gnu23 OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
   <!-- Optimization levels -->
   <flag type="enum" value="-O3|-O2|-Os" w_speed="9" w_size="9" />

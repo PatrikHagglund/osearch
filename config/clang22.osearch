@@ -3,7 +3,7 @@
   <description value="clang 22 (full)" />
   <get_version value="clang -dumpversion" />
 
-  <prime command="clang OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
+  <prime command="clang -std=gnu23 OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
   <!-- All flags validated against Clang 22: each is accepted by the driver
        (no -Wignored-optimization-argument) and each -mllvm option exists in
