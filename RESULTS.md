@@ -167,50 +167,98 @@ found — a greedy path-dependence, see [Quick vs audit](#quick-vs-audit).)
 
 #### Why the big gaps
 
-Each ≥40% delta was root-caused from the winning binaries' disassembly. The
-checksums (see top) verify both compilers compute the same result in every
-case — none of these gaps is dead-code elimination.
+Each ≥40% delta was root-caused: rebuild the winner with its exact flags,
+confirm the published count reproduces to within a few instructions, then
+read the hot loops in the disassembly and test counterfactuals (add/remove
+one flag, or split a phase out by patching in an early return). Two
+possibilities were ruled out first:
 
-- **distbench (GCC −40%).** Both compilers vectorize 8-wide (zmm), but GCC
-  vectorizes the *outer* `i` loop: it transposes 8 `v1[i]` points into
-  registers once, then each `j` iteration broadcasts `v2[j]`'s three scalars
-  and computes 8 distances with zero shuffles — ~1.4 instructions per
-  distance. Clang vectorizes the *inner* `j` loop, so it loads interleaved
-  `{x,y,z}` structs and pays 24 `vpermt2pd` de-interleave shuffles per 32
-  distances — ~2.8 instructions per distance.
-- **mat1bench (GCC −47%).** GCC interchanges the `j`/`k` loops into the
-  classic broadcast-FMA GEMM microkernel: `c[i][j..j+7]` lives in a zmm
-  accumulator across the entire `k` loop, rows of `b` stream unit-stride,
-  9× unrolled — 0.30 instructions per multiply-add. Clang keeps the
-  dot-product order as written (LLVM's LoopInterchange pass is off by
-  default, and `-mllvm -enable-loopinterchange` doesn't fire on this nest),
-  so `b[k][j]` is a strided *column* access costing `vgatherqpd` +
-  `kxnorb` mask reset + `vxorpd` per 8 elements — 0.60 instructions per
-  multiply-add.
-- **almabench (was "GCC −46%") — a config artifact, not a compiler gap.**
-  GCC auto-vectorizes `sin`/`cos` calls into glibc's vector math library
-  (libmvec, `_ZGVeN8v_sin/cos`) under `-ffast-math`; Clang only uses libmvec
-  when told to via `-fveclib=libmvec`, which the config didn't offer. Adding
-  the flag (an exact no-op on the other benchmarks) drops Clang from 646M to
-  216M — flipping the winner to Clang by a wide margin. The option is now in
-  `clang22.osearch`, and the tables above reflect the re-run.
-- **fftbench (Clang −43%).** Split by measuring the two phases separately:
-  - *Bit-reverse permutation — 75% of the gap.* Clang recognizes the
-    shift/or loop in `bit_reverse()` as the `llvm.bitreverse` idiom and,
-    with znver4's GFNI, lowers it to `vgf2p8affineqb` + `bswap` + `bextr`:
-    16.2M instructions for the whole pass. GCC has no bit-reverse idiom
-    recognition and keeps the 20-iteration loop — 161.0M instructions (it
-    doesn't even fully unroll it: the default
-    `max-completely-peel-times=16` is below the 20 iterations).
-  - *Butterfly stages — 25% of the gap.* 287.3M (GCC) vs 238.3M (Clang):
-    both emit scalar FMA butterflies (the twiddle recurrence is a loop
-    dependence neither can vectorize), but Clang unrolls the innermost loop
-    2× with slightly denser code.
+- *Dead-code elimination:* every benchmark's full output feeds a printed
+  checksum (see top), and all eight checksums agree bit-exactly between the
+  two compilers at `-O2` — both sides do all the intended work.
+- *Vector width:* both compilers use 8-wide zmm on the FP kernels; no gap
+  comes from one side staying at 256-bit.
 
-The pattern: the remaining big deltas are single hot-loop codegen decisions
-(outer-loop vectorization, loop interchange, idiom recognition), not broad
-code-quality differences — and one "compiler win" was really a missing
-config flag.
+What remains is, in each case, **one discrete codegen decision** in one hot
+loop — detailed below.
+
+**distbench (GCC −40%): which loop to vectorize.** The kernel is
+`r[i] += dist(v1[i], v2[j])` over 4000×4000 points stored as
+array-of-structs `{x,y,z}`. GCC vectorizes the *outer* `i` loop: it
+transposes 8 `v1[i]` points into three zmm registers (x-, y-, z-lanes)
+once per block, then each `j` step is 3 `vbroadcastsd` of `v2[j]`'s
+scalars + 3 `vsubpd` + `vmulpd` + 2 `vfmadd` + `vsqrtpd` + `vaddpd` —
+**zero shuffles**, ~11 instructions per 8 distances (1.4/distance;
+16M distances × 1.4 ≈ the measured 23.5M). Clang vectorizes the *inner*
+`j` loop, which forces it to load the interleaved `{x,y,z}` structs and
+transpose them in registers: 24 `vpermt2pd` shuffles per 32 distances, 90
+instructions per iteration (2.8/distance ≈ the measured 39.1M). For AoS
+layouts, outer-loop vectorization turns the transpose problem into cheap
+broadcasts; LLVM's vectorizer only handles inner loops (outer-loop
+vectorization is still an experimental VPlan path).
+
+**mat1bench (GCC −47%): loop interchange.** The source is the naive
+`c[i][j] += a[i][k] * b[k][j]` with `k` innermost — a dot product whose
+`b`-access walks a *column* (stride 3600 B). GCC interchanges the nest
+into the classic broadcast-FMA GEMM microkernel: `c[i][j..j+7]` stays in
+a zmm accumulator for the entire `k` loop, `a[i][k]` is a broadcast,
+`b[k][j..j+7]` streams unit-stride, unrolled 9× — 0.30 instructions per
+multiply-add (91.1M MACs → measured 29.0M). Clang keeps the loop order as
+written and vectorizes the `k` reduction, so every 8 elements of `b` cost
+`vgatherqpd` + `kxnorb` (mask reset) + `vxorpd` (destination zero) —
+0.60 instructions per MAC (measured 54.3M). LLVM's LoopInterchange pass
+is off by default, and even `-mllvm -enable-loopinterchange` doesn't fire
+on this nest, so no config flag can close this gap. Note the instruction
+count *understates* the real cost: a zmm gather decodes into many µops on
+Zen 4, so the cycle gap is larger than 2×.
+
+**almabench (was "GCC −46%", now Clang −38% the other way): a config
+artifact, not a compiler gap.** The workload is dominated by `sin`/`cos`
+series evaluation. Under `-ffast-math` GCC auto-vectorizes those calls
+into glibc's vector math library (libmvec: `_ZGVeN8v_sin/cos`, 8 lanes per
+call); Clang supports the same lowering but only when asked via
+`-fveclib=libmvec` — and the config never offered it, so Clang's search
+could not escape scalar `sin`/`cos`. Adding the flag (verified an exact
+no-op on the other seven benchmarks) let the search adopt it as its
+single largest step ever (−434.6M) and land at 216.0M vs GCC's 347.4M.
+Moral: a "compiler A beats compiler B" result on libm-heavy code is often
+really a *defaults* difference — worth auditing the config whenever one
+compiler wins by an implausible margin.
+
+**fftbench (Clang −43%): idiom recognition, mostly.** Splitting the
+measurement by phase (early-return after the permutation):
+
+| Phase | GCC (winner) | Clang (winner) |
+|-------|-------------:|---------------:|
+| bit-reverse permutation | 161.0M | 16.2M |
+| butterfly stages | 287.3M | 238.3M |
+| **total** | **448.3M** | **254.5M** |
+
+- *Bit-reverse — 75% of the gap.* Clang's loop-idiom recognition turns the
+  shift/or loop in `bit_reverse()` into `llvm.bitreverse`, and znver4 has
+  GFNI, so each index costs a single `vgf2p8affineqb` (byte-wise bit
+  reversal in the Galois field unit) + `bswap` + `bextr` — ~7 instructions.
+  GCC has no bit-reverse idiom recognition and emits the 20-iteration loop
+  as written, ~160 instructions per index. It doesn't even fully unroll it:
+  the default `max-completely-peel-times=16` is below the 20 iterations,
+  and raising the param only gets 161M → 110M — still scalar shift/or,
+  nowhere near the GFNI lowering.
+- *Butterflies — 25% of the gap.* Both compilers emit scalar FMA
+  butterflies (`vfmsub231sd`/`vfmadd231sd`) — the twiddle-factor recurrence
+  is a loop-carried dependence neither can vectorize — but Clang unrolls
+  the innermost loop 2× with slightly denser addressing.
+
+**Takeaways.** None of the big gaps is a broad "compiler X generates
+better code" effect. Each is a single pass-level decision: outer-loop
+vectorization (distbench), loop interchange (mat1bench), vector-libm
+defaults (almabench), idiom recognition + peel limits (fftbench). The
+remaining ≤16% deltas (linbench, huffbench, treebench, evobench) were not
+root-caused. Two caveats when reading the table: `-p` counts retired
+instructions, not cycles — shuffle- and gather-heavy code (Clang's
+distbench/mat1bench losses) costs relatively more in time than in count —
+and a gap this size is as likely to be one missing flag or one missed
+idiom as it is a quality difference, so check the disassembly before
+crediting the compiler.
 
 ## Code size (-s)
 
