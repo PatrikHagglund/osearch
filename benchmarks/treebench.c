@@ -22,6 +22,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <string.h>
@@ -1036,7 +1038,24 @@ void clean() {
         }
     }
 #endif
-    
+
+    // Prevent dead-code elimination: fold the final tree contents and the
+    // flags array into the printed checksum. Without this the tree is only
+    // freed and flags[] only read under VERIFY, so the insert/remove work
+    // is in principle elidable. Runs in clean(), outside the measured
+    // region.
+    {
+        double sum = 0.0;
+        for (btree_key_t k = 0; k < MAX_KEY; ++k)
+        {
+            if (btree_find(tree,k) != NULL_DATA)
+                sum += (double)k;
+            if (flags[k])
+                sum += 1.0;
+        }
+        bench_result = sum;
+    }
+
     // clean up
     free_btree(tree);
 

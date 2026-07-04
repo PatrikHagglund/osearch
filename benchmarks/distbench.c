@@ -22,6 +22,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <stdlib.h>
@@ -103,14 +105,13 @@ void run() {
             r[i] += distance(v1[i], v2[j]);
     }
 
-    // Prevent dead-code elimination: observe every result. Without this,
-    // Clang sees that the static array r[] is never read and eliminates
-    // the whole loop nest.
+    // Prevent dead-code elimination: fold every result into the printed
+    // checksum. Without this, Clang sees that the static array r[] is
+    // never read and eliminates the whole loop nest.
     double sum = 0.0;
     for (int i = 0; i < ARRAY_SIZE; ++i)
         sum += r[i];
-    volatile double sink = sum;
-    (void)sink;
+    bench_result = sum;
 }
 
 void clean() {

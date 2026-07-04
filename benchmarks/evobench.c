@@ -30,6 +30,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <stdlib.h>
@@ -271,6 +273,13 @@ void optimize(size_t pop_size,
 	// increment generation
 	++counter;
     }
+
+    // Prevent dead-code elimination: fold the evolved optimum — the
+    // intended output of this benchmark — into the printed checksum.
+    // Without this, nothing escapes optimize() at all (the RNG is
+    // internal, all arrays are freed, the printf above is commented
+    // out), so the entire evolution is in principle elidable.
+    bench_result = most_fit_x + 2.0 * most_fit_y;
 
     // delete pop_x and fitness arrays
     free(pop_x);

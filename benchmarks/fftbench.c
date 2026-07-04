@@ -7,6 +7,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <math.h>
@@ -89,10 +91,15 @@ void run() {
 }
 
 void clean() {
-    // Prevent dead-code elimination: the volatile sink keeps fft()'s
-    // output live.
-    volatile double sink = re[0] + im[N / 2];
-    (void)sink;
+    // Prevent dead-code elimination: fold the ENTIRE spectrum into the
+    // printed checksum. Observing only a couple of elements would in
+    // principle let a compiler skip computing the unobserved outputs of
+    // the final butterfly stages. Runs in clean(), outside the measured
+    // region.
+    double sum = 0.0;
+    for (unsigned i = 0; i < N; ++i)
+        sum += re[i] + im[i];
+    bench_result = sum;
     free(re);
     free(im);
 }

@@ -26,6 +26,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <string.h>
@@ -448,7 +450,19 @@ void clean() {
     fwrite(test_data,1,TEST_SIZE,after);
     fclose(after);
 #endif
-    
+
+    // Prevent dead-code elimination: fold the round-tripped data into the
+    // printed checksum. Without this, nothing ever reads test_data after
+    // the last compdecomp() call, so the final decompression (and,
+    // transitively, the compression feeding it) is provably dead. Runs in
+    // clean(), outside the measured region.
+    {
+        double sum = 0.0;
+        for (size_t i = 0; i < TEST_SIZE; ++i)
+            sum += test_data[i];
+        bench_result = sum;
+    }
+
     // release resources
     free(test_data);
 

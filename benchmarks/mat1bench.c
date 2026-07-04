@@ -22,6 +22,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <stdlib.h>
@@ -90,14 +92,14 @@ void run() {
         }
     }
 
-    // Prevent dead-code elimination: observe the result matrix. Without
-    // this, c[][] is written but never read and the multiply can be elided.
+    // Prevent dead-code elimination: fold the result matrix into the
+    // printed checksum. Without this, c[][] is written but never read
+    // and the multiply can be elided.
     double sum = 0.0;
     for (unsigned i = 0; i < N; ++i)
         for (unsigned j = 0; j < N; ++j)
             sum += c[i][j];
-    volatile double sink = sum;
-    (void)sink;
+    bench_result = sum;
 }
 
 void clean() {

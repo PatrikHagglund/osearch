@@ -43,6 +43,14 @@ extern void init();
 extern void run();
 extern void clean();
 
+/* Every benchmark folds its full computed output into this checksum. It is
+   printed (to stderr, under -v) below, which makes the benchmark's output
+   observable through a reachable I/O call — so no compiler, at any
+   optimization level (including -flto -fwhole-program), may dead-code
+   eliminate the computation that feeds it. Stronger than a volatile sink,
+   and it doubles as a cross-compiler correctness check. */
+double bench_result;
+
 /* #define CLOCK CLOCK_REALTIME */
 /* #define CLOCK CLOCK_PROCESS_CPUTIME_ID */
 #define CLOCK CLOCK_THREAD_CPUTIME_ID
@@ -114,6 +122,11 @@ int main(int argc, char ** argv)
 #endif
 
     clean();
+
+    /* Observe the benchmark's output. stderr + -v-gated, so the search
+       harness (which parses stdout and never passes -v) is unaffected. */
+    if (verbose)
+        fprintf(stderr, "%s checksum: %.17g\n", name, bench_result);
 
     /* report objective */
     if (perf) {

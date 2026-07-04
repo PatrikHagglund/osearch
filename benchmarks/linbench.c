@@ -20,6 +20,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <string.h>
@@ -193,15 +195,15 @@ void run() {
     p = lup_decompose(a);
     r = lup_solve(a,p,b);
 
-    // Prevent dead-code elimination: observe the solution vector. Without
-    // this, r's contents are only freed (never read) and the solve elides.
+    // Prevent dead-code elimination: fold the solution vector into the
+    // printed checksum. Without this, r's contents are only freed (never
+    // read) and the solve elides.
     if (r)
     {
         double sum = 0.0;
         for (unsigned i = 0; i < N; ++i)
             sum += r[i];
-        volatile double sink = sum;
-        (void)sink;
+        bench_result = sum;
     }
 }
 

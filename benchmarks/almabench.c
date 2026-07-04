@@ -35,6 +35,8 @@
 
 #ifndef LINK
 #include "main.ic"
+#else
+extern double bench_result;
 #endif
 
 #include <math.h>
@@ -359,8 +361,7 @@ void run() {
     // eliminate all earlier planetpv()/radecdist() calls — which -ffast-math
     // enables by making sin/cos/sqrt side-effect-free. With the weak sink,
     // Clang computed only ~22% of the intended 160000 iterations.
-    volatile double sink = acc;
-    (void)sink;
+    bench_result = acc;
 }
 
 void clean() {
