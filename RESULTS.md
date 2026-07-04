@@ -52,33 +52,14 @@ FP benchmarks prefer `-O3 -ffast-math`; the integer/branch ones prefer plain
 `-O3`. Every table below uses this order (FP-heavy first, then integer-heavy),
 matching `aggregate.sh`.
 
-## Size optimization (-s), Level 1 (quick)
+## Instruction count (-p)
 
-Config: `config/gcc16.osearch` (226 flags), quick mode (`-k 80`)
+The primary reproducible performance metric: user-space retired instructions
+for `run()`, counted in-harness and stable to ~1 ppm per binary.
 
-| Benchmark   | .text (bytes) | Best flags |
-|-------------|---------------|------------|
-| distbench   | 1050          | -Os -march=native -flto -fno-if-conversion -fno-math-errno -fno-reorder-functions -fno-thread-jumps -fno-tree-loop-im -fno-tree-sink |
-| mat1bench   | 1032          | -Os -flto -fno-if-conversion -fno-move-loop-stores -fno-reorder-functions -fno-ssa-phiopt -fno-thread-jumps -fno-tree-sink -fira-region=all |
-| almabench   | 2350          | -Os -march=native -flto -fno-caller-saves -fno-cse-follow-jumps -fno-if-conversion -fno-math-errno -fno-reorder-functions -fno-ssa-phiopt -fno-tree-loop-im -fno-tree-sink |
-| fftbench    | 1315          | -Os -march=native -flto -fno-caller-saves -fno-thread-jumps -fno-tree-sink |
-| linbench    | 1629          | -Os -march=native -flto -fno-guess-branch-probability -fno-if-conversion -fno-ssa-phiopt -fno-tree-sink -ffinite-math-only -ffp-contract=on |
-| evobench    | 1748          | -Os -march=native -flto -fno-caller-saves -fno-reorder-functions -fno-tree-sink -fno-tree-tail-merge |
-| treebench   | 4227          | -Os -march=native -flto -fno-dce -fno-forward-propagate -fno-if-conversion -fno-optimize-sibling-calls -fno-reorder-functions -fno-schedule-insns2 -fno-thread-jumps -fno-tree-forwprop -fno-tree-scev-cprop -fgraphite -fira-region=all |
-| huffbench   | 2025          | -Os -flto -fno-caller-saves -fno-cse-follow-jumps -fno-guess-branch-probability -fno-if-conversion -fno-move-loop-invariants -fno-schedule-insns2 -fno-thread-jumps -fno-tree-forwprop -fno-tree-scev-cprop -fno-tree-sink |
+### GCC 16 — instructions
 
-### Size observations
-
-- `-Os -flto` is the foundation for every benchmark
-- `-march=native` helps most benchmarks but not the pure-integer mat1bench and
-  huffbench, which omit it (AVX encoding wastes bytes)
-- `-fno-tree-sink`, `-fno-if-conversion`, `-fno-reorder-functions` and
-  `-fno-thread-jumps` recur as the broad size-reducers
-- treebench is the largest (4227 B) — recursive tree traversal has many code paths
-
-## Instruction count (-p), Level 1 (quick)
-
-Config: `config/gcc16.osearch` (226 flags), quick mode (`-k 80`)
+Config: `config/gcc16.osearch` (226 flags), quick mode (`-k 80`), greedy `-l 1`.
 
 Totals are reproducible to ~1 ppm per binary; the `-fno-*` tail beyond the
 `-O`/`-march`/`-flto` base is adopted at the default `-T 0` threshold and
@@ -102,7 +83,7 @@ includes marginal picks that vary between runs (use `-T 3` for a stable set).
 > elsewhere (+29% if added to the greedy's path), so single-flag hill-climbing
 > can't reach it. See [Search limitations](#search-limitations).
 
-### Instruction count observations
+#### Observations
 
 - All benchmarks build on `-O3` + `-ffast-math` (`-Ofast` = `-O3 -ffast-math`);
   fftbench prefers `-Os`.
@@ -116,86 +97,9 @@ includes marginal picks that vary between runs (use `-T 3` for a stable set).
   former hand-curated result (see [Quick vs audit](#quick-vs-audit)): several of
   its winning flags are huffbench-specific and rank low on the weights.
 
-## Quick vs audit
+### Clang 22 — instructions
 
-The tables above are *quick* runs (`-k 80`: the 80 highest-ranked options for
-the active objective). The per-flag weights put broadly-effective options at the
-front of the search, so quick reproduces a thorough search within ~1–2% on most
-benchmarks, and `-k` lets you trade speed for reach without a second config.
-
-Two benchmarks are worth calling out:
-
-- **huffbench `-p`** (quick 1.00B) is the widest gap. Its best flag set is
-  *specific to that workload* (e.g. `-fipa-cp-clone`, `-fsplit-paths`,
-  `-finline-stringops`), so those options rank low on the cross-benchmark
-  weights. This is greedy *path-dependence*, not coverage: widening to `-k 130`
-  only nudges it to 0.98B, and even an uncapped audit over all 226 flags (with
-  `-finline-stringops` among its picks) reaches just 0.98B — so the flags are
-  reachable; greedy simply doesn't take that path from the full space. A
-  smaller, hand-chosen space (the former curated config, ~0.89B) happened to
-  steer the hill-climb down a better path. It is the clearest price of replacing
-  a hand-curated set with data-driven weights — and the kind of case `-l 2` or a
-  non-greedy search (README TODO) would address.
-- **almabench `-p`** is a true greedy local optimum that no `-k` escapes (see
-  below).
-
-Everywhere else, one annotated file in quick mode is within noise of a thorough
-search, which was the point of converging the configs.
-
-## Search limitations
-
-osearch is greedy hill-climbing (`-l 1` toggles one flag at a time, keeping
-improvements). Two effects surface in the tables:
-
-- **Local optima.** When the best result needs a *coordinated* multi-flag
-  combination, greedy can't reach it. almabench `-p` is the clear case:
-  `-flto` helps it only together with a specific co-set (→ 319.6M) and is +29%
-  *worse* on any other path, so single-flag steps reject it and settle at
-  ~347M. Pair search (`-l 2`) explores two-flag moves but is impractically
-  slow on a full config; multiple random restarts or a non-greedy search
-  (the genetic approach of the ACOVEA ancestor) would be the real fix — see
-  the README TODO.
-- **Coverage vs. the weights.** Quick mode trusts the cross-benchmark weights
-  to front-load the useful options. A workload whose winning flags are specific
-  to it (and so rank low on average) can be under-served; a larger `-k` widens
-  reach, but greedy path-dependence means it does not always recover a
-  hand-curated result (huffbench `-p`, see [Quick vs audit](#quick-vs-audit)).
-- **Path sensitivity.** At the default `-T 0` the marginal `-fno-*` tail is
-  noise-level, so the exact flag set — and occasionally the total (almabench
-  `-p` ranges 311–347M) — varies between runs. The other benchmarks' totals
-  are stable.
-
-## Time (default)
-
-No per-benchmark time table: wall-clock search is too noisy on this shared
-host to optimize on. With the unified config's `-O` enum now exposing `-Os`,
-the greedy search adopts `-Os` for compute-bound FP benchmarks (almabench,
-fftbench) from a momentarily slow `-O3` baseline — even with `-n 3 -T 20`
-(the doc's noise-robust settings) — producing results that are clearly *not*
-fastest (e.g. almabench at `-Os` ≈ 84 ms vs ~51 ms at `-O3 -ffast-math`).
-The old time tables only looked sane because the previous speed-only config
-couldn't offer `-Os`.
-
-Use `-s` or `-p` for reproducible optimization. If you must use time mode,
-pin the CPU (`taskset`), disable turbo, set the `performance` governor, and
-raise `-n`/`-T`; even then the greedy path can diverge (see
-[Search limitations](#search-limitations) and Reproducibility below).
-
-## Reproducibility
-
-- **Size (-s):** 100% reproducible across runs
-- **Instructions (-p):** totals reproducible to ~1 ppm; at the default
-  `-T 0` the marginal `-fno-*` picks vary run-to-run, but `-T 3` yields a
-  stable flag set (e.g. fftbench → `-O3 -march=native`)
-- **Time (default):** too noisy on this shared host to optimize on — the
-  greedy search even adopts `-Os` for compute-bound FP benchmarks. Use `-s`
-  or `-p` instead (see [Time](#time-default)).
-
----
-
-## Clang 22 — Instruction count (-p), Level 1 (quick)
-
-Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`)
+Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`), greedy `-l 1`.
 
 | Benchmark   | Instructions    | Best flags |
 |-------------|-----------------|------------|
@@ -208,7 +112,7 @@ Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`)
 | treebench   | 770,321,839     | -O3 -flto=thin -fno-delete-null-pointer-checks -fno-plt -fno-direct-access-external-data -fno-builtin -mllvm -enable-gvn-hoist |
 | huffbench   | 1,190,827,257   | -O3 -flto -march=native -fno-omit-frame-pointer -fno-plt |
 
-### Clang 22 observations
+#### Observations
 
 - `-march=native -ffast-math` + LTO (`-flto` or `-flto=thin`) is the universal
   base; the `-O` level varies: most pick `-O3`, distbench `-O2`, almabench
@@ -223,7 +127,7 @@ Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`)
   fftbench (300), and almabench (200); `-mllvm -force-vector-width=8` helps
   mat1bench. `-mno-vzeroupper` recurs (avoids `vzeroupper` overhead).
 
-## GCC 16 vs Clang 22 — Instructions (-p)
+### GCC 16 vs Clang 22 — Instructions (-p)
 
 Δ is the winner's reduction relative to the other compiler.
 
@@ -250,11 +154,37 @@ compiler. Two quick-mode caveats narrow GCC's lead here: GCC almabench is the
 huffbench quick lands at 1.00B, ~13% above the best the former hand-curated set
 found — a greedy path-dependence, see [Quick vs audit](#quick-vs-audit).)
 
----
+## Code size (-s)
 
-## Clang 22 — Size optimization (-s), Level 1 (quick)
+Fully deterministic: `.text` byte counts are 100% reproducible across runs.
 
-Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`)
+### GCC 16 — size
+
+Config: `config/gcc16.osearch` (226 flags), quick mode (`-k 80`), greedy `-l 1`.
+
+| Benchmark   | .text (bytes) | Best flags |
+|-------------|---------------|------------|
+| distbench   | 1050          | -Os -march=native -flto -fno-if-conversion -fno-math-errno -fno-reorder-functions -fno-thread-jumps -fno-tree-loop-im -fno-tree-sink |
+| mat1bench   | 1032          | -Os -flto -fno-if-conversion -fno-move-loop-stores -fno-reorder-functions -fno-ssa-phiopt -fno-thread-jumps -fno-tree-sink -fira-region=all |
+| almabench   | 2350          | -Os -march=native -flto -fno-caller-saves -fno-cse-follow-jumps -fno-if-conversion -fno-math-errno -fno-reorder-functions -fno-ssa-phiopt -fno-tree-loop-im -fno-tree-sink |
+| fftbench    | 1315          | -Os -march=native -flto -fno-caller-saves -fno-thread-jumps -fno-tree-sink |
+| linbench    | 1629          | -Os -march=native -flto -fno-guess-branch-probability -fno-if-conversion -fno-ssa-phiopt -fno-tree-sink -ffinite-math-only -ffp-contract=on |
+| evobench    | 1748          | -Os -march=native -flto -fno-caller-saves -fno-reorder-functions -fno-tree-sink -fno-tree-tail-merge |
+| treebench   | 4227          | -Os -march=native -flto -fno-dce -fno-forward-propagate -fno-if-conversion -fno-optimize-sibling-calls -fno-reorder-functions -fno-schedule-insns2 -fno-thread-jumps -fno-tree-forwprop -fno-tree-scev-cprop -fgraphite -fira-region=all |
+| huffbench   | 2025          | -Os -flto -fno-caller-saves -fno-cse-follow-jumps -fno-guess-branch-probability -fno-if-conversion -fno-move-loop-invariants -fno-schedule-insns2 -fno-thread-jumps -fno-tree-forwprop -fno-tree-scev-cprop -fno-tree-sink |
+
+#### Observations
+
+- `-Os -flto` is the foundation for every benchmark
+- `-march=native` helps most benchmarks but not the pure-integer mat1bench and
+  huffbench, which omit it (AVX encoding wastes bytes)
+- `-fno-tree-sink`, `-fno-if-conversion`, `-fno-reorder-functions` and
+  `-fno-thread-jumps` recur as the broad size-reducers
+- treebench is the largest (4227 B) — recursive tree traversal has many code paths
+
+### Clang 22 — size
+
+Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`), greedy `-l 1`.
 
 | Benchmark   | .text (bytes) | Best flags |
 |-------------|---------------|------------|
@@ -267,7 +197,7 @@ Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`)
 | treebench   | 4202          | -Oz -flto -march=native -fno-inline-functions -fno-optimize-sibling-calls -mno-vzeroupper -mllvm -enable-gvn-hoist -mllvm -enable-newgvn |
 | huffbench   | 2203          | -Oz -flto=thin -mtune=native -mllvm -enable-newgvn |
 
-### Clang 22 size observations
+#### Observations
 
 - `-Oz` + LTO (`-flto` or `-flto=thin`) wins for every benchmark
 - `-march=native` helps the FP benchmarks but not the integer ones
@@ -277,7 +207,7 @@ Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`)
   additionally helps treebench
 - `-fno-builtin` helps a few benchmarks (avoids inlining libc)
 
-## GCC 16 vs Clang 22 — Size (-s)
+### GCC 16 vs Clang 22 — Size (-s)
 
 Δ is the winner's reduction relative to the other compiler.
 
@@ -294,3 +224,80 @@ Config: `config/clang22.osearch` (105 flags), quick mode (`-k 80`)
 
 GCC wins 7 of 8 on code size — only treebench goes to Clang, by 0.6%. GCC's
 `-Os` is consistently tighter, by 2–14% (largest on almabench and huffbench).
+
+## Time (default)
+
+No per-benchmark time table: wall-clock search is too noisy on this shared
+host to optimize on. With the unified config's `-O` enum now exposing `-Os`,
+the greedy search adopts `-Os` for compute-bound FP benchmarks (almabench,
+fftbench) from a momentarily slow `-O3` baseline — even with `-n 3 -T 20`
+(the doc's noise-robust settings) — producing results that are clearly *not*
+fastest (e.g. almabench at `-Os` ≈ 84 ms vs ~51 ms at `-O3 -ffast-math`).
+The old time tables only looked sane because the previous speed-only config
+couldn't offer `-Os`.
+
+Use `-s` or `-p` for reproducible optimization. If you must use time mode,
+pin the CPU (`taskset`), disable turbo, set the `performance` governor, and
+raise `-n`/`-T`; even then the greedy path can diverge (see
+[Search limitations](#search-limitations) and Reproducibility below).
+
+## Methodology & caveats
+
+### Quick vs audit
+
+The result tables are *quick* runs (`-k 80`: the 80 highest-ranked options for
+the active objective). The per-flag weights put broadly-effective options at the
+front of the search, so quick reproduces a thorough search within ~1–2% on most
+benchmarks, and `-k` lets you trade speed for reach without a second config.
+
+Two benchmarks are worth calling out:
+
+- **huffbench `-p`** (quick 1.00B) is the widest gap. Its best flag set is
+  *specific to that workload* (e.g. `-fipa-cp-clone`, `-fsplit-paths`,
+  `-finline-stringops`), so those options rank low on the cross-benchmark
+  weights. This is greedy *path-dependence*, not coverage: widening to `-k 130`
+  only nudges it to 0.98B, and even an uncapped audit over all 226 flags (with
+  `-finline-stringops` among its picks) reaches just 0.98B — so the flags are
+  reachable; greedy simply doesn't take that path from the full space. A
+  smaller, hand-chosen space (the former curated config, ~0.89B) happened to
+  steer the hill-climb down a better path. It is the clearest price of replacing
+  a hand-curated set with data-driven weights — and the kind of case `-l 2` or a
+  non-greedy search (README TODO) would address.
+- **almabench `-p`** is a true greedy local optimum that no `-k` escapes (see
+  below).
+
+Everywhere else, one annotated file in quick mode is within noise of a thorough
+search, which was the point of converging the configs.
+
+### Search limitations
+
+osearch is greedy hill-climbing (`-l 1` toggles one flag at a time, keeping
+improvements). Two effects surface in the tables:
+
+- **Local optima.** When the best result needs a *coordinated* multi-flag
+  combination, greedy can't reach it. almabench `-p` is the clear case:
+  `-flto` helps it only together with a specific co-set (→ 319.6M) and is +29%
+  *worse* on any other path, so single-flag steps reject it and settle at
+  ~347M. Pair search (`-l 2`) explores two-flag moves but is impractically
+  slow on a full config; multiple random restarts or a non-greedy search
+  (the genetic approach of the ACOVEA ancestor) would be the real fix — see
+  the README TODO.
+- **Coverage vs. the weights.** Quick mode trusts the cross-benchmark weights
+  to front-load the useful options. A workload whose winning flags are specific
+  to it (and so rank low on average) can be under-served; a larger `-k` widens
+  reach, but greedy path-dependence means it does not always recover a
+  hand-curated result (huffbench `-p`, see [Quick vs audit](#quick-vs-audit)).
+- **Path sensitivity.** At the default `-T 0` the marginal `-fno-*` tail is
+  noise-level, so the exact flag set — and occasionally the total (almabench
+  `-p` ranges 311–347M) — varies between runs. The other benchmarks' totals
+  are stable.
+
+### Reproducibility
+
+- **Size (-s):** 100% reproducible across runs
+- **Instructions (-p):** totals reproducible to ~1 ppm; at the default
+  `-T 0` the marginal `-fno-*` picks vary run-to-run, but `-T 3` yields a
+  stable flag set (e.g. fftbench → `-O3 -march=native`)
+- **Time (default):** too noisy on this shared host to optimize on — the
+  greedy search even adopts `-Os` for compute-bound FP benchmarks. Use `-s`
+  or `-p` instead (see [Time](#time-default)).

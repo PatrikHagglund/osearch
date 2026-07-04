@@ -94,6 +94,12 @@ osearch uses the standalone mode: it compiles the benchmark source with
 candidate flags, runs the resulting binary, and parses the printed
 microsecond value as the objective.
 
+## Results
+
+See [RESULTS.md](RESULTS.md) for measured instruction-count (`-p`) and
+code-size (`-s`) results per benchmark on GCC 16 and Clang 22, the
+head-to-head compiler comparisons, and the search-methodology caveats.
+
 ## Components
 
 | File | Purpose |
