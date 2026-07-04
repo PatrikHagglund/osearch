@@ -57,9 +57,6 @@ top-ranked options for a quick run — no separate "test" config needed. See
 |--------|-------------|
 | `gcc16.osearch` | GCC 16, full annotated flag set (226 flags) |
 | `clang22.osearch` | Clang/LLVM 22, full annotated flag set + LLVM pass control (105 flags) |
-| `gcc48-test.osearch` | GCC 4.8, small test set |
-| `gcc48.osearch` | GCC 4.8, full flag set |
-| `gcc43_full.osearch` | GCC 4.3, full flag set |
 
 ## Benchmarks
 
