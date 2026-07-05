@@ -9,9 +9,11 @@ methodology behind the search and its objectives is documented in
 
 **Status:** done, 2026-07-05 — step 1 (fixed A/B, results below) gave a clear
 go; step 2 is implemented: `scripts/cc-pgo.sh` + the `-fprofile-use`
-pseudo-flag in both configs (verified to reproduce the A/B numbers exactly,
-and adopted by a quick `-p` search on clang/treebench). **Remaining:** re-run
-the RESULTS.md tables with the flag available.
+pseudo-flag in both configs (verified to reproduce the A/B numbers exactly).
+The RESULTS.md tables are re-run with the flag available: adopted in 11 of 16
+speed searches (clang/treebench −21%, gcc/almabench −10% — dissolving the
+documented greedy local optimum — huffbench −6%/−4%), rejected exactly where
+the A/B predicted regressions, never adopted in size mode.
 
 PGO is not a flag but a build *protocol* — instrument → training run →
 recompile — so it can't be a plain `<flag>` line in a config. It can still be
@@ -204,10 +206,11 @@ systematically under-credits PGO.
    the harness. µops is the recommended speed objective on this host; cycles
    the audit metric (fftbench-class memory-layout variance won't converge
    regardless of `-n`).
-3. ⬜ `scripts/aggregate.sh` / RESULTS.md: add a cycles column next to `-p`
-   (via the harness `-g` mode on each winner binary) so count-vs-time
-   divergence (distbench, huffbench) is visible in the tables — natural to do
-   together with the pending PGO-enabled re-run of the tables (item 1).
+3. ✅ RESULTS.md carries an ops/cycles audit table on the `-p` winners
+   (harness `-g` mode, median of 21 pinned runs), making the count-vs-time
+   divergence visible: distbench's −40% is a cycle tie, huffbench flips to a
+   2.1× Clang cycle win, and the cycle scoreboard reads Clang 5 / GCC 2 /
+   one wash vs 4–4 on instructions.
 
 ## 3. Design backlog (moved from README)
 
