@@ -51,7 +51,7 @@ modern profile is a single annotated file serving both objectives: options
 carry per-flag effectiveness weights (`w_speed` / `w_size`) that order and bias
 the search. A full run audits every option; `-k n` (or `-Q n`) restricts to the
 top-ranked options for a quick run — no separate "test" config needed. See
-[`annotate.sh`](annotate.sh) for regenerating the weights from measured data.
+[`annotate.sh`](scripts/annotate.sh) for regenerating the weights from measured data.
 
 | Config | Description |
 |--------|-------------|
@@ -130,7 +130,7 @@ Two layers:
 
 - **Unit tests** (`tests/`) — small, fast, no external processes. Registered
   with CTest via CMake.
-- **Integration smoke tests** (`test.sh`) — end-to-end search runs on real
+- **Integration smoke tests** (`scripts/test.sh`) — end-to-end search runs on real
   benchmarks.
 
 Unit tests combine two complementary styles:
@@ -152,8 +152,8 @@ C++ and reuses the main target's compile flags.
 Run:
 
 ```sh
-./test.sh --fast    # ctest + DEBUG syntax check (~seconds)
-./test.sh           # fast layer + full integration search runs (minutes)
+./scripts/test.sh --fast    # ctest + DEBUG syntax check (~seconds)
+./scripts/test.sh           # fast layer + full integration search runs (minutes)
 ctest --test-dir build --output-on-failure   # unit tests only
 ```
 
@@ -219,7 +219,7 @@ effectiveness is a prior; per-benchmark it varies (`-march=native` helps FP,
 hurts integer size), so an uncapped run still reaches every option to find
 cross-objective surprises.
 
-**Populate from data.** [`annotate.sh`](annotate.sh) measures each option's
+**Populate from data.** [`annotate.sh`](scripts/annotate.sh) measures each option's
 per-objective marginal effect (uncapped `-l 1`, size and perf modes) and writes
 the weights back into the config, so they are regenerated rather than
 hand-curated and refreshed as compilers change. `enum` options (the `-O` level,

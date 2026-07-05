@@ -60,7 +60,7 @@ significant digits under `-O3 -march=native -ffast-math -flto`.
 
 FP benchmarks prefer `-O3 -ffast-math`; the integer/branch ones prefer plain
 `-O3`. Every table below uses this order (FP-heavy first, then integer-heavy),
-matching `aggregate.sh`.
+matching `scripts/aggregate.sh`.
 
 ## Instruction count (-p)
 

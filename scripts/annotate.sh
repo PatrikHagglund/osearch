@@ -4,7 +4,7 @@
 # "Effectiveness-ranked options" notes in README and osearch's -k/-Q/-r).
 #
 # Usage:
-#   ./annotate.sh <measure_config> <target_config>
+#   ./scripts/annotate.sh <measure_config> <target_config>
 #
 #   <measure_config>  config searched to MEASURE per-flag effect (use the
 #                     curated subset: smaller and faster, and exactly the
@@ -62,4 +62,4 @@ for mode in size perf; do
 done
 
 echo "Injecting weights into $TARGET_CFG ..." >&2
-python3 ./annotate.py "$TMPDIR" "$MEASURE_CFG" "$TARGET_CFG"
+python3 "$(dirname "$0")/annotate.py" "$TMPDIR" "$MEASURE_CFG" "$TARGET_CFG"

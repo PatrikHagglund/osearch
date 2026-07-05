@@ -3,14 +3,14 @@
 # by average improvement, and optionally reorder the config file.
 #
 # Usage:
-#   ./aggregate.sh [--mode=time|perf|size] [--reorder] [config_file]
+#   ./scripts/aggregate.sh [--mode=time|perf|size] [--reorder] [config_file]
 #
 #   --mode=time  (default) execution time
 #   --mode=perf  retired instructions (needs Linux perf_event support)
 #   --mode=size  binary .text size (deterministic)
 #
 # To turn this ranking into the per-flag w_speed/w_size weights stored in the
-# config (used by the search order and -k/-Q/-r), see ./annotate.sh.
+# config (used by the search order and -k/-Q/-r), see ./scripts/annotate.sh.
 #
 # Requires: osearch built in ./build/, python3 for JSON parsing.
 set -e

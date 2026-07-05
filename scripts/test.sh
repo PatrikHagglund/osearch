@@ -2,8 +2,8 @@
 # Tests for osearch.
 #
 # Usage:
-#   ./test.sh --fast    # unit tests + cheap smoke checks (seconds)
-#   ./test.sh           # full suite: unit + integration search runs (minutes)
+#   ./scripts/test.sh --fast    # unit tests + cheap smoke checks (seconds)
+#   ./scripts/test.sh           # full suite: unit + integration search runs (minutes)
 set -e
 
 MODE=full
@@ -36,7 +36,7 @@ echo "DEBUG build: OK"
 
 if [ "$MODE" = fast ]; then
   echo ""
-  echo "=== FAST PASS (skipped integration search runs; use ./test.sh for full) ==="
+  echo "=== FAST PASS (skipped integration search runs; use ./scripts/test.sh for full) ==="
   exit 0
 fi
 
