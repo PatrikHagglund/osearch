@@ -6,7 +6,8 @@ Working notes for measurement/exploration work. Longer-term *design* TODOs
 
 ## 1. Profile-guided optimization (PGO) as a searchable option
 
-**Status:** exploring — step 1 (fixed A/B) running.
+**Status:** step 1 (fixed A/B) done, 2026-07-05 — verdict: **go for step 2**.
+Results below.
 
 PGO is not a flag but a build *protocol* — instrument → training run →
 recompile — so it can't be a plain `<flag>` line in a config. It can still be
@@ -21,7 +22,55 @@ hand: 8 benchmarks × 2 compilers, measure retired instructions (`bin -p`),
 more than the ~±10-instruction noise floor on several benchmarks, proceed to
 step 2; if it is flat, record the negative result here and stop.
 
-**Step 2 — wrapper integration (only if step 1 pays).**
+### Step 1 findings (2026-07-05)
+
+Each benchmark's best-known `-p` flag set (RESULTS.md tables), rebuilt ± PGO.
+All baselines reproduced the published counts to within a few instructions
+(note: Clang was bumped 22.1.7 → 22.1.8 by a package update during setup —
+counts unaffected). PGO builds are just as deterministic as plain ones
+(repeat runs within a few instructions). Δ = PGO vs base, retired instructions:
+
+| Benchmark | GCC 16 Δ | Clang 22 Δ |
+|-----------|---------:|-----------:|
+| distbench | +0.01%   | +0.00%     |
+| mat1bench | −0.01%   | −0.00%     |
+| almabench | −0.10%   | −0.07%     |
+| fftbench  | −0.00%   | −0.82%     |
+| linbench  | **+3.01%** | −0.49%   |
+| evobench  | +0.09%   | **+15.67%** |
+| treebench | **+1.06%** | **−19.93%** |
+| huffbench | **−3.63%** | **−3.77%** |
+
+- **Far from flat, and benchmark-specific in *both* directions** (−19.9% to
+  +15.7%) — exactly the profile of a good *searchable* option: the greedy
+  search will adopt it where it wins (Clang treebench, huffbench both
+  compilers) and reject it where it regresses (Clang evobench, GCC linbench).
+  As a blanket default it would be a wash.
+- The vectorized FP kernels (distbench, mat1bench, almabench, fftbench) are
+  essentially immune — their hot loops are already shaped by
+  `-ffast-math -march=native`; PGO has nothing to add that `-p` can see.
+- **Clang treebench −19.9%:** the big win. All hot B-tree functions
+  (`promote_internal`, `redistribute`, `concatenate`) got *smaller* and the
+  dynamic count dropped 20% — profile-driven inlining/if-conversion doing
+  real work on the branch-heaviest benchmark.
+- **Clang evobench +15.7%:** PGO's `optimize()` is *smaller* (2811 B vs
+  3088 B) yet retires 16% more instructions — the profile talked Clang out of
+  unrolling/vectorizing the hot loop (likely optimizing expected cycles, not
+  count). A concrete instance of TODO item 2: `-p` may be *mis-scoring* this
+  binary; on a cycle metric it might actually be a win. Re-check once a
+  µops/cycles counter exists.
+- `.text` moves a lot under PGO, usually down (Clang distbench 5441 → 2541 B:
+  cold-path splitting) but sometimes up (GCC treebench 10465 → 17899 B). If a
+  PGO pseudo-flag is ever offered in `-s` mode it needs its own weight.
+- Two checksum footnotes, both FP-tolerance, not correctness: GCC linbench
+  differs in the last 3 of 17 digits (fast-math reassociation changes with
+  different unrolling — same tolerance as the GCC-vs-Clang comparison), and
+  fftbench's checksum is *ill-conditioned* for cross-build comparison (it sums
+  a spectrum that cancels to ≈0; published value −2.8e−09, so an absolute
+  wobble of 5e−10 looks huge in relative terms). Worth fixing separately:
+  sum `|re| + |im|` instead, making the fftbench checksum well-conditioned.
+
+**Step 2 — wrapper integration (go).**
 
 - `scripts/cc-pgo.sh` + one pseudo-flag per config, e.g.
   `<flag type="simple" value="-fprofile-use" w_speed="?" w_size="0" />`;
