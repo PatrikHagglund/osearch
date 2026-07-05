@@ -3,3 +3,4 @@ osearch
 build/
 build-*
 tmp//
+__pycache__/
