@@ -59,6 +59,10 @@ counts unaffected). PGO builds are just as deterministic as plain ones
   count). A concrete instance of TODO item 2: `-p` may be *mis-scoring* this
   binary; on a cycle metric it might actually be a win. Re-check once a
   µops/cycles counter exists.
+- **Re-scored under a cycle counter (same day — see item 2 findings):** the
+  two "regressions" are artifacts of counting instructions (clang evobench
+  +15.7% → +0.5% cycles; GCC linbench +3.0% → ~0%), and the wins are larger
+  in cycles (clang treebench −24%). `-p` under-credits PGO, as predicted.
 - `.text` moves a lot under PGO, usually down (Clang distbench 5441 → 2541 B:
   cold-path splitting) but sometimes up (GCC treebench 10465 → 17899 B). If a
   PGO pseudo-flag is ever offered in `-s` mode it needs its own weight.
@@ -133,3 +137,68 @@ Candidates, in rough order of promise:
 one run measures all three), behind a new option letter. Then measure each
 counter's run-to-run spread over ~20 runs on the gather/shuffle-heavy binaries
 (Clang mat1bench/distbench winners) to pick the objective empirically.
+
+### First-step findings (2026-07-05)
+
+Done with a scratchpad probe variant of `main.ic` (`-g`: group of
+instructions-leader + raw `0xC1` `ex_ret_ops` + cycles, read atomically):
+21 runs pinned (`taskset -c 5`) for all 16 best-flag builds, the 5 big PGO
+movers from item 1, and 2 unpinned controls.
+
+**Determinism, run-to-run per binary:**
+
+- *Instructions:* exact (spread ≤ 1 count) — as known.
+- *Retired µops:* spread ≤ ~900 ppm, CV ≤ 240 ppm. Deterministic enough for
+  any realistic `-T` threshold — essentially free fidelity.
+- *Cycles, pinned:* workload-dependent. CV ≈ 0.05–0.1% on compute-bound
+  binaries (distbench, evobench) but up to 9% on memory-bound ones. Noise is
+  one-sided (interference only adds cycles), so **min-of-N beats median**:
+  median sits within ~1% of min for 20 of 23 cases. The pathology is GCC
+  fftbench: median 28% above min — its 16 MB working set makes cycle cost
+  depend on run-to-run physical page placement; irreducible by repetition.
+- *Cycles, unpinned:* CV up to 22%. Pinning is mandatory.
+
+**Fidelity — cycles re-rank the head-to-head** (medians, pinned; Δ = winner
+vs loser):
+
+| Benchmark | GCC cycles | Clang cycles | Winner (cycles) | (was, insns) |
+|-----------|-----------:|-------------:|-----------------|--------------|
+| distbench | 32.1M | 32.4M | ~tie (GCC −0.8%) | GCC −40% |
+| mat1bench | 55.1M | 168.2M | GCC −67% | GCC −47% |
+| almabench | 166.8M | 107.4M | Clang −36% | Clang −38% |
+| fftbench | 180.4M | 115.9M | Clang −36% | Clang −43% |
+| linbench | 116.7M | 123.7M | GCC −6% | GCC −12% |
+| evobench | 617.3M | 613.0M | Clang −0.7% | Clang −2% |
+| treebench | 658.7M | 634.2M | Clang −4% | Clang −7% |
+| huffbench | 886.3M | 434.8M | **Clang −51%** | **GCC −16%** |
+
+- *distbench:* the "GCC −40%" evaporates — Clang's 24 shuffles per iteration
+  cost instruction count, not time (the port pipes them fine). Cycles: a tie.
+- *mat1bench:* the gap *grows* to −67%. µops caught this exactly: Clang's
+  gather kernel is 586M µops from 54M instructions (10.8× microcode
+  expansion) vs GCC's 27.7M µops.
+- *huffbench flips outright:* GCC retires 16% fewer instructions **and** 24%
+  fewer µops, yet takes 2.0× the cycles (IPC 0.93 vs 2.45) — stall-dominated,
+  invisible to *both* deterministic counters.
+- Cycle scoreboard: Clang 5, GCC 2, one tie — vs 4–4 on instructions.
+
+**PGO re-scored in cycles** (cross-ref item 1): clang evobench "+15.7%
+instructions" is **+0.5% cycles** (not a real regression — hypothesis
+confirmed), GCC linbench "+3.0%" is +0.3% median / −1.5% min (also ~neutral),
+and the wins grow: clang treebench −24%, GCC huffbench −8.6%, clang huffbench
+−6.5%. PGO binaries also run 5–20× *steadier* in cycles (clang treebench CV
+2.0% → 0.2%) — better layout stabilizes timing. Conclusion: `-p`
+systematically under-credits PGO.
+
+**Proposed integration (next step):**
+
+1. `benchmarks/main.ic`: replace the single counter with the 3-counter group;
+   `-p` keeps printing instructions (harness compat); new options select
+   retired µops or cycles as the printed objective.
+2. µops is a strictly better default speed objective than instructions —
+   same effective determinism, fixes gather/shuffle mis-scoring. Cycles stays
+   the ground-truth audit metric: osearch would need to pin the measured run
+   and use min-of-`-n` (not mean/median) with a %-scaled `-T`; even then
+   fftbench-class memory-layout variance won't converge.
+3. `scripts/aggregate.sh` / RESULTS.md: add a cycles column next to `-p` so
+   count-vs-time divergence (distbench, huffbench) is visible in the tables.
