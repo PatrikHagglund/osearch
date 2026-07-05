@@ -3,7 +3,12 @@
   <description value="clang 22 (full)" />
   <get_version value="clang -dumpversion" />
 
-  <prime command="clang -std=gnu23 OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
+  <!-- Compiles route through scripts/cc-pgo.sh (run osearch from the repo
+       root): a plain passthrough unless -fprofile-use is among the options,
+       in which case it performs the full PGO protocol (instrument, one
+       training run on the benchmark itself, llvm-profdata merge, recompile
+       with the profile). -->
+  <prime command="scripts/cc-pgo.sh clang -std=gnu23 OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
   <!-- All flags validated against Clang 22: each is accepted by the driver
        (no -Wignored-optimization-argument) and each -mllvm option exists in
@@ -17,6 +22,14 @@
 
   <flag type="simple" value="-march=native" w_speed="5" w_size="1" />
   <flag type="simple" value="-mtune=native" w_speed="0" w_size="0" />
+
+  <!-- Pseudo-flag, expanded by cc-pgo.sh (see prime command). A/B on the
+       best-known flag sets: treebench -19.9% instructions (-24% cycles),
+       huffbench -3.8%, ~0 on the vectorized FP kernels; evobench +15.7%
+       instructions but ~0 cycles (profile-driven unrolling trades count
+       for time — the search will reject it under -p/-u). Candidate builds
+       cost 2 compiles + a training run. -->
+  <flag type="simple" value="-fprofile-use" w_speed="5" w_size="0" />
 
   <!-- Floating-point relaxations (granular pieces of -ffast-math) -->
   <flag type="simple" value="-ffast-math" w_speed="2" w_size="1" />

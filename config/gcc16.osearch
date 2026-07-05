@@ -3,13 +3,23 @@
   <description value="gcc 16 (full)" />
   <get_version value="gcc -dumpversion" />
 
-  <prime command="gcc -std=gnu23 OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
+  <!-- Compiles route through scripts/cc-pgo.sh (run osearch from the repo
+       root): a plain passthrough unless -fprofile-use is among the options,
+       in which case it performs the full PGO protocol (instrument, one
+       training run on the benchmark itself, recompile with the profile). -->
+  <prime command="scripts/cc-pgo.sh gcc -std=gnu23 OSEARCH_OPTS -o OSEARCH_OUT OSEARCH_IN" />
 
   <!-- Optimization levels -->
   <flag type="enum" value="-O3|-O2|-Os" w_speed="9" w_size="9" />
   <flag type="simple" value="-ffast-math" w_speed="6" w_size="0" />
   <flag type="simple" value="-march=native" w_speed="9" w_size="6" />
   <flag type="simple" value="-flto" w_speed="2" w_size="9" />
+  <!-- Pseudo-flag, expanded by cc-pgo.sh (see prime command). A/B on the
+       best-known flag sets: huffbench -3.6% instructions / -8.6% cycles,
+       ~0 on the vectorized FP kernels, mildly negative on linbench (which
+       the search will reject). Candidate builds cost 2 compiles + a
+       training run, so searches slow down where it gets explored. -->
+  <flag type="simple" value="-fprofile-use" w_speed="4" w_size="0" />
 
   <!-- O2/O3 flags: disable to test impact -->
   <flag type="simple" value="-fno-aggressive-loop-optimizations" w_speed="0" w_size="0" />

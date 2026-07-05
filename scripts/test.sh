@@ -43,11 +43,18 @@ fi
 # ---------------------------------------------------------------------------
 # Slow layer: full integration search runs (each compiles + executes many
 # variants of a real benchmark; takes on the order of minutes).
+#
+# All runs are capped (-k): these tests exercise code paths and output
+# formats, not search exhaustiveness — and an uncapped time-mode search can
+# noise-adopt the -fprofile-use pseudo-flag early, after which every
+# remaining candidate pays cc-pgo.sh's three-phase build (hours, not
+# minutes). The caps still rank -fprofile-use high enough to exercise the
+# PGO wrapper path.
 # ---------------------------------------------------------------------------
 
 echo ""
 echo "=== Test: -q (quiet mode) ==="
-OUT=$($OSEARCH -q config/gcc16.osearch benchmarks/fftbench.c)
+OUT=$($OSEARCH -q -k 20 config/gcc16.osearch benchmarks/fftbench.c)
 if echo "$OUT" | grep -q "^Progress indicators"; then
   echo "FAIL: -q did not suppress progress output" >&2; exit 1
 fi
@@ -71,19 +78,19 @@ fi
 
 echo ""
 echo "=== Test: default (single flag search) ==="
-$OSEARCH config/gcc16.osearch benchmarks/fftbench.c
+$OSEARCH -k 20 config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== Test: -l 2 (flag pair search) ==="
-$OSEARCH -l 2 config/gcc16.osearch benchmarks/fftbench.c
+$OSEARCH -l 2 -k 12 config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== Test: -s (optimize for size) ==="
-$OSEARCH -s config/gcc16.osearch benchmarks/fftbench.c
+$OSEARCH -s -k 20 config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== Test: -i (extra compile options) ==="
-$OSEARCH -i "-march=native" config/gcc16.osearch benchmarks/fftbench.c
+$OSEARCH -i "-march=native" -k 20 config/gcc16.osearch benchmarks/fftbench.c
 
 echo ""
 echo "=== ALL PASS ==="
