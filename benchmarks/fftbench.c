@@ -95,10 +95,12 @@ void clean() {
     // printed checksum. Observing only a couple of elements would in
     // principle let a compiler skip computing the unobserved outputs of
     // the final butterfly stages. Runs in clean(), outside the measured
-    // region.
+    // region. Sum absolute values: the signed spectrum sum cancels to
+    // ~0, which makes the checksum ill-conditioned (a harmless absolute
+    // FP wobble of 1e-10 looks like a huge relative difference).
     double sum = 0.0;
     for (unsigned i = 0; i < N; ++i)
-        sum += re[i] + im[i];
+        sum += fabs(re[i]) + fabs(im[i]);
     bench_result = sum;
     free(re);
     free(im);
