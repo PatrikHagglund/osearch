@@ -12,6 +12,7 @@
 #ifdef __linux__
 #include <unistd.h>
 #include <errno.h>
+#include <sched.h>
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
 #include <linux/perf_event.h>
@@ -22,19 +23,49 @@ static long perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu,
     return syscall(SYS_perf_event_open, attr, pid, cpu, group_fd, flags);
 }
 
-/* Open a counter for retired user-space instructions on the calling thread.
-   Returned counter is disabled (ready for RESET+ENABLE). -1 on failure. */
-static int open_insn_counter(void) {
+/* AMD Zen PMCx0C1 "retired ops" (ex_ret_ops): retired macro-ops. Counts
+   what an instruction actually decodes into, so microcoded instructions
+   (gathers, wide shuffles) are priced honestly where an instruction count
+   sees 1. Vendor-specific: on non-AMD hardware -u/-g will count whatever
+   raw event 0xC1 means there, or fail to open. */
+#define RAW_EX_RET_OPS 0xC1
+
+/* Open one hardware counter for the calling thread, counting user space
+   only. `group_fd` = -1 starts a new leader (created disabled, ready for
+   RESET+ENABLE); otherwise the counter joins that group. `group_read`
+   (leader only) selects the PERF_FORMAT_GROUP read layout
+   ({nr, values[nr]}) so followers are read atomically with the leader —
+   without it a read returns the single { value }.
+   Returns the fd, -1 on failure. */
+static int open_counter(uint32_t type, uint64_t config, int group_fd,
+                        bool group_read) {
     struct perf_event_attr attr;
     memset(&attr, 0, sizeof(attr));
-    attr.type = PERF_TYPE_HARDWARE;
+    attr.type = type;
     attr.size = sizeof(attr);
-    attr.config = PERF_COUNT_HW_INSTRUCTIONS;
-    attr.disabled = 1;
-    attr.exclude_kernel = 1; /* user-space only: matches 'instructions:u' */
+    attr.config = config;
+    attr.exclude_kernel = 1; /* user-space only: matches 'event:u' */
     attr.exclude_hv = 1;
+    if (group_fd == -1) {
+        attr.disabled = 1;
+        if (group_read)
+            attr.read_format = PERF_FORMAT_GROUP;
+    }
     /* pid=0, cpu=-1: count this thread wherever it runs. */
-    return (int)perf_event_open(&attr, 0, -1, -1, 0);
+    return (int)perf_event_open(&attr, 0, -1, group_fd, 0);
+}
+
+/* Pin this thread to the CPU it currently runs on. Cycle counts are only
+   comparable when the run stays on one core (migration changes frequency
+   and cache context); instruction/op counts don't need this. */
+static void pin_to_current_cpu(void) {
+    int cpu = sched_getcpu();
+    if (cpu < 0)
+        return;
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(cpu, &set);
+    sched_setaffinity(0, sizeof(set), &set);
 }
 #endif
 
@@ -55,30 +86,68 @@ double bench_result;
 /* #define CLOCK CLOCK_PROCESS_CPUTIME_ID */
 #define CLOCK CLOCK_THREAD_CPUTIME_ID
 
+/* What to measure over run() and print on stdout. */
+enum mode {
+    MODE_TIME,   /* wall-clock microseconds (default) */
+    MODE_INSNS,  /* -p: retired instructions — deterministic (~1 ppm) */
+    MODE_UOPS,   /* -u: retired ops (AMD Zen) — near-deterministic, prices
+                        microcoded instructions honestly */
+    MODE_CYCLES, /* -c: core cycles, self-pinned — the real cost, but
+                        noisy; sample repeatedly and take the minimum */
+    MODE_GROUP,  /* -g: insns, uops and cycles from one atomic group
+                        read, tab-separated — for audits/reporting */
+};
+
 int main(int argc, char ** argv)
 {
-    /* -v: labelled output.  -p: report retired instructions for run()
-       (counted in-harness) instead of wall-clock time. */
     bool verbose = false;
-    bool perf = false;
+    enum mode mode = MODE_TIME;
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-v") == 0) verbose = true;
-        else if (strcmp(argv[i], "-p") == 0) perf = true;
+        else if (strcmp(argv[i], "-p") == 0) mode = MODE_INSNS;
+        else if (strcmp(argv[i], "-u") == 0) mode = MODE_UOPS;
+        else if (strcmp(argv[i], "-c") == 0) mode = MODE_CYCLES;
+        else if (strcmp(argv[i], "-g") == 0) mode = MODE_GROUP;
     }
 
-    int perf_fd = -1;
-    if (perf) {
+    int perf_fd = -1; /* group leader (or the sole counter) */
+    if (mode != MODE_TIME) {
 #ifdef __linux__
-        perf_fd = open_insn_counter();
+        if (mode == MODE_CYCLES || mode == MODE_GROUP)
+            pin_to_current_cpu();
+        switch (mode) {
+        case MODE_INSNS:
+            perf_fd = open_counter(PERF_TYPE_HARDWARE,
+                                   PERF_COUNT_HW_INSTRUCTIONS, -1, false);
+            break;
+        case MODE_UOPS:
+            perf_fd = open_counter(PERF_TYPE_RAW, RAW_EX_RET_OPS, -1, false);
+            break;
+        case MODE_CYCLES:
+            perf_fd = open_counter(PERF_TYPE_HARDWARE,
+                                   PERF_COUNT_HW_CPU_CYCLES, -1, false);
+            break;
+        default: /* MODE_GROUP: instructions leader + uops + cycles */
+            perf_fd = open_counter(PERF_TYPE_HARDWARE,
+                                   PERF_COUNT_HW_INSTRUCTIONS, -1, true);
+            if (perf_fd != -1 &&
+                (open_counter(PERF_TYPE_RAW, RAW_EX_RET_OPS, perf_fd,
+                              false) == -1 ||
+                 open_counter(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES,
+                              perf_fd, false) == -1))
+                perf_fd = -1;
+        }
         if (perf_fd == -1) {
             fprintf(stderr,
                     "%s: perf_event_open failed: %s\n"
-                    "(needs CONFIG_PERF_EVENTS and perf_event_paranoid <= 2)\n",
+                    "(needs CONFIG_PERF_EVENTS and perf_event_paranoid <= 2;"
+                    " -u/-g also need an AMD Zen PMU)\n",
                     argv[0], strerror(errno));
             return 1;
         }
 #else
-        fprintf(stderr, "%s: -p (instruction count) requires Linux\n", argv[0]);
+        fprintf(stderr, "%s: -p/-u/-c/-g (hardware counters) require Linux\n",
+                argv[0]);
         return 1;
 #endif
     }
@@ -91,8 +160,8 @@ int main(int argc, char ** argv)
     clock_gettime(CLOCK, &start);
 #ifdef __linux__
     if (perf_fd != -1) {
-        ioctl(perf_fd, PERF_EVENT_IOC_RESET, 0);
-        ioctl(perf_fd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(perf_fd, PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP);
+        ioctl(perf_fd, PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP);
     }
 #endif
 
@@ -100,7 +169,7 @@ int main(int argc, char ** argv)
 
 #ifdef __linux__
     if (perf_fd != -1)
-        ioctl(perf_fd, PERF_EVENT_IOC_DISABLE, 0);
+        ioctl(perf_fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
 #endif
     struct timespec stop;
     clock_gettime(CLOCK, &stop);
@@ -108,13 +177,18 @@ int main(int argc, char ** argv)
     uint64_t run_time = (stop.tv_sec - start.tv_sec) * 1000000UL +
 	(stop.tv_nsec - start.tv_nsec) / 1000;
 
-    uint64_t insns = 0;
+    /* Single counter: { u64 value; }.
+       Group (PERF_FORMAT_GROUP): { u64 nr; u64 values[nr]; }. */
+    uint64_t buf[4] = {0, 0, 0, 0};
 #ifdef __linux__
     if (perf_fd != -1) {
-        bool ok = read(perf_fd, &insns, sizeof(insns)) == (ssize_t)sizeof(insns);
+        size_t const want = mode == MODE_GROUP ? 4 * sizeof(uint64_t)
+                                               : sizeof(uint64_t);
+        bool ok = read(perf_fd, buf, want) == (ssize_t)want &&
+                  (mode != MODE_GROUP || buf[0] == 3);
         close(perf_fd);
         if (!ok) {
-            fprintf(stderr, "%s: reading instruction counter failed\n", argv[0]);
+            fprintf(stderr, "%s: reading hardware counter failed\n", argv[0]);
             clean();
             return 1;
         }
@@ -129,11 +203,29 @@ int main(int argc, char ** argv)
         fprintf(stderr, "%s checksum: %.17g\n", name, bench_result);
 
     /* report objective */
-    if (perf) {
+    switch (mode) {
+    case MODE_INSNS:
 	if (verbose)
 	    printf("%s retired instructions: ", name);
-	printf("%" PRIu64 "\n", insns);
-    } else {
+	printf("%" PRIu64 "\n", buf[0]);
+	break;
+    case MODE_UOPS:
+	if (verbose)
+	    printf("%s retired ops: ", name);
+	printf("%" PRIu64 "\n", buf[0]);
+	break;
+    case MODE_CYCLES:
+	if (verbose)
+	    printf("%s cycles: ", name);
+	printf("%" PRIu64 "\n", buf[0]);
+	break;
+    case MODE_GROUP:
+	if (verbose)
+	    printf("%s insns/ops/cycles: ", name);
+	printf("%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\n",
+	       buf[1], buf[2], buf[3]);
+	break;
+    default:
 	if (verbose)
 	    printf("%s run time (us): ", name);
 	printf("%" PRIu64 "\n", run_time);

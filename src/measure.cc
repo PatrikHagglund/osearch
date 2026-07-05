@@ -54,6 +54,46 @@ static int dummy_p_ =
 
 // END
 
+// BEGIN option handling for 'uops' (retired-op count)
+
+/// Flag to tell if we optimize for retired ops (micro/macro-ops).
+static bool opt_uops = false;
+
+/// Option helper function.
+static void opt_u() { opt_uops = true; }
+
+/// Option helper variable.
+static int dummy_u_ =
+    (opt_reg_t::append(
+         'u', opt_u, "u", "  [-u]",
+         "  -u \t\tuse retired-op count (AMD Zen ex_ret_ops, counted\n"
+         "  \t\tin-harness like -p). Near-deterministic, and prices\n"
+         "  \t\tmicrocoded instructions (gathers, wide shuffles) honestly\n"
+         "  \t\twhere -p counts 1\n"),
+     1);
+
+// END
+
+// BEGIN option handling for 'cycles'
+
+/// Flag to tell if we optimize for core cycles.
+static bool opt_cycles = false;
+
+/// Option helper function.
+static void opt_c() { opt_cycles = true; }
+
+/// Option helper variable.
+static int dummy_c_ =
+    (opt_reg_t::append(
+         'c', opt_c, "c", "  [-c]",
+         "  -c \t\tuse core cycles (counted in-harness like -p; the run\n"
+         "  \t\tself-pins to its CPU). Closest to real time but noisy on\n"
+         "  \t\ta shared host: sampled -n times taking the minimum —\n"
+         "  \t\traise -n and -T accordingly\n"),
+     1);
+
+// END
+
 // BEGIN option handling for 'num_samples'
 
 /// Number of samples per measurement (take minimum). Default 3.
@@ -123,6 +163,8 @@ void summary_first_measure() {
   o3 << "\nOptimized for: "
      << (opt_size     ? "size"
          : opt_perf   ? "retired instructions (perf)"
+         : opt_uops   ? "retired ops (perf)"
+         : opt_cycles ? "cycles (perf, min of -n samples)"
                       : "time (output value)");
 }
 
@@ -136,15 +178,16 @@ static void warn_if_perf_unavailable(std::string const &output) {
   if (warned || output.find("perf_event_open") == std::string::npos) return;
   warned = true;
   std::string::size_type const nl = output.find('\n');
-  std::cerr << "\nWARNING: -p instruction counting failed; every measurement "
-               "will be 'inf'.\n"
-               "The benchmark could not open a hardware instruction counter. "
+  std::cerr << "\nWARNING: -p/-u/-c hardware counting failed; every "
+               "measurement will be 'inf'.\n"
+               "The benchmark could not open a hardware counter. "
                "Check that the\n"
                "kernel has CONFIG_PERF_EVENTS and perf_event_paranoid <= 2, "
                "and that a container\n"
                "(if any) is not blocking perf_event_open via seccomp (e.g. run "
                "with\n"
-               "--security-opt seccomp=unconfined).\n"
+               "--security-opt seccomp=unconfined). -u additionally needs an "
+               "AMD Zen PMU.\n"
                "Underlying error: "
             << output.substr(0, nl) << "\n";
 }
@@ -173,20 +216,24 @@ static obj_t sample(pset_t pset) {
   // via perf_event_open when passed -p, and prints the count like the time
   // value. This excludes process startup, init(), clean(), and the perf
   // tool's own fork+exec, which dominate the count for short benchmarks.
-  const std::string perf_cmd = std::string(tmp_file.get_path()) + " -p";
-  const std::string run_cmd = std::string(tmp_file.get_path());
-  const std::string cmd = opt_size ? size_cmd : opt_perf ? perf_cmd : run_cmd;
+  const std::string run_cmd =
+      std::string(tmp_file.get_path()) +
+      (opt_perf ? " -p" : opt_uops ? " -u" : opt_cycles ? " -c" : "");
+  const std::string cmd = opt_size ? size_cmd : run_cmd;
+  bool const counter_mode = opt_perf || opt_uops || opt_cycles;
 
   const cmd_res_t cmd_res = execute(cmd);
-  if (opt_perf && cmd_res.status != EXIT_SUCCESS)
+  if (counter_mode && cmd_res.status != EXIT_SUCCESS)
     warn_if_perf_unavailable(cmd_res.output);
   const obj_t obj = cmd_res.status == EXIT_SUCCESS
                         ? obj_t(std::stol(cmd_res.output))
                         : obj_t_inf;
 
-  // For time measurements, take the minimum of num_samples runs.
-  // Size and perf measurements are deterministic; a single sample is enough.
-  if (opt_size || opt_perf || num_samples <= 1 || !obj.is_finite()) {
+  // For time and cycle measurements, take the minimum of num_samples runs
+  // (their noise is one-sided: interference only adds). Size, instruction
+  // and op counts are deterministic; a single sample is enough.
+  if (opt_size || opt_perf || opt_uops || num_samples <= 1 ||
+      !obj.is_finite()) {
     return obj;
   }
   obj_t best = obj;
