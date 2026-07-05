@@ -26,6 +26,13 @@ ninja -C build
   -p            optimize for retired instruction count (counted in-harness
                 via perf_event_open around run(); deterministic, requires
                 Linux perf_event support, perf_event_paranoid <= 2)
+  -u            optimize for retired-op count (AMD Zen ex_ret_ops).
+                Near-deterministic like -p, but prices microcoded
+                instructions (gathers, wide shuffles) honestly where an
+                instruction count sees 1
+  -c            optimize for core cycles (run self-pins to its CPU).
+                Closest to real time but noisy on a shared host: sampled
+                -n times taking the minimum; raise -n and -T accordingly
   -l max_level  max number of options to alter at once (default 1)
   -k n          quick mode: restrict the search to the 'n' highest-ranked
                 options for the active objective (0 = all, default). Ranking
@@ -55,8 +62,16 @@ top-ranked options for a quick run — no separate "test" config needed. See
 
 | Config | Description |
 |--------|-------------|
-| `gcc16.osearch` | GCC 16, full annotated flag set (226 flags) |
-| `clang22.osearch` | Clang/LLVM 22, full annotated flag set + LLVM pass control (106 flags) |
+| `gcc16.osearch` | GCC 16, full annotated flag set (227 flags) |
+| `clang22.osearch` | Clang/LLVM 22, full annotated flag set + LLVM pass control (107 flags) |
+
+Both configs route compiles through
+[`scripts/cc-pgo.sh`](scripts/cc-pgo.sh) (run osearch from the repo root): a
+plain passthrough, except that the pseudo-flag `-fprofile-use` triggers a full
+profile-guided-optimization build — instrument, one training run on the
+benchmark itself, recompile with the profile — so the search can adopt or
+reject PGO per benchmark like any other option (see TODO.md item 1 for the
+A/B measurements). PGO candidates cost two compiles plus a training run.
 
 ## Benchmarks
 
@@ -73,9 +88,14 @@ void run();         // the timed workload
 void clean();       // teardown
 ```
 
-`main.ic` provides `main()`, which calls `init()`, times `run()` using
-`CLOCK_THREAD_CPUTIME_ID`, calls `clean()`, and prints the elapsed
-microseconds to stdout. Pass `-v` for a labeled line.
+`main.ic` provides `main()`, which calls `init()`, measures `run()`, calls
+`clean()`, and prints the measured value to stdout. What is measured is
+selected by an option: elapsed microseconds via `CLOCK_THREAD_CPUTIME_ID`
+(default), retired instructions (`-p`), retired ops (`-u`, AMD Zen), core
+cycles (`-c`, self-pinned), or all three counters from one atomic group read
+(`-g`, tab-separated — used for audits/reporting rather than as a search
+objective). Pass `-v` for a labeled line plus the benchmark's output checksum
+on stderr.
 
 To build benchmarks standalone (with their own `main`):
 
@@ -190,8 +210,9 @@ to enforce zero-overhead C++ discipline:
 
 ## TODO
 
-- Use C++26 reflection (`-freflection`) for JSON serialization and CLI option registration once compiler support matures (blocked on compiler support)
-- Deeper search to escape greedy local optima: a non-greedy search (simulated annealing / genetic, as in the ACOVEA ancestor). The `-l 1` greedy can't reach optima needing a coordinated multi-flag move — e.g. almabench `-p`, where `-flto` only helps in a specific co-set (see RESULTS.md "Search limitations"). The ranked-restart plan below is the lighter near-term mitigation
+Open work items live in [TODO.md](TODO.md).
+
+## Search methodology
 
 ### Effectiveness-ranked options
 
@@ -224,11 +245,6 @@ per-objective marginal effect (uncapped `-l 1`, size and perf modes) and writes
 the weights back into the config, so they are regenerated rather than
 hand-curated and refreshed as compilers change. `enum` options (the `-O` level,
 cost models, …) are structural and always ranked top.
-
-**Remaining:** restart seeding — bias a future `random_point()` so an option's
-on-probability rises with its weight, making `-r` restarts begin near promising
-regions (the proper multi-restart escape for greedy local optima; pure-random
-restart proved impractically slow).
 
 ### Noise-robust search
 
@@ -270,9 +286,19 @@ improvements.
 
 Practical guidance:
 
-- Prefer `-p` (retired instructions) for reproducible optimization.
-  Same optimization target for most CPU-bound code, fully deterministic.
+- Prefer `-p` (retired instructions) or `-u` (retired ops) for
+  reproducible optimization — both effectively deterministic. `-u` is
+  the better speed proxy on AMD Zen: it prices microcoded instructions
+  (gathers, wide shuffles) honestly where an instruction count sees 1
+  (measured: Clang's mat1bench gather kernel is 586M ops from 54M
+  instructions; see TODO.md item 2).
 - Prefer `-s` (size) when optimizing for binary size.
+- `-c` (cycles) is the closest to real time and much better behaved
+  than wall-clock (the run self-pins, counts only own-thread user-space
+  cycles, and `-n` takes the minimum of one-sided noise), but still not
+  deterministic — CV 0.1–9% per binary on a shared host, worst for
+  memory-bound workloads. Use it to audit `-p`/`-u` results rather than
+  as the primary objective, with raised `-n` and `-T`.
 - Use time mode as a sanity check only. `-n 5 -T 20` reduces variance
   but does not eliminate it. Pinning (`taskset`), disabling turbo, and
   setting the CPU governor to `performance` help but don't fully fix
@@ -280,11 +306,13 @@ Practical guidance:
 
 ### Perf speed
 
-Instruction counting is done in-harness: `main.ic` opens a
-`perf_event_open` counter for `PERF_COUNT_HW_INSTRUCTIONS` (user-space
-only) and brackets exactly `run()` with `RESET`/`ENABLE`/`DISABLE`,
-then prints the count just like the time value. This is what `-p`
-parses.
+Hardware counting is done in-harness: `main.ic` opens a
+`perf_event_open` counter (user-space only) and brackets exactly
+`run()` with `RESET`/`ENABLE`/`DISABLE`, then prints the count just
+like the time value. `-p` counts `PERF_COUNT_HW_INSTRUCTIONS`, `-u`
+the AMD Zen raw event `0xC1` (`ex_ret_ops`), `-c`
+`PERF_COUNT_HW_CPU_CYCLES` (self-pinned), and the harness-only `-g`
+reads all three atomically as one group.
 
 Compared to spawning `perf stat <binary>` per sample, this:
 
@@ -293,7 +321,3 @@ Compared to spawning `perf stat <binary>` per sample, this:
   and exit from the count — for short benchmarks these fixed
   instructions otherwise dominate and dilute the signal, exactly as
   the timer already excludes them in time mode.
-
-Still open to investigate:
-- Sample multiple flag sets in parallel (extend `compile_batch()` to
-  cover measurement, but beware contention between measurements).

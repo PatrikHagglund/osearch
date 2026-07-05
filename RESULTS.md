@@ -377,7 +377,7 @@ Two benchmarks are worth calling out:
   smaller, hand-chosen space (the former curated config, ~0.89B) happened to
   steer the hill-climb down a better path. It is the clearest price of replacing
   a hand-curated set with data-driven weights — and the kind of case `-l 2` or a
-  non-greedy search (README TODO) would address.
+  non-greedy search (TODO.md item 3) would address.
 - **almabench `-p`** is a true greedy local optimum that no `-k` escapes (see
   below).
 
@@ -396,7 +396,7 @@ improvements). Two effects surface in the tables:
   ~347M. Pair search (`-l 2`) explores two-flag moves but is impractically
   slow on a full config; multiple random restarts or a non-greedy search
   (the genetic approach of the ACOVEA ancestor) would be the real fix — see
-  the README TODO.
+  TODO.md item 3.
 - **Coverage vs. the weights.** Quick mode trusts the cross-benchmark weights
   to front-load the useful options. A workload whose winning flags are specific
   to it (and so rank low on average) can be under-served; a larger `-k` widens

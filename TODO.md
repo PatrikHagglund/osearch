@@ -1,13 +1,17 @@
-# TODO — exploration notes
+# TODO
 
-Working notes for measurement/exploration work. Longer-term *design* TODOs
-(non-greedy search, `-r` restart seeding, C++26 reflection) live in
-[README.md § TODO](README.md#todo).
+All open work items. Items 1–2 are measurement/exploration notes (with
+findings recorded inline); item 3 is the longer-term design backlog. The
+methodology behind the search and its objectives is documented in
+[README.md § Search methodology](README.md#search-methodology).
 
 ## 1. Profile-guided optimization (PGO) as a searchable option
 
-**Status:** step 1 (fixed A/B) done, 2026-07-05 — verdict: **go for step 2**.
-Results below.
+**Status:** done, 2026-07-05 — step 1 (fixed A/B, results below) gave a clear
+go; step 2 is implemented: `scripts/cc-pgo.sh` + the `-fprofile-use`
+pseudo-flag in both configs (verified to reproduce the A/B numbers exactly,
+and adopted by a quick `-p` search on clang/treebench). **Remaining:** re-run
+the RESULTS.md tables with the flag available.
 
 PGO is not a flag but a build *protocol* — instrument → training run →
 recompile — so it can't be a plain `<flag>` line in a config. It can still be
@@ -190,15 +194,34 @@ and the wins grow: clang treebench −24%, GCC huffbench −8.6%, clang huffbenc
 2.0% → 0.2%) — better layout stabilizes timing. Conclusion: `-p`
 systematically under-credits PGO.
 
-**Proposed integration (next step):**
+**Integration status (2026-07-05):**
 
-1. `benchmarks/main.ic`: replace the single counter with the 3-counter group;
-   `-p` keeps printing instructions (harness compat); new options select
-   retired µops or cycles as the printed objective.
-2. µops is a strictly better default speed objective than instructions —
-   same effective determinism, fixes gather/shuffle mis-scoring. Cycles stays
-   the ground-truth audit metric: osearch would need to pin the measured run
-   and use min-of-`-n` (not mean/median) with a %-scaled `-T`; even then
-   fftbench-class memory-layout variance won't converge.
-3. `scripts/aggregate.sh` / RESULTS.md: add a cycles column next to `-p` so
-   count-vs-time divergence (distbench, huffbench) is visible in the tables.
+1. ✅ `benchmarks/main.ic`: `-u` (retired ops), `-c` (cycles, self-pinned via
+   `sched_setaffinity`) and `-g` (all three counters in one atomic
+   `PERF_FORMAT_GROUP` read) implemented alongside `-p`, which is unchanged.
+2. ✅ osearch: `-u` objective (deterministic, single sample) and `-c`
+   objective (min of `-n` samples — cycle noise is one-sided) pass through to
+   the harness. µops is the recommended speed objective on this host; cycles
+   the audit metric (fftbench-class memory-layout variance won't converge
+   regardless of `-n`).
+3. ⬜ `scripts/aggregate.sh` / RESULTS.md: add a cycles column next to `-p`
+   (via the harness `-g` mode on each winner binary) so count-vs-time
+   divergence (distbench, huffbench) is visible in the tables — natural to do
+   together with the pending PGO-enabled re-run of the tables (item 1).
+
+## 3. Design backlog (moved from README)
+
+- **Non-greedy search** to escape greedy local optima: simulated annealing /
+  genetic (as in the ACOVEA ancestor). The `-l 1` greedy can't reach optima
+  needing a coordinated multi-flag move — e.g. almabench `-p`, where `-flto`
+  only helps in a specific co-set (see RESULTS.md "Search limitations"). The
+  restart seeding below is the lighter near-term mitigation.
+- **Restart seeding** — bias a future `random_point()` so an option's
+  on-probability rises with its effectiveness weight, making `-r` restarts
+  begin near promising regions (the proper multi-restart escape for greedy
+  local optima; pure-random restart proved impractically slow).
+- **Parallel measurement** — sample multiple flag sets in parallel (extend
+  `compile_batch()` to cover measurement), but beware contention between
+  measurements: fine for `-s`/`-p`/`-u` (deterministic), wrong for `-c`/time.
+- **C++26 reflection** (`-freflection`) for JSON serialization and CLI option
+  registration, once compiler support matures (blocked on compiler support).
