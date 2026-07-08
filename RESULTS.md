@@ -5,9 +5,10 @@
 - **CPU:** AMD EPYC 9354 (Zen 4) — AVX-512 + AVX2; `-march=native` ⇒ `znver4`
 - **OS:** Fedora Linux 44 (container)
 - **Compilers:** GCC 16.1.1, Clang 22.1.8
-- **Date:** 2026-07-05 (full `-p`/`-s` re-run with PGO searchable — the
-  `-fprofile-use` pseudo-flag expanded by `scripts/cc-pgo.sh` — and the
-  `-u`/`-c`/`-g` counter modes in the harness)
+- **Date:** 2026-07-08 (speed tables re-run under `-u`, now the primary
+  speed objective; size tables from the 2026-07-05 run — same objective,
+  unchanged. PGO searchable throughout via the `-fprofile-use` pseudo-flag
+  expanded by `scripts/cc-pgo.sh`)
 - **Configs:** one annotated file per compiler — `gcc16` (227 flags) and
   `clang22` (107 flags), under `config/`. Each carries per-flag `w_speed` /
   `w_size` weights; a *quick* run restricts to the top-ranked options
@@ -16,13 +17,14 @@
   workload's best flags are benchmark-specific (see
   [Quick vs audit](#quick-vs-audit)).
 
-`-p` counts are user-space retired instructions for `run()` only, via the
-in-harness `perf_event_open` counter. The harness can also count retired ops
-(`-u`) and self-pinned core cycles (`-c`), or all three atomically (`-g`) —
-the [audit table](#audit-retired-ops-and-cycles-on-the--p-winners) below uses
-`-g`. Absolute size/time figures are larger than pre-2026-06 revisions
-because DCE-prevention sinks and the harness's counter code are real `.text`
-and work in every binary.
+`-u` counts are user-space retired macro-ops (AMD Zen `ex_ret_ops`) for
+`run()` only, via the in-harness `perf_event_open` counter. The harness can
+also count instructions (`-p`, the portable fallback) and self-pinned core
+cycles (`-c`), or all three atomically (`-g`) — the [audit
+table](#audit-instructions-and-cycles-on-the--u-winners) below uses `-g`.
+Absolute size/time figures are larger than pre-2026-06 revisions because
+DCE-prevention sinks and the harness's counter code are real `.text` and
+work in every binary.
 
 Every benchmark folds its full computed output into a checksum
 (`bench_result` in `main.ic`) that is printed under `-v`, so no compiler at
@@ -35,31 +37,37 @@ cancels to ~0 and made harmless FP wobble look large.)
 
 ## Summary
 
-- **For reproducible optimization use `-s` (size), `-p` (instructions) or
-  `-u` (retired ops)** — all deterministic. Wall-clock time is too noisy here
-  to optimize on (see [Time](#time-default)); cycles (`-c`) is the best
-  ground-truth *audit* metric but not reproducible enough to search on.
+- **The speed objective is `-u` (retired ops); size is `-s`.** Both
+  deterministic in practice. `-u` prices microcoded instructions honestly
+  where an instruction count sees 1 — and that changed real outcomes: the
+  `-u` search found a clang/mat1bench binary **~9% faster in cycles** than
+  the `-p` winner by fleeing AVX-512 gathers, a binary `-p` structurally
+  could not choose. `-p` (instructions) remains as the portable fallback
+  (`ex_ret_ops` is Zen-specific) and is reported in the audit table.
+  Wall-clock time is too noisy here to optimize on (see
+  [Time](#time-default)); cycles (`-c`) is the ground-truth *audit* metric
+  but not reproducible enough to search on.
 - **PGO is searchable and pays.** The `-fprofile-use` pseudo-flag (expanded
   into instrument → train → recompile by `scripts/cc-pgo.sh`) was adopted in
-  11 of the 16 speed searches — biggest wins clang/treebench (−21%),
-  gcc/almabench (−10%, escaping a documented greedy local optimum),
-  huffbench (−6% GCC / −4% Clang) — and correctly rejected where the A/B
-  said it regresses (clang/evobench, gcc/linbench). No size search adopted
-  it. Training input = benchmark input, so this is best-case PGO.
+  10 of the 16 `-u` speed searches — biggest wins clang/treebench,
+  gcc/almabench (whose documented greedy local optimum it dissolved),
+  huffbench on both compilers — and correctly rejected where it costs ops
+  (clang/evobench). No size search adopted it. Training input = benchmark
+  input, so this is best-case PGO.
 - **One annotated config per compiler.** `gcc16` and `clang22` each search both
   speed and size (their `-O` level is an enum spanning `-O3…-Os`/`-Oz`) and
   carry per-flag effectiveness weights, so a quick `-k n` run searches the
   top-ranked options and an uncapped audit reaches the rest. The former
   separate "curated" and "full" configs are now one file each.
-- **GCC vs Clang, instructions:** 4–4. Biggest gaps: mat1bench (GCC −47%),
-  fftbench (Clang −44%), treebench (Clang −26%, PGO-driven) — the older gaps
-  each root-caused to a single hot-loop codegen decision, see
+- **GCC vs Clang, retired ops:** 4–4. Biggest gaps: mat1bench (GCC −82%),
+  fftbench (Clang −38%), huffbench (GCC −26%) — the classic gaps each
+  root-caused to a single hot-loop codegen decision, see
   [Why the big gaps](#why-the-big-gaps).
-  See [comparison](#gcc-16-vs-clang-22--instructions--p).
-- **On cycles the picture shifts:** Clang 5, GCC 2, one wash — instruction
-  counts under-price Clang's gathers (mat1bench) but also hide its 2×
-  huffbench cycle win. See the [audit
-  table](#audit-retired-ops-and-cycles-on-the--p-winners).
+  See [comparison](#gcc-16-vs-clang-22--retired-ops--u).
+- **On cycles the picture shifts:** Clang 4, GCC 1, three washes — ops fix
+  the gather blindness that instruction counts had, but still hide Clang's
+  2.1× huffbench cycle win. See the [audit
+  table](#audit-instructions-and-cycles-on-the--u-winners).
 - **GCC vs Clang, size:** GCC wins 6 of 8, by ~2–10%; Clang takes evobench
   (−1%) and treebench (−4%). See [comparison](#gcc-16-vs-clang-22--size--s).
 
@@ -80,126 +88,127 @@ FP benchmarks prefer `-O3 -ffast-math`; the integer/branch ones prefer plain
 `-O3`. Every table below uses this order (FP-heavy first, then integer-heavy),
 matching `scripts/aggregate.sh`.
 
-## Instruction count (-p)
+## Retired ops (-u)
 
-The primary reproducible performance metric: user-space retired instructions
-for `run()`, counted in-harness and stable to ~1 ppm per binary.
+The primary reproducible performance metric: user-space retired macro-ops
+for `run()` (AMD Zen `ex_ret_ops`), counted in-harness and stable to
+~100 ppm per binary. Unlike an instruction count, this prices microcoded
+instructions (gathers, wide shuffles) at what they actually cost the
+decoder — and the search exploits that: see mat1bench below, where the
+`-u` objective found a binary ~9% *faster in cycles* than the `-p` winner
+by retiring 3× the instructions. Instructions (`-p`) remain the portable
+fallback (the ops event is Zen-specific) and are reported per winner in the
+[audit table](#audit-instructions-and-cycles-on-the--u-winners).
 
-### GCC 16 — instructions
+### GCC 16 — retired ops
 
 Config: `config/gcc16.osearch` (227 flags), quick mode (`-k 80`), greedy `-l 1`.
 
-Totals are reproducible to ~1 ppm per binary; the `-fno-*` tail beyond the
-`-O`/`-march`/`-flto` base is adopted at the default `-T 0` threshold and
-includes marginal picks that vary between runs (use `-T 3` for a stable set).
+The `-fno-*` tail beyond the `-O`/`-march`/`-flto` base is adopted at the
+default `-T 0` threshold and includes marginal picks that vary between runs
+(use `-T 3` for a stable set).
 
-| Benchmark   | Instructions    | Best flags |
+| Benchmark   | Retired ops     | Best flags |
 |-------------|-----------------|------------|
-| distbench   | 23,512,257      | -O3 -ffast-math -march=native -fno-align-loops -funroll-all-loops |
-| mat1bench   | 28,958,911      | -O3 -ffast-math -march=native **-fprofile-use** -fno-align-loops -fno-asynchronous-unwind-tables -fno-tree-loop-distribute-patterns -funroll-all-loops -ffp-contract=on -fira-algorithm=priority |
-| almabench   | 311,361,518     | -O2 -ffast-math -march=native -flto **-fprofile-use** -fno-caller-saves -fno-cse-follow-jumps -fno-if-conversion -fno-move-loop-invariants -fno-peephole2 -fno-plt -fno-reorder-functions -fno-sched-dep-count-heuristic -fno-thread-jumps -fno-tree-ter -funroll-all-loops -fira-region=all |
-| fftbench    | 448,263,892     | -Os -ffast-math -march=native -flto -fno-plt -fno-tree-sink -ffp-contract=on -freorder-blocks-algorithm=simple |
-| linbench    | 96,244,520      | -O3 -ffast-math -march=native -flto -fno-align-jumps -fno-align-loops -fno-caller-saves -fno-dse -fno-forward-propagate -fno-if-conversion -fno-if-conversion2 -fno-plt -fno-tree-loop-distribute-patterns -funroll-all-loops -fira-algorithm=priority -fira-region=one -fvect-cost-model=unlimited |
-| evobench    | 566,866,541     | -O3 -ffast-math -march=native **-fprofile-use** -fno-align-jumps -fno-asynchronous-unwind-tables -fno-early-inlining -fno-if-conversion -fno-move-loop-invariants -fno-plt -fno-thread-jumps -fno-tree-dominator-opts -funroll-all-loops -ffp-contract=on |
-| treebench   | 833,805,037     | -O3 -flto **-fprofile-use** -fno-align-jumps -fno-asynchronous-unwind-tables -fno-dce -fno-dse -fno-forward-propagate -fno-gcse -fno-guess-branch-probability -fno-inline-functions-called-once -fno-ipa-modref -fno-ipa-sra -fno-ira-share-spill-slots -fno-lra-remat -fno-move-loop-invariants -fno-plt -fno-schedule-insns2 -fno-ssa-phiopt -fno-tree-dominator-opts -fno-tree-loop-distribute-patterns -fno-tree-reassoc -fno-tree-slp-vectorize |
-| huffbench   | 944,629,971     | -O3 -ffast-math -march=native **-fprofile-use** -fno-align-functions -fno-align-loops -fno-dce -fno-if-conversion -fno-if-conversion2 -fno-ipa-bit-cp -fno-plt -fno-ssa-phiopt -fno-toplevel-reorder -funroll-all-loops -fira-algorithm=priority |
-
-> **almabench's greedy local optimum is gone.** The previous table carried a
-> warning: greedy `-l 1` landed at ~347M, ~8% above the best reachable 319.6M,
-> because `-flto` only helps almabench inside one specific co-set. With PGO
-> searchable, the greedy path changes: adopting `-fprofile-use` makes `-flto`
-> a straight win, and the search now lands at **311.4M** — below the former
-> "unreachable" 319.6M. A coordinated-move limitation can dissolve when a new
-> option reshapes the adoption path (see
-> [Search limitations](#search-limitations)).
+| distbench   | 23,021,840      | -O2 -ffast-math -march=native -flto -fno-dce -funroll-all-loops -ffp-contract=on -fira-region=one -freorder-blocks-algorithm=simple |
+| mat1bench   | 27,668,187      | -O2 -ffast-math -march=native -funroll-all-loops -ffp-contract=on -freorder-blocks-algorithm=simple |
+| almabench   | 329,950,059     | -O2 -ffast-math -march=native -flto **-fprofile-use** -fno-align-loops -fno-caller-saves -fno-crossjumping -fno-cse-follow-jumps -fno-if-conversion -fno-peephole2 -fno-plt -fno-schedule-insns2 -fno-tree-slp-vectorize -fno-tree-ter -funroll-all-loops -fira-algorithm=priority |
+| fftbench    | 393,782,288     | -O3 -ffast-math -march=native -flto -fno-tree-loop-distribute-patterns -fno-tree-ter -funroll-all-loops -fexcess-precision=standard -ffp-contract=on |
+| linbench    | 112,264,690     | -O3 -ffast-math -march=native **-fprofile-use** -fno-align-functions -fno-align-loops -fno-dse -fno-forward-propagate -fno-if-conversion -fno-omit-frame-pointer -fno-peephole2 -funroll-all-loops -fvect-cost-model=unlimited |
+| evobench    | 654,551,385     | -O3 -ffast-math -march=native **-fprofile-use** -fno-align-functions -fno-align-jumps -fno-align-loops -fno-caller-saves -fno-code-hoisting -fno-crossjumping -fno-if-conversion -fno-move-loop-invariants -fno-omit-frame-pointer -fno-shrink-wrap -fno-tree-dominator-opts -fno-tree-vrp -funroll-all-loops -ffp-contract=on -freorder-blocks-algorithm=simple |
+| treebench   | 676,900,779     | -O3 -march=native -flto **-fprofile-use** -fno-align-functions -fno-align-loops -fno-code-hoisting -fno-dce -fno-dse -fno-early-inlining -fno-forward-propagate -fno-guess-branch-probability -fno-if-conversion -fno-if-conversion2 -fno-ira-share-spill-slots -fno-tree-dominator-opts -fno-tree-loop-distribute-patterns -fno-tree-reassoc -funroll-all-loops -fvect-cost-model=very-cheap |
+| huffbench   | 742,407,036     | -O3 -march=native **-fprofile-use** -fno-align-loops -fno-asynchronous-unwind-tables -fno-code-hoisting -fno-cprop-registers -fno-if-conversion -fno-if-conversion2 -funroll-all-loops -fira-algorithm=priority -fira-region=one |
 
 #### Observations
 
-- `-fprofile-use` (PGO) was adopted by 5 of 8: almabench (−10.4% vs the
-  pre-PGO table), huffbench (−5.8%), evobench and treebench (−0.7%),
-  mat1bench (marginal). Rejected for distbench/fftbench/linbench —
-  consistent with the fixed A/B (TODO.md item 1).
-- All benchmarks build on `-O3` + `-ffast-math`; fftbench prefers `-Os` and
-  almabench now `-O2` (+PGO +LTO).
-- `-funroll-all-loops` is a broad win (distbench, mat1bench, almabench,
-  linbench, evobench, huffbench).
-- `-fno-if-conversion` and `-fno-plt` recur on the branch-heavy / call-heavy
-  benchmarks; `-march=native` helps everyone except treebench this round
-  (huffbench adopts it under PGO).
-- treebench picks up the most `-fno-*` flags (largest search surface).
-  huffbench `-p` remains the one benchmark where quick mode visibly trails
-  the former hand-curated result (see [Quick vs audit](#quick-vs-audit)).
+- `-fprofile-use` (PGO) adopted by 5 of 8 (almabench, linbench, evobench,
+  treebench, huffbench). linbench is new versus the `-p` search: PGO cost it
+  +3% *instructions* (rejected) but pays in *ops* (adopted) — the metric
+  changes what the search keeps.
+- Versus the ops that the former `-p` winners scored: fftbench −7%
+  (393.8M vs 424.2M — a different flag shape, `-O3 -flto
+  -funroll-all-loops` instead of `-Os`), huffbench −2.6%, linbench −3.1%,
+  the rest equal. One counter-case: treebench lands 2% *more* ops than the
+  `-p` winner's binary scored (greedy paths differ), yet its cycles are
+  ~4% better — at these margins neither count is the last word.
+- `-funroll-all-loops` is adopted by all eight — with loop overhead priced
+  in ops it is an unambiguous win.
+- `-fno-if-conversion` recurs on almost every benchmark; `-march=native` on
+  all eight.
 
-### Clang 22 — instructions
+### Clang 22 — retired ops
 
 Config: `config/clang22.osearch` (107 flags), quick mode (`-k 80`), greedy `-l 1`.
 
-| Benchmark   | Instructions    | Best flags |
+| Benchmark   | Retired ops     | Best flags |
 |-------------|-----------------|------------|
-| distbench   | 39,092,624      | -O3 -march=native -ffast-math |
-| mat1bench   | 54,305,654      | -O3 -flto -march=native **-fprofile-use** -ffast-math -mllvm -force-vector-width=8 |
-| almabench   | 215,813,021     | -O3 -flto=thin -march=native **-fprofile-use** -ffast-math -fveclib=libmvec -fno-omit-frame-pointer -fno-plt -fno-direct-access-external-data -mno-vzeroupper -mllvm -unroll-threshold=200 |
-| fftbench    | 252,279,010     | -O3 -march=native **-fprofile-use** -ffast-math -fno-plt -fno-builtin -mllvm -enable-ext-tsp-block-placement |
-| linbench    | 108,958,981     | -O3 -flto=thin -march=native **-fprofile-use** -ffast-math -ffp-contract=on -fno-asynchronous-unwind-tables -fno-plt -fno-jump-tables -mno-vzeroupper |
-| evobench    | 557,312,637     | -O3 -flto=thin -march=native -ffast-math -ffp-contract=on -fno-optimize-sibling-calls -mno-vzeroupper -mllvm -enable-gvn-hoist |
-| treebench   | 612,854,757     | -Os -flto=thin -march=native **-fprofile-use** -fno-strict-overflow -fno-plt -fno-optimize-sibling-calls -fno-builtin -mno-vzeroupper -mllvm -inline-threshold=500 -mllvm -enable-gvn-sink |
-| huffbench   | 1,145,983,651   | -O3 -flto -march=native **-fprofile-use** -fno-inline-functions -fno-plt -mllvm -unroll-threshold=200 |
+| distbench   | 39,098,514      | -O2 -flto -march=native -ffast-math -finline-hint-functions |
+| mat1bench   | 156,443,246     | -O2 -flto -ffast-math -fno-asynchronous-unwind-tables **-mavx2 -mfma** -mllvm -force-vector-width=8 -mllvm -unroll-threshold=200 |
+| almabench   | 282,447,153     | -O3 -flto=thin -march=native **-fprofile-use** -ffast-math -fveclib=libmvec -fno-omit-frame-pointer -fno-plt -fno-jump-tables -fvisibility=hidden -mno-vzeroupper -mprefer-vector-width=256 -mllvm -unroll-threshold=200 |
+| fftbench    | 243,405,254     | -O3 -march=native **-fprofile-use** -fno-omit-frame-pointer -fno-direct-access-external-data -fno-builtin -mllvm -unroll-threshold=200 -mllvm -enable-ext-tsp-block-placement |
+| linbench    | 120,838,290     | -O3 -march=native **-fprofile-use** -ffast-math -ffp-contract=on -ffunction-sections |
+| evobench    | 645,080,055     | -O3 -flto=thin -march=native -ffast-math -ffp-contract=on -fno-plt -fno-optimize-sibling-calls -fno-builtin -mno-vzeroupper |
+| treebench   | 602,757,776     | -O3 -flto=thin -march=native **-fprofile-use** -ffast-math -fno-unroll-loops -fno-strict-overflow -fno-asynchronous-unwind-tables -fno-plt -fno-optimize-sibling-calls -fno-jump-tables -fno-builtin -mllvm -enable-gvn-sink |
+| huffbench   | 1,005,035,442   | -O3 -flto **-fprofile-use** -fno-inline-functions -fno-omit-frame-pointer -fno-asynchronous-unwind-tables -fno-plt -fno-direct-access-external-data -mllvm -unroll-threshold=200 -mllvm -enable-newgvn |
 
 #### Observations
 
-- `-fprofile-use` (PGO) was adopted by 6 of 8 — treebench is the headline
-  (−21.2% vs the pre-PGO table: 777.9M → 612.9M), then huffbench (−3.8%),
-  fftbench (−0.9%), linbench (−0.7%), almabench and mat1bench (marginal).
-  Correctly *rejected* for evobench, where the A/B measured +15.7%
-  instructions (a `-p` artifact — see the [audit
-  table](#audit-retired-ops-and-cycles-on-the--p-winners): its cycles are
-  unchanged under PGO).
-- `-march=native` is now universal (PGO brought treebench along); LTO is
-  near-universal, and `-flto=thin` beats full `-flto` wherever both compete.
-  With PGO in the mix every benchmark picks `-O3` except treebench (`-Os`).
-- `-fno-plt` consistently helps (avoids PLT indirection on hot calls);
-  `-mno-vzeroupper` recurs.
-- fftbench now skips LTO and instead adopts
-  `-mllvm -enable-ext-tsp-block-placement` (profile-driven basic-block
-  layout — only useful *because* PGO is in the flag set).
+- **mat1bench is the headline of the `-u` switch.** The search dropped
+  `-march=native` for `-mavx2 -mfma`: without AVX-512 there is no
+  `vgatherqpd`, so the microcode explosion disappears — 156.4M ops versus
+  the 586.3M the `-p` winner scored (−73%). The binary retires 3× the
+  instructions (159.4M vs 54.3M — under `-p` it could never be chosen), yet
+  runs **~9% faster in cycles** (145.0M vs 160.0M min). The objective did
+  not just re-score the search; it steered it to genuinely better code.
+- `-fprofile-use` (PGO) adopted by 5 of 8 (almabench, fftbench, linbench,
+  treebench, huffbench). Rejected for evobench — PGO costs it +13.5% ops,
+  the same artifact as its +15.7% instructions; only cycles show it
+  neutral, and cycles aren't searchable.
+- treebench refines its PGO win further (602.8M ops, now with `-ffast-math
+  -fno-unroll-loops`); huffbench sheds 2% more ops than its `-p` winner.
+- `-mllvm -enable-ext-tsp-block-placement` (profile-driven block layout)
+  again rides along with PGO on fftbench.
 
-### GCC 16 vs Clang 22 — Instructions (-p)
+### GCC 16 vs Clang 22 — Retired ops (-u)
 
 Δ is the winner's reduction relative to the other compiler.
 
 | Benchmark | GCC 16 | Clang 22 | Winner | Δ |
 |-----------|--------|----------|--------|---|
-| distbench | 23,512,257 | 39,092,624 | GCC | −40% |
-| mat1bench | 28,958,911 | 54,305,654 | GCC | −47% |
-| almabench | 311,361,518 | 215,813,021 | Clang | −31% |
-| fftbench | 448,263,892 | 252,279,010 | Clang | −44% |
-| linbench | 96,244,520 | 108,958,981 | GCC | −12% |
-| evobench | 566,866,541 | 557,312,637 | Clang | −2% |
-| treebench | 833,805,037 | 612,854,757 | Clang | −26% |
-| huffbench | 944,629,971 | 1,145,983,651 | GCC | −18% |
+| distbench | 23,021,840 | 39,098,514 | GCC | −41% |
+| mat1bench | 27,668,187 | 156,443,246 | GCC | −82% |
+| almabench | 329,950,059 | 282,447,153 | Clang | −14% |
+| fftbench | 393,782,288 | 243,405,254 | Clang | −38% |
+| linbench | 112,264,690 | 120,838,290 | GCC | −7% |
+| evobench | 654,551,385 | 645,080,055 | Clang | −1% |
+| treebench | 676,900,779 | 602,757,776 | Clang | −11% |
+| huffbench | 742,407,036 | 1,005,035,442 | GCC | −26% |
 
-It's 4–4: GCC wins distbench (−40%), mat1bench (−47%), linbench (−12%), and
-huffbench (−18%); Clang wins fftbench (−44%), almabench (−31%), treebench
-(−26%), and evobench (−2%). PGO moved two margins: treebench widened from
-−7% to −26% (Clang's PGO is far more effective there) and almabench narrowed
-from −38% to −31% (GCC's PGO+LTO escape). Earlier still, almabench flipped
-from "GCC −46%" when `-fveclib=libmvec` was added to the Clang config — see
-[Why the big gaps](#why-the-big-gaps).
+Still 4–4: GCC wins distbench (−41%), mat1bench (−82%), linbench (−7%), and
+huffbench (−26%); Clang wins fftbench (−38%), almabench (−14%), treebench
+(−11%), and evobench (−1%). Compared to the instruction-count head-to-head,
+mat1bench widens sharply (−47% → −82%: even after Clang's search fled to
+AVX2 to escape the gathers, GCC's interchanged broadcast-FMA kernel does the
+same work in a fraction of the ops) and huffbench widens (−18% → −26%) —
+but the cycles audit below shows ops still overstate GCC on the
+stall-bound benchmarks.
 
-(Both columns are the single annotated config in quick mode (`-k 80`), so this
-is an apples-to-apples comparison. Earlier revisions measured GCC with a weaker
-speed-only config and reported "Clang wins 5/8" — that was the config, not the
-compiler. Quick-mode caveat: GCC huffbench quick lands at 0.94B, above the
-~0.89B the former hand-curated set found pre-PGO — a greedy path-dependence,
-see [Quick vs audit](#quick-vs-audit).)
+(Both columns are the single annotated config in quick mode (`-k 80`), so
+this is an apples-to-apples comparison. The per-flag `w_speed` weights that
+rank quick-mode candidates were measured under `-p`; they order well for
+`-u` too, but regenerating them with `scripts/annotate.sh` under `-u` would
+make the ranking native.)
 
 #### Why the big gaps
 
-*(This analysis was done on the pre-PGO winners of 2026-07-04; the
-mechanisms — vectorization strategy, loop interchange, veclib defaults,
-idiom recognition — are properties of the compilers and still hold. The
-treebench gap is newer: it is PGO effectiveness, not a codegen idiom, and is
-covered under the tables above.)*
+*(This analysis was done in instruction counts on the pre-PGO winners of
+2026-07-04; the mechanisms — vectorization strategy, loop interchange,
+veclib defaults, idiom recognition — are properties of the compilers and
+still hold. Two later developments layer on top: the treebench gap is PGO
+effectiveness, not a codegen idiom, and the mat1bench story gained a coda —
+under the `-u` objective Clang's search escapes the gather kernel entirely
+by dropping to AVX2, recovering ~9% in cycles; see the Clang observations
+above.)*
 
 Each ≥40% delta was root-caused: rebuild the winner with its exact flags,
 confirm the published count reproduces to within a few instructions, then
@@ -294,40 +303,40 @@ and a gap this size is as likely to be one missing flag or one missed
 idiom as it is a quality difference, so check the disassembly before
 crediting the compiler.
 
-### Audit: retired ops and cycles on the -p winners
+### Audit: instructions and cycles on the -u winners
 
-Each `-p` winner above, rebuilt and measured with the harness's `-g` mode
+Each `-u` winner above, rebuilt and measured with the harness's `-g` mode
 (instructions + retired ops + cycles in one atomic counter-group read;
-median of 21 self-pinned runs, in millions):
+median of 21 self-pinned runs, in millions). This is also where the
+portable instruction counts (`-p`) live now that ops are the headline:
 
-| Benchmark | GCC insns / ops / cycles | Clang insns / ops / cycles | Cycles winner | (-p winner) |
+| Benchmark | GCC insns / ops / cycles | Clang insns / ops / cycles | Cycles winner | (-u winner) |
 |-----------|--------------------------|----------------------------|---------------|-------------|
-| distbench | 23.5 / 23.0 / 32.1 | 39.1 / 39.1 / 32.4 | ~tie (GCC −1%) | GCC −40% |
-| mat1bench | 29.0 / 27.7 / 54.4 | 54.3 / 586.3 / 161.6 | GCC −66% | GCC −47% |
-| almabench | 311.4 / 329.8 / 158.7 | 215.8 / 282.5 / 106.9 | Clang −33% | Clang −31% |
-| fftbench | 448.3 / 424.2 / 146.9 | 252.3 / 243.4 / 116.0 | Clang −21% | Clang −44% |
-| linbench | 96.2 / 115.9 / 117.2 | 109.0 / 120.8 / 113.4 | Clang −3% | GCC −12% |
-| evobench | 566.9 / 655.1 / 616.2 | 557.3 / 645.5 / 615.5 | wash | Clang −2% |
-| treebench | 833.8 / 663.5 / 677.0 | 612.9 / 609.5 / 475.8 | Clang −30% | Clang −26% |
-| huffbench | 944.6 / 762.1 / 839.4 | 1,146.0 / 1,020.7 / 400.1 | **Clang −52%** | **GCC −18%** |
+| distbench | 23.5 / 23.0 / 32.1 | 39.1 / 39.1 / 32.4 | ~tie (GCC −1%) | GCC −41% |
+| mat1bench | 29.0 / 27.7 / 55.1 | 159.4 / 156.5 / 146.2 | GCC −62% | GCC −82% |
+| almabench | 311.5 / 330.0 / 158.7 | 216.7 / 282.5 / 106.6 | Clang −33% | Clang −14% |
+| fftbench | 406.6 / 393.8 / 151.8 | 252.3 / 243.4 / 117.7 | Clang −22% | Clang −38% |
+| linbench | 96.2 / 112.3 / 115.9 | 109.0 / 120.9 / 116.0 | wash | GCC −7% |
+| evobench | 566.8 / 654.6 / 614.9 | 557.1 / 645.1 / 616.6 | wash | Clang −1% |
+| treebench | 843.5 / 677.1 / 645.5 | 616.4 / 602.8 / 475.3 | Clang −26% | Clang −11% |
+| huffbench | 949.6 / 742.5 / 858.3 | 1,163.8 / 1,005.0 / 400.4 | **Clang −53%** | **GCC −26%** |
 
-On cycles the scoreboard is Clang 5, GCC 2 (mat1bench decisively, distbench
-barely), evobench a wash — versus 4–4 on instructions. The recurring
-lessons (measured in detail in TODO.md item 2):
+On cycles the scoreboard is Clang 4, GCC 1 (mat1bench), three washes
+(distbench, linbench, evobench) — versus 4–4 on ops. The recurring lessons
+(measured in detail in TODO.md item 2):
 
-- **Instruction counts under-price microcoded instructions.** Clang's
-  mat1bench gather kernel is 586M ops from 54M instructions (10.8×); its
-  real cycle loss is −66%, worse than the −47% the `-p` table shows.
-  Conversely distbench's "GCC −40%" is a wall of cheap shuffles — a cycle
-  tie.
-- **Neither instructions nor ops see stalls.** huffbench flips outright:
-  GCC retires 18% fewer instructions and 24% fewer ops, yet takes 2.1× the
-  cycles (IPC 1.1 vs 2.9). linbench flips the same way, mildly.
-- **PGO looks better in cycles than in counts** — clang/treebench is −30%
-  in cycles vs −21% in instructions, and the A/B's apparent PGO
-  "regressions" (clang/evobench, gcc/linbench) vanish under cycles.
+- **Ops fix the microcode blindness but can overshoot.** mat1bench under
+  `-u` escaped the gather kernel and gained ~9% real cycles — the metric
+  working as intended — yet the remaining "GCC −82%" op gap corresponds to
+  −62% in cycles: GCC's broadcast-FMA kernel retires very few ops but
+  doesn't run proportionally faster (port-limited, not decode-limited).
+- **Neither instructions nor ops see stalls.** huffbench still flips
+  outright: GCC retires 26% fewer ops, yet takes 2.1× the cycles (IPC 1.1
+  vs 2.9). linbench's −7% op win is a cycle wash.
+- **PGO looks better in cycles than in counts** — clang/treebench is −26%
+  in cycles vs −11% in ops against GCC's PGO'd winner.
 - Cycle medians on this shared host carry 0.1–7% run-to-run spread
-  (fftbench up to ~20% — its 16 MB working set is at the mercy of physical
+  (fftbench the worst — its 16 MB working set is at the mercy of physical
   page placement), which is why cycles audit the tables instead of driving
   the search.
 
@@ -423,7 +432,8 @@ fastest (e.g. almabench at `-Os` ≈ 84 ms vs ~51 ms at `-O3 -ffast-math`).
 The old time tables only looked sane because the previous speed-only config
 couldn't offer `-Os`.
 
-Use `-s` or `-p` for reproducible optimization. If you must use time mode,
+Use `-s` or `-u` (or the portable `-p`) for reproducible optimization. If
+you must use time mode,
 pin the CPU (`taskset`), disable turbo, set the `performance` governor, and
 raise `-n`/`-T`; even then the greedy path can diverge (see
 [Search limitations](#search-limitations) and Reproducibility below).
@@ -439,19 +449,17 @@ benchmarks, and `-k` lets you trade speed for reach without a second config.
 
 One benchmark is worth calling out:
 
-- **huffbench `-p`** (quick 0.94B with PGO) remains the widest gap. Its best
-  flag set is *specific to that workload* (e.g. `-fipa-cp-clone`,
-  `-fsplit-paths`, `-finline-stringops`), so those options rank low on the
-  cross-benchmark weights. This is greedy *path-dependence*, not coverage:
-  pre-PGO, widening to `-k 130` only nudged 1.00B to 0.98B and even an
-  uncapped audit reached just 0.98B — so the flags are reachable; greedy
-  simply doesn't take that path. A smaller, hand-chosen space (the former
-  curated config, ~0.89B pre-PGO) happened to steer the hill-climb down a
-  better path. It is the clearest price of replacing a hand-curated set with
+- **GCC huffbench** remains the widest gap (measured in the `-p` era: quick
+  1.00B vs 0.98B for an uncapped audit vs ~0.89B for the former hand-curated
+  config). Its best flag set is *specific to that workload* (e.g.
+  `-fipa-cp-clone`, `-fsplit-paths`, `-finline-stringops`), so those options
+  rank low on the cross-benchmark weights. This is greedy *path-dependence*,
+  not coverage — the flags are reachable; greedy simply doesn't take that
+  path. It is the clearest price of replacing a hand-curated set with
   data-driven weights — and the kind of case `-l 2` or a non-greedy search
   (TODO.md item 3) would address.
 
-(almabench `-p` was the other callout — a greedy local optimum that no `-k`
+(almabench was the other callout — a greedy local optimum that no `-k`
 escaped — until PGO dissolved it; see below.)
 
 Everywhere else, one annotated file in quick mode is within noise of a thorough
@@ -478,22 +486,28 @@ improvements). Two effects surface in the tables:
   to front-load the useful options. A workload whose winning flags are specific
   to it (and so rank low on average) can be under-served; a larger `-k` widens
   reach, but greedy path-dependence means it does not always recover a
-  hand-curated result (huffbench `-p`, see [Quick vs audit](#quick-vs-audit)).
+  hand-curated result (GCC huffbench, see [Quick vs audit](#quick-vs-audit)).
+  The `w_speed` weights themselves were annotated under `-p`; regenerating
+  them under `-u` (`scripts/annotate.sh`) would make the quick-mode ranking
+  native to the current objective.
 - **Path sensitivity.** At the default `-T 0` the marginal `-fno-*` tail is
   noise-level, so the exact flag set varies between runs; totals are stable.
 
 ### Reproducibility
 
 - **Size (-s):** 100% reproducible across runs
-- **Instructions (-p) and retired ops (-u):** totals reproducible to ~1 ppm
-  (`-u` to ~100 ppm); at the default `-T 0` the marginal `-fno-*` picks vary
-  run-to-run, but `-T 3` yields a stable flag set. PGO builds are just as
-  deterministic (the training run is deterministic, so the profile is too).
+- **Retired ops (-u) and instructions (-p):** totals reproducible to
+  ~100 ppm (`-u`) / ~1 ppm (`-p`) — every `-u` winner above re-verified
+  within 0.2% on rebuild; at the default `-T 0` the marginal `-fno-*` picks
+  vary run-to-run, but `-T 3` yields a stable flag set. PGO builds are just
+  as deterministic (the training run is deterministic, so the profile is
+  too). Note `-u` counts AMD Zen's `ex_ret_ops` (raw event `0xC1`) — on
+  non-AMD hardware use `-p`, whose numbers are in the audit table.
 - **Cycles (-c):** 0.1–7% run-to-run spread even self-pinned (fftbench up to
   ~20%); an audit metric, not a search objective.
 - **Time (default):** too noisy on this shared host to optimize on — the
-  greedy search even adopts `-Os` for compute-bound FP benchmarks. Use `-s`,
-  `-p` or `-u` instead (see [Time](#time-default)).
+  greedy search even adopts `-Os` for compute-bound FP benchmarks. Use `-s`
+  or `-u` instead (see [Time](#time-default)).
 - **Rebuilding a winner by hand:** match the harness invocation —
   `scripts/cc-pgo.sh gcc -std=gnu23 <flags> -o out bench.c -lm -lrt` from the
   repo root (the wrapper is a passthrough unless the flags include

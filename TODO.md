@@ -206,11 +206,20 @@ systematically under-credits PGO.
    the harness. µops is the recommended speed objective on this host; cycles
    the audit metric (fftbench-class memory-layout variance won't converge
    regardless of `-n`).
-3. ✅ RESULTS.md carries an ops/cycles audit table on the `-p` winners
-   (harness `-g` mode, median of 21 pinned runs), making the count-vs-time
-   divergence visible: distbench's −40% is a cycle tie, huffbench flips to a
-   2.1× Clang cycle win, and the cycle scoreboard reads Clang 5 / GCC 2 /
-   one wash vs 4–4 on instructions.
+3. ✅ RESULTS.md carries an instructions/ops/cycles audit table on the
+   winners (harness `-g` mode, median of 21 pinned runs), making the
+   count-vs-time divergence visible (huffbench flips to a 2.1× Clang cycle
+   win that neither deterministic counter sees).
+4. ✅ **`-u` is now the primary speed objective of RESULTS.md**
+   (2026-07-08 re-run; `-p` folded into the audit table as the portable
+   fallback). The switch changed real outcomes: the `-u` search found a
+   clang/mat1bench binary ~9% faster in cycles than the `-p` winner by
+   dropping `-march=native` for `-mavx2 -mfma` (no `vgatherqpd`) — a binary
+   `-p` could never choose (3× the instructions). It also flipped
+   gcc/linbench's PGO decision (costs instructions, pays ops).
+5. ⬜ Regenerate the configs' `w_speed` weights under `-u`
+   (`scripts/annotate.sh` currently annotates with `-p`), so quick-mode
+   ranking is native to the current objective.
 
 ## 3. Design backlog (moved from README)
 

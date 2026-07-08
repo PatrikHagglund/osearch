@@ -116,9 +116,11 @@ microsecond value as the objective.
 
 ## Results
 
-See [RESULTS.md](RESULTS.md) for measured instruction-count (`-p`) and
-code-size (`-s`) results per benchmark on GCC 16 and Clang 22, the
-head-to-head compiler comparisons, and the search-methodology caveats.
+See [RESULTS.md](RESULTS.md) for measured retired-op (`-u`, the primary
+speed objective) and code-size (`-s`) results per benchmark on GCC 16 and
+Clang 22, the head-to-head compiler comparisons (including an
+instructions/ops/cycles audit of every winner), and the search-methodology
+caveats.
 
 ## Components
 
@@ -286,12 +288,15 @@ improvements.
 
 Practical guidance:
 
-- Prefer `-p` (retired instructions) or `-u` (retired ops) for
-  reproducible optimization — both effectively deterministic. `-u` is
-  the better speed proxy on AMD Zen: it prices microcoded instructions
-  (gathers, wide shuffles) honestly where an instruction count sees 1
-  (measured: Clang's mat1bench gather kernel is 586M ops from 54M
-  instructions; see TODO.md item 2).
+- Prefer `-u` (retired ops) as the speed objective — effectively
+  deterministic, and it prices microcoded instructions (gathers, wide
+  shuffles) honestly where an instruction count sees 1. This changes
+  search *outcomes*, not just scores: under `-u` the search found a
+  clang/mat1bench binary ~9% faster in cycles that `-p` structurally
+  could not choose (it retires 3× the instructions but avoids
+  `vgatherqpd`; see TODO.md item 2 and RESULTS.md).
+- `-p` (retired instructions) is the portable fallback: `-u` counts AMD
+  Zen's `ex_ret_ops` raw event, `-p` works on any CPU with perf support.
 - Prefer `-s` (size) when optimizing for binary size.
 - `-c` (cycles) is the closest to real time and much better behaved
   than wall-clock (the run self-pins, counts only own-thread user-space
