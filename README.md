@@ -33,6 +33,11 @@ ninja -C build
   -c            optimize for core cycles (run self-pins to its CPU).
                 Closest to real time but noisy on a shared host: sampled
                 -n times taking the minimum; raise -n and -T accordingly
+  -C permille   hybrid validation: search on the chosen objective, then
+                re-check each adopted flag under real cycles (paired
+                interleaved runs, min-of-pairs) and keep it only if it
+                wins by >= permille (0.1% units; ~25-30 clears this
+                host's noise)
   -l max_level  max number of options to alter at once (default 1)
   -k n          quick mode: restrict the search to the 'n' highest-ranked
                 options for the active objective (0 = all, default). Ranking

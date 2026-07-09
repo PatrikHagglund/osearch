@@ -217,9 +217,11 @@ systematically under-credits PGO.
    dropping `-march=native` for `-mavx2 -mfma` (no `vgatherqpd`) — a binary
    `-p` could never choose (3× the instructions). It also flipped
    gcc/linbench's PGO decision (costs instructions, pays ops).
-5. ⬜ Regenerate the configs' `w_speed` weights under `-u`
-   (`scripts/annotate.sh` currently annotates with `-p`), so quick-mode
-   ranking is native to the current objective.
+5. ✅ Configs' weights regenerated under `-u` (2026-07-09,
+   `scripts/annotate.sh` now measures speed with `-u`). The new ranking
+   front-loads hard: a `-k 12` quick run on gcc/distbench reaches the same
+   23.0M ops as the full `-k 80` table entry. `-fprofile-use` ranks
+   `w_speed=9` for GCC (top tier) under the ops objective.
 
 ### Cycle-reliability findings (2026-07-09)
 
@@ -246,16 +248,14 @@ search on? Measured answers:
 
 **What would actually help, in deployment order:**
 
-1. **Hybrid search (approved, queued for implementation):** keep the greedy
-   search on `-u`, but re-score the *post-search validation pass* under `-c`
-   with paired, interleaved baseline/candidate runs (difference of paired
-   minimums cancels slow drift — frequency, neighbors) and a `-T` above the
-   residual ~2–3% noise. Greedy steps stay deterministic; the handful of
-   final adoptions get checked against something close to the end goal.
-   Sketch: a new osearch option (`-C`) that leaves the search objective
-   untouched and swaps only `validate()`'s measurement for the paired-cycles
-   comparison (alternate baseline/trial executions back-to-back, N pairs,
-   compare minimums).
+1. **Hybrid search — implemented as `-C permille` (2026-07-09):** the greedy
+   search runs on its chosen objective; afterwards each adopted flag is
+   re-checked under real cycles with paired interleaved with/without runs
+   (minimum of each side; interleaving means both sides see the same slow
+   drift) and kept only if it wins by ≥ permille (~25–30 clears this host's
+   noise). First smoke run demonstrated the point: on gcc/distbench it
+   dropped `-ffast-math` — worth −12% ops but nothing in cycles there (the
+   `vsqrtpd` pipe is the bottleneck either way).
 2. **Environment control (infrastructure, not code):** an idle machine,
    `cpuset`-isolated core, fixed frequency (`performance` governor, boost
    off). This is what actually removes the noise floor; nothing in the

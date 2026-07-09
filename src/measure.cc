@@ -8,7 +8,11 @@
 
 #include "flat_map.hh"
 
-#include <cstdlib> // EXIT_SUCCESS
+#include <algorithm> // std::max, std::min
+#include <cstdint>   // INT64_MAX
+#include <cstdlib>   // EXIT_SUCCESS
+#include <string>    // std::stol
+#include <utility>   // std::pair
 
 /// \file
 /// Measure (compile and sample) given a point_t, using measure(). Store results
@@ -107,6 +111,30 @@ static int dummy_n_ =
     (opt_reg_t::append('n', opt_n, "n:", "  [-n samples]",
                        "  -n samples \tnumber of samples per measurement "
                        "(take minimum, default 1)\n"),
+     1);
+
+// END
+
+// BEGIN option handling for 'cycle validation' (-C permille)
+
+/// If nonzero, re-score the post-search validation pass under cycles:
+/// paired interleaved baseline/trial runs, compared by their minimums,
+/// keeping a flag only if it improves cycles by at least this many
+/// permille. The search objective itself is untouched (hybrid search:
+/// deterministic -u/-p/-s greedy steps, real-cycle final validation).
+static unsigned long opt_cvalidate_permille = 0;
+
+/// Option helper function.
+static void opt_C() { opt_cvalidate_permille = strtoul(optarg, nullptr, 0); }
+
+/// Option helper variable.
+static int dummy_C_ =
+    (opt_reg_t::append(
+         'C', opt_C, "C:", "  [-C permille]",
+         "  -C permille \tafter the search, re-check each adopted flag under\n"
+         "  \t\tcycles (paired interleaved runs, min-of-pairs); keep it only\n"
+         "  \t\tif it improves cycles by >= permille (0.1%% units; ~25-30\n"
+         "  \t\tclears this host's noise). Search objective is unchanged\n"),
      1);
 
 // END
@@ -296,6 +324,73 @@ point_t get_min_point() {
   return get_point(min_i->first);
 }
 
+/// Paired interleaved cycle measurement of two binaries: alternate
+/// with-flag / without-flag executions back-to-back so both see the same
+/// slow drift (frequency, neighbor load), and compare minimums — cycle
+/// noise is one-sided, so the minimum is the clean estimate on each side.
+/// Returns {min_with, min_without}, or {-1, -1} on any run failure.
+static std::pair<int64_t, int64_t> paired_cycles(pset_t with_f,
+                                                 pset_t without_f) {
+  const std::string with_cmd =
+      std::string(get_tmp_file(with_f).get_path()) + " -c";
+  const std::string without_cmd =
+      std::string(get_tmp_file(without_f).get_path()) + " -c";
+  unsigned long const pairs = std::max(num_samples, 5UL);
+  int64_t min_w = INT64_MAX;
+  int64_t min_wo = INT64_MAX;
+  for (unsigned long i = 0; i < pairs; ++i) {
+    cmd_res_t const rw = execute(with_cmd);
+    cmd_res_t const rwo = execute(without_cmd);
+    if (rw.status != EXIT_SUCCESS || rwo.status != EXIT_SUCCESS) {
+      warn_if_perf_unavailable(rw.output);
+      return {-1, -1};
+    }
+    min_w = std::min(min_w, std::stol(rw.output));
+    min_wo = std::min(min_wo, std::stol(rwo.output));
+  }
+  return {min_w, min_wo};
+}
+
+/// Second validation pass under real cycles (-C): for each still-active
+/// flag, keep it only if the with-flag binary beats the without-flag
+/// binary by at least opt_cvalidate_permille in paired-minimum cycles.
+/// Flags whose removal doesn't change the binary are left alone (the
+/// objective pass already keeps the option string minimal for those).
+static point_t validate_cycles(point_t p) {
+  o1 << "\n## Cycle validation pass (-C " << opt_cvalidate_permille
+     << ", paired minimums):\n" << p.to_string() << "\n";
+
+  bool dropped_any = true;
+  while (dropped_any) {
+    dropped_any = false;
+    for (size_t i = 0; i < p.val.size(); ++i) {
+      if (p.val[i] == 0) continue;  // already inactive
+      point_t p_trial = p;
+      p_trial.val[i] = 0;
+      pset_t const with_f = compile(p);
+      pset_t const without_f = compile(p_trial);
+      if (with_f == pset_invalid || without_f == pset_invalid ||
+          with_f == without_f)  // same binary: nothing to measure
+        continue;
+      auto const [min_w, min_wo] = paired_cycles(with_f, without_f);
+      if (min_w < 0)
+        return p;  // cycles unavailable; keep the objective-passed point
+      // Keep the flag only if it wins by >= threshold of the without side.
+      int64_t const needed =
+          (min_wo * static_cast<int64_t>(opt_cvalidate_permille)) / 1000;
+      if (min_wo - min_w < needed) {
+        o1 << "\nCycle validation dropped flag at index " << i << ": with "
+           << min_w << " vs without " << min_wo << " cycles (needed -"
+           << needed << ")";
+        p = p_trial;
+        dropped_any = true;
+      }
+    }
+  }
+  o1 << "\n## After cycle validation:\n" << p.to_string() << "\n";
+  return p;
+}
+
 point_t validate() {
   point_t p = get_min_point();
   obj_t res = measure(p);
@@ -326,6 +421,10 @@ point_t validate() {
   }
   o1 << "\n## After validation:\n"
      << res.to_string() << " " << p.to_string() << "\n";
+
+  if (opt_cvalidate_permille != 0)
+    p = validate_cycles(p);
+
   return p;
 }
 
