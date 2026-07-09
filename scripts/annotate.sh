@@ -15,7 +15,8 @@
 #                     uncapped "audit" run, never in quick -k/-Q mode).
 #
 # Method: run a -l 1 search per benchmark in size mode (-> w_size) and
-# perf/retired-instruction mode (-> w_speed). Each run's JSON gives every
+# retired-ops mode (-u, the primary speed objective -> w_speed). Each run's
+# JSON gives every
 # sampled option's marginal effect at the local optimum; weights are the
 # per-objective mean effect, normalised to small integers. The search is capped
 # with -Q (QCAP, default 60) for practicality — an uncapped sweep over the full
@@ -51,7 +52,7 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 for mode in size perf; do
-  case "$mode" in size) F="-s" ;; perf) F="-p" ;; esac
+  case "$mode" in size) F="-s" ;; perf) F="-u" ;; esac
   echo "Measuring $mode (uncapped -l 1) on $MEASURE_CFG ..." >&2
   for bench in $BENCHMARKS; do
     name=$(basename "$bench" .c)

@@ -221,6 +221,45 @@ systematically under-credits PGO.
    (`scripts/annotate.sh` currently annotates with `-p`), so quick-mode
    ranking is native to the current objective.
 
+### Cycle-reliability findings (2026-07-09)
+
+Can cycles (or something closer to real time) be made reliable enough to
+search on? Measured answers:
+
+- **Callgrind (valgrind cache+branch simulation) is not the answer,
+  measured three ways.** It is bit-exact deterministic across runs and
+  ~165× slower (huffbench 0.13 s → 21 s) — the profile of a perfect slow
+  objective — but: (a) valgrind 3.27 cannot decode znver4 AVX-512, so every
+  `-march=native` winner dies with SIGILL; as an objective it would
+  systematically veto AVX-512 flags. (b) Its linear cost model cannot see
+  ILP: on the two huffbench winners it scores the 2.0× real cycle gap as
+  0.98 — even though its branch simulator correctly measures GCC taking
+  2.2× the mispredicts (43.5M vs 20.1M), no per-event weighting can
+  represent an IPC 1.1-vs-2.9 dependency-chain difference. A simulator that
+  models out-of-order execution (gem5 O3) would see it, at 10⁴–10⁵×
+  slowdown — audit-only, never searchable.
+- **The fftbench cycle variance is not fixable from userspace.** THP is
+  already `always` on this host (glibc's `hugetlb=1` tunable changes
+  nothing: 19% vs 18% spread); the residual variance is physical-page /
+  L3-slice placement plus neighbor traffic. Even min-of-15 differs ~2%
+  between batches on memory-bound benchmarks.
+
+**What would actually help, in deployment order:**
+
+1. **Hybrid search (deployable in osearch now):** keep the greedy search on
+   `-u`, but re-score the *post-search validation pass* under `-c` with
+   paired, interleaved baseline/candidate runs (difference of paired
+   minimums cancels slow drift — frequency, neighbors) and a `-T` above the
+   residual ~2–3% noise. Greedy steps stay deterministic; the handful of
+   final adoptions get checked against something close to the end goal.
+   This is the most value per implementation effort.
+2. **Environment control (infrastructure, not code):** an idle machine,
+   `cpuset`-isolated core, fixed frequency (`performance` governor, boost
+   off). This is what actually removes the noise floor; nothing in the
+   harness can substitute for it in this shared container.
+3. **Not worth deploying:** callgrind as an objective (above), gem5-class
+   simulation (too slow), userspace hugepage tricks (already active).
+
 ## 3. Design backlog (moved from README)
 
 - **Non-greedy search** to escape greedy local optima: simulated annealing /
