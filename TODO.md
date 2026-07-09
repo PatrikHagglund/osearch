@@ -246,13 +246,16 @@ search on? Measured answers:
 
 **What would actually help, in deployment order:**
 
-1. **Hybrid search (deployable in osearch now):** keep the greedy search on
-   `-u`, but re-score the *post-search validation pass* under `-c` with
-   paired, interleaved baseline/candidate runs (difference of paired
+1. **Hybrid search (approved, queued for implementation):** keep the greedy
+   search on `-u`, but re-score the *post-search validation pass* under `-c`
+   with paired, interleaved baseline/candidate runs (difference of paired
    minimums cancels slow drift — frequency, neighbors) and a `-T` above the
    residual ~2–3% noise. Greedy steps stay deterministic; the handful of
    final adoptions get checked against something close to the end goal.
-   This is the most value per implementation effort.
+   Sketch: a new osearch option (`-C`) that leaves the search objective
+   untouched and swaps only `validate()`'s measurement for the paired-cycles
+   comparison (alternate baseline/trial executions back-to-back, N pairs,
+   compare minimums).
 2. **Environment control (infrastructure, not code):** an idle machine,
    `cpuset`-isolated core, fixed frequency (`performance` governor, boost
    off). This is what actually removes the noise floor; nothing in the
