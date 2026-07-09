@@ -20,8 +20,8 @@
   <!-- Link-time optimization (mutually exclusive: full or thin) -->
   <flag type="enum" value="-flto|-flto=thin" w_speed="9" w_size="9" />
 
-  <flag type="simple" value="-march=native" w_speed="5" w_size="1" />
-  <flag type="simple" value="-mtune=native" w_speed="0" w_size="0" />
+  <flag type="simple" value="-march=native" w_speed="9" w_size="2" />
+  <flag type="simple" value="-mtune=native" w_speed="1" w_size="1" />
 
   <!-- Pseudo-flag, expanded by cc-pgo.sh (see prime command). A/B on the
        best-known flag sets: treebench -19.9% instructions (-24% cycles),
@@ -29,90 +29,90 @@
        instructions but ~0 cycles (profile-driven unrolling trades count
        for time — the search will reject it under -p/-u). Candidate builds
        cost 2 compiles + a training run. -->
-  <flag type="simple" value="-fprofile-use" w_speed="5" w_size="0" />
+  <flag type="simple" value="-fprofile-use" w_speed="2" w_size="-2" />
 
   <!-- Floating-point relaxations (granular pieces of -ffast-math) -->
-  <flag type="simple" value="-ffast-math" w_speed="2" w_size="1" />
+  <flag type="simple" value="-ffast-math" w_speed="6" w_size="1" />
   <flag type="simple" value="-fno-math-errno" w_speed="1" w_size="1" />
   <flag type="simple" value="-ffinite-math-only" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-honor-infinities" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-honor-nans" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-honor-infinities" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-honor-nans" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-signed-zeros" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-trapping-math" w_speed="1" w_size="1" />
   <flag type="simple" value="-fassociative-math" w_speed="1" w_size="1" />
   <flag type="simple" value="-freciprocal-math" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fapprox-func" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-rounding-math" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-strict-float-cast-overflow" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fapprox-func" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-rounding-math" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-strict-float-cast-overflow" w_speed="-7" w_size="1" />
   <flag type="enum" value="-ffp-contract=fast|-ffp-contract=on|-ffp-contract=off" w_speed="9" w_size="9" />
 
   <!-- Vectorization (disable to test impact) -->
-  <flag type="simple" value="-fno-vectorize" w_speed="-2" w_size="1" />
+  <flag type="simple" value="-fno-vectorize" w_speed="1" w_size="1" />
   <!-- Vectorized libm (glibc libmvec): GCC uses it automatically under
        -ffast-math, Clang only when asked. Decisive on sin/cos-heavy code
        (almabench -p: 646M -> 216M) and an exact no-op elsewhere. -->
-  <flag type="simple" value="-fveclib=libmvec" w_speed="4" w_size="0" />
+  <flag type="simple" value="-fveclib=libmvec" w_speed="9" w_size="1" />
   <flag type="simple" value="-fno-slp-vectorize" w_speed="1" w_size="1" />
 
   <!-- Loop unrolling -->
   <flag type="simple" value="-funroll-loops" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-unroll-loops" w_speed="0" w_size="1" />
+  <flag type="simple" value="-fno-unroll-loops" w_speed="1" w_size="1" />
 
   <!-- Inlining -->
-  <flag type="simple" value="-fno-inline-functions" w_speed="0" w_size="1" />
-  <flag type="simple" value="-finline-hint-functions" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-inline-functions" w_speed="1" w_size="0" />
+  <flag type="simple" value="-finline-hint-functions" w_speed="1" w_size="1" />
 
   <!-- Aliasing / UB-based optimization (disable to test impact) -->
-  <flag type="simple" value="-fno-strict-aliasing" w_speed="-7" w_size="0" />
-  <flag type="simple" value="-fno-strict-overflow" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-strict-aliasing" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-strict-overflow" w_speed="0" w_size="1" />
   <flag type="simple" value="-fno-strict-enums" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-strict-return" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-delete-null-pointer-checks" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fstrict-vtable-pointers" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fstrict-vtable-pointers" w_speed="1" w_size="1" />
 
   <!-- Code generation -->
   <flag type="simple" value="-fno-omit-frame-pointer" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-asynchronous-unwind-tables" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-unwind-tables" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-unwind-tables" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-plt" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-semantic-interposition" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-direct-access-external-data" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-direct-access-external-data" w_speed="1" w_size="1" />
   <flag type="simple" value="-ffunction-sections" w_speed="1" w_size="1" />
   <flag type="simple" value="-fdata-sections" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-common" w_speed="1" w_size="1" />
   <flag type="simple" value="-fmerge-all-constants" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-addrsig" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-addrsig" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-optimize-sibling-calls" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-jump-tables" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-builtin" w_speed="0" w_size="1" />
-  <flag type="simple" value="-fcf-protection=none" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-stack-protector" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fvisibility=hidden" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fvisibility-inlines-hidden" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-builtin" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fcf-protection=none" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-stack-protector" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fvisibility=hidden" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fvisibility-inlines-hidden" w_speed="1" w_size="1" />
 
   <!-- Target-specific (x86) -->
-  <flag type="simple" value="-mavx" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mavx" w_speed="1" w_size="1" />
   <flag type="simple" value="-mavx2" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mavx512f" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mavx512f" w_speed="1" w_size="1" />
   <flag type="simple" value="-mfma" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mbmi" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mbmi" w_speed="1" w_size="1" />
   <flag type="simple" value="-mbmi2" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mpopcnt" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mlzcnt" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mf16c" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mno-vzeroupper" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mpopcnt" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mlzcnt" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mf16c" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mno-vzeroupper" w_speed="1" w_size="1" />
   <flag type="enum" value="-mprefer-vector-width=256|-mprefer-vector-width=512" w_speed="9" w_size="9" />
 
   <!-- LLVM vectorizer tuning (-mllvm) -->
   <flag type="simple" value="-mllvm -vectorize-loops=true" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -vectorize-slp=true" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mllvm -enable-epilogue-vectorization" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-masked-interleaved-mem-accesses" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-interleaved-mem-accesses" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -vectorizer-maximize-bandwidth" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -extra-vectorizer-passes" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -slp-vectorize-hor" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -slp-vectorize-hor-store" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mllvm -enable-epilogue-vectorization" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-masked-interleaved-mem-accesses" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-interleaved-mem-accesses" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -vectorizer-maximize-bandwidth" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -extra-vectorizer-passes" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -slp-vectorize-hor" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -slp-vectorize-hor-store" w_speed="1" w_size="1" />
   <flag type="enum" value="-mllvm -force-vector-width=4|-mllvm -force-vector-width=8" w_speed="9" w_size="9" />
 
   <!-- LLVM loop passes (-mllvm) -->
@@ -120,12 +120,12 @@
   <flag type="simple" value="-mllvm --enable-loopinterchange" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-unroll-and-jam" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-loop-flatten" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mllvm -enable-loop-versioning-licm" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-loop-simplifycfg-term-folding" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-matrix" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -unroll-runtime" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -unroll-allow-partial" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -disable-licm-promotion" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mllvm -enable-loop-versioning-licm" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-loop-simplifycfg-term-folding" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-matrix" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -unroll-runtime" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -unroll-allow-partial" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -disable-licm-promotion" w_speed="1" w_size="1" />
 
   <!-- LLVM inlining / unrolling thresholds (-mllvm, one of N) -->
   <flag type="enum" value="-mllvm -inline-threshold=300|-mllvm -inline-threshold=500|-mllvm -inline-threshold=1000" w_speed="9" w_size="9" />
@@ -133,32 +133,32 @@
 
   <!-- LLVM GVN / memory / value-numbering (-mllvm) -->
   <flag type="simple" value="-mllvm -enable-load-pre" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mllvm -enable-load-in-loop-pre" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mllvm -enable-load-in-loop-pre" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-gvn-memdep" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-gvn-hoist" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-gvn-sink" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-newgvn" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-pre" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -enable-split-backedge-in-load-pre" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mllvm -enable-dfa-jump-thread" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mllvm -enable-dfa-jump-thread" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm -aggressive-ext-opt" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mllvm -enable-constraint-elimination" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mllvm -enable-constraint-elimination" w_speed="1" w_size="1" />
 
   <!-- LLVM block placement / layout / outlining (-mllvm) -->
   <flag type="simple" value="-mllvm -enable-ext-tsp-block-placement" w_speed="1" w_size="1" />
   <flag type="simple" value="-mllvm --enable-tail-merge" w_speed="1" w_size="1" />
-  <flag type="simple" value="-mllvm -enable-machine-outliner" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -hot-cold-split" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -mergefunc-use-aliases" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-chr" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mllvm -enable-machine-outliner" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -hot-cold-split" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -mergefunc-use-aliases" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-chr" w_speed="1" w_size="1" />
 
   <!-- LLVM scheduling / codegen (-mllvm) -->
-  <flag type="simple" value="-mllvm -enable-misched" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-post-misched" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-shrink-wrap" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -enable-pipeliner" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -x86-cmov-converter" w_speed="0" w_size="0" />
-  <flag type="simple" value="-mllvm -instcombine-code-sinking" w_speed="0" w_size="0" />
+  <flag type="simple" value="-mllvm -enable-misched" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-post-misched" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-shrink-wrap" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -enable-pipeliner" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -x86-cmov-converter" w_speed="1" w_size="1" />
+  <flag type="simple" value="-mllvm -instcombine-code-sinking" w_speed="1" w_size="1" />
 
   <!-- Folded in from the former curated config -->
   <flag type="simple" value="-faddrsig" w_speed="1" w_size="1" />

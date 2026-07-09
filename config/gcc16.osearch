@@ -11,224 +11,224 @@
 
   <!-- Optimization levels -->
   <flag type="enum" value="-O3|-O2|-Os" w_speed="9" w_size="9" />
-  <flag type="simple" value="-ffast-math" w_speed="6" w_size="0" />
-  <flag type="simple" value="-march=native" w_speed="9" w_size="6" />
+  <flag type="simple" value="-ffast-math" w_speed="9" w_size="1" />
+  <flag type="simple" value="-march=native" w_speed="9" w_size="-3" />
   <flag type="simple" value="-flto" w_speed="2" w_size="9" />
   <!-- Pseudo-flag, expanded by cc-pgo.sh (see prime command). A/B on the
        best-known flag sets: huffbench -3.6% instructions / -8.6% cycles,
        ~0 on the vectorized FP kernels, mildly negative on linbench (which
        the search will reject). Candidate builds cost 2 compiles + a
        training run, so searches slow down where it gets explored. -->
-  <flag type="simple" value="-fprofile-use" w_speed="4" w_size="0" />
+  <flag type="simple" value="-fprofile-use" w_speed="9" w_size="1" />
 
   <!-- O2/O3 flags: disable to test impact -->
-  <flag type="simple" value="-fno-aggressive-loop-optimizations" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-aggressive-loop-optimizations" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-align-functions" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-align-jumps" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-align-labels" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-align-labels" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-align-loops" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-allocation-dce" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-allocation-dce" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-asynchronous-unwind-tables" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-auto-inc-dec" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-bit-tests" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-branch-count-reg" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-caller-saves" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-code-hoisting" w_speed="1" w_size="3" />
-  <flag type="simple" value="-fno-combine-stack-adjustments" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-compare-elim" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-cprop-registers" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-crossjumping" w_speed="1" w_size="-1" />
-  <flag type="simple" value="-fno-cse-follow-jumps" w_speed="1" w_size="0" />
+  <flag type="simple" value="-fno-auto-inc-dec" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-bit-tests" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-branch-count-reg" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-caller-saves" w_speed="1" w_size="2" />
+  <flag type="simple" value="-fno-code-hoisting" w_speed="2" w_size="3" />
+  <flag type="simple" value="-fno-combine-stack-adjustments" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-compare-elim" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-cprop-registers" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-crossjumping" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-cse-follow-jumps" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-dce" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-defer-pop" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-dep-fusion" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-defer-pop" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-dep-fusion" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-devirtualize" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-devirtualize-speculatively" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-dse" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-devirtualize-speculatively" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-dse" w_speed="1" w_size="0" />
   <flag type="simple" value="-fno-early-inlining" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-expensive-optimizations" w_speed="-1" w_size="-1" />
-  <flag type="simple" value="-fno-ext-dce" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-fold-mem-offsets" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-expensive-optimizations" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ext-dce" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-fold-mem-offsets" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-forward-propagate" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-function-cse" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-gcse" w_speed="1" w_size="-2" />
+  <flag type="simple" value="-fno-function-cse" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-gcse" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-gcse-after-reload" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-gcse-lm" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-guess-branch-probability" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-gcse-lm" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-guess-branch-probability" w_speed="1" w_size="4" />
   <flag type="simple" value="-fno-hoist-adjacent-loads" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-if-conversion" w_speed="2" w_size="2" />
+  <flag type="simple" value="-fno-if-conversion" w_speed="2" w_size="3" />
   <flag type="simple" value="-fno-if-conversion2" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-indirect-inlining" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-inline" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-inline-atomics" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-inline-functions" w_speed="-7" w_size="1" />
-  <flag type="simple" value="-fno-inline-functions-called-once" w_speed="1" w_size="-7" />
-  <flag type="simple" value="-fno-inline-small-functions" w_speed="-5" w_size="-1" />
+  <flag type="simple" value="-fno-inline" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-inline-atomics" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-inline-functions" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-inline-functions-called-once" w_speed="-1" w_size="1" />
+  <flag type="simple" value="-fno-inline-small-functions" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-ipa-bit-cp" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-ipa-cp" w_speed="-2" w_size="0" />
-  <flag type="simple" value="-fno-ipa-cp-clone" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-ipa-cp" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-cp-clone" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-ipa-icf" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-ipa-icf-functions" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-icf-variables" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-modref" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-ipa-profile" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-pure-const" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-ra" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-ipa-reference" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-reference-addressable" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-sra" w_speed="1" w_size="-1" />
-  <flag type="simple" value="-fno-ipa-stack-alignment" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-strict-aliasing" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ipa-vrp" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ira-hoist-pressure" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ira-share-save-slots" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ira-share-spill-slots" w_speed="1" w_size="-7" />
-  <flag type="simple" value="-fno-isolate-erroneous-paths-dereference" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ivopts" w_speed="0" w_size="-7" />
-  <flag type="simple" value="-fno-jump-tables" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-late-combine-instructions" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-lifetime-dse" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-loop-interchange" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-loop-unroll-and-jam" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-ipa-icf-functions" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-icf-variables" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-modref" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-profile" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-pure-const" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-ra" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-reference" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-reference-addressable" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-sra" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-stack-alignment" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-strict-aliasing" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ipa-vrp" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ira-hoist-pressure" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ira-share-save-slots" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ira-share-spill-slots" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-isolate-erroneous-paths-dereference" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ivopts" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-jump-tables" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-late-combine-instructions" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-lifetime-dse" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-loop-interchange" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-loop-unroll-and-jam" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-lra-remat" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-malloc-dce" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-math-errno" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-move-loop-invariants" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-move-loop-stores" w_speed="-7" w_size="1" />
-  <flag type="simple" value="-fno-omit-frame-pointer" w_speed="1" w_size="-7" />
-  <flag type="simple" value="-fno-optimize-crc" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-malloc-dce" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-math-errno" w_speed="1" w_size="9" />
+  <flag type="simple" value="-fno-move-loop-invariants" w_speed="0" w_size="1" />
+  <flag type="simple" value="-fno-move-loop-stores" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-omit-frame-pointer" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-optimize-crc" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-optimize-sibling-calls" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-optimize-strlen" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-partial-inlining" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-peel-loops" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-peephole" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-peephole2" w_speed="1" w_size="-6" />
-  <flag type="simple" value="-fno-plt" w_speed="1" w_size="-2" />
-  <flag type="simple" value="-fno-predictive-commoning" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-printf-return-value" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ree" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-reorder-blocks" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-partial-inlining" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-peel-loops" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-peephole" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-peephole2" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-plt" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-predictive-commoning" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-printf-return-value" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ree" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-reorder-blocks" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-reorder-blocks-and-partition" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-reorder-functions" w_speed="1" w_size="2" />
-  <flag type="simple" value="-fno-rerun-cse-after-loop" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-sched-critical-path-heuristic" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-reorder-functions" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-rerun-cse-after-loop" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-sched-critical-path-heuristic" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-sched-dep-count-heuristic" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-sched-group-heuristic" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-sched-interblock" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-sched-last-insn-heuristic" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-sched-rank-heuristic" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-sched-spec" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-sched-spec-insn-heuristic" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-sched-stalled-insns-dep" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-schedule-fusion" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-sched-group-heuristic" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-sched-interblock" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-sched-last-insn-heuristic" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-sched-rank-heuristic" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-sched-spec" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-sched-spec-insn-heuristic" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-sched-stalled-insns-dep" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-schedule-fusion" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-schedule-insns2" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-semantic-interposition" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-shrink-wrap" w_speed="1" w_size="-1" />
+  <flag type="simple" value="-fno-semantic-interposition" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-shrink-wrap" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-shrink-wrap-separate" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-signed-zeros" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-speculatively-call-stored-functions" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-split-ivs-in-unroller" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-split-loops" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-split-paths" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-split-wide-types" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-ssa-backprop" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-signed-zeros" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-speculatively-call-stored-functions" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-split-ivs-in-unroller" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-split-loops" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-split-paths" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-split-wide-types" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-ssa-backprop" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-ssa-phiopt" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-stdarg-opt" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-stdarg-opt" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-store-merging" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-strict-aliasing" w_speed="-7" w_size="-7" />
-  <flag type="simple" value="-fno-thread-jumps" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-toplevel-reorder" w_speed="1" w_size="-7" />
-  <flag type="simple" value="-fno-trapping-math" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-tree-bit-ccp" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-builtin-call-dce" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-ccp" w_speed="1" w_size="-2" />
-  <flag type="simple" value="-fno-tree-ch" w_speed="-7" w_size="-1" />
-  <flag type="simple" value="-fno-tree-coalesce-vars" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-copy-prop" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-dce" w_speed="-6" w_size="1" />
-  <flag type="simple" value="-fno-tree-dominator-opts" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-tree-dse" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-strict-aliasing" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-thread-jumps" w_speed="1" w_size="-3" />
+  <flag type="simple" value="-fno-toplevel-reorder" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-trapping-math" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-bit-ccp" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-builtin-call-dce" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-ccp" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-ch" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-coalesce-vars" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-copy-prop" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-dce" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-dominator-opts" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-dse" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-tree-forwprop" w_speed="1" w_size="2" />
-  <flag type="simple" value="-fno-tree-fre" w_speed="1" w_size="-5" />
-  <flag type="simple" value="-fno-tree-loop-distribute-patterns" w_speed="2" w_size="0" />
-  <flag type="simple" value="-fno-tree-loop-distribution" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-loop-im" w_speed="-4" w_size="1" />
-  <flag type="simple" value="-fno-tree-loop-ivcanon" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-loop-optimize" w_speed="-7" w_size="-3" />
-  <flag type="simple" value="-fno-tree-loop-vectorize" w_speed="-7" w_size="1" />
-  <flag type="simple" value="-fno-tree-partial-pre" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-phiprop" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-pre" w_speed="-1" w_size="-1" />
-  <flag type="simple" value="-fno-tree-pta" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-reassoc" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-tree-scev-cprop" w_speed="1" w_size="2" />
-  <flag type="simple" value="-fno-tree-sink" w_speed="1" w_size="3" />
+  <flag type="simple" value="-fno-tree-fre" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-loop-distribute-patterns" w_speed="3" w_size="1" />
+  <flag type="simple" value="-fno-tree-loop-distribution" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-loop-im" w_speed="1" w_size="0" />
+  <flag type="simple" value="-fno-tree-loop-ivcanon" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-loop-optimize" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-loop-vectorize" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-partial-pre" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-phiprop" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-pre" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-pta" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-reassoc" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-scev-cprop" w_speed="1" w_size="4" />
+  <flag type="simple" value="-fno-tree-sink" w_speed="1" w_size="5" />
   <flag type="simple" value="-fno-tree-slp-vectorize" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-tree-slsr" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-sra" w_speed="-7" w_size="-3" />
+  <flag type="simple" value="-fno-tree-slsr" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-sra" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-tree-switch-conversion" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-tree-tail-merge" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fno-tree-ter" w_speed="1" w_size="-1" />
-  <flag type="simple" value="-fno-tree-vrp" w_speed="1" w_size="0" />
-  <flag type="simple" value="-fno-unroll-completely-grow-size" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-unroll-loops" w_speed="-2" w_size="1" />
-  <flag type="simple" value="-fno-unswitch-loops" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-version-loops-for-strides" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-tree-ter" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-vrp" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-unroll-completely-grow-size" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-unroll-loops" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-unswitch-loops" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-version-loops-for-strides" w_speed="1" w_size="1" />
 
   <!-- Disabled by default at O3: enable to test impact -->
-  <flag type="simple" value="-fallow-store-data-races" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fassociative-math" w_speed="0" w_size="0" />
-  <flag type="simple" value="-favoid-store-forwarding" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fconserve-stack" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fdelayed-branch" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fdelete-dead-exceptions" w_speed="0" w_size="0" />
-  <flag type="simple" value="-ffinite-loops" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fallow-store-data-races" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fassociative-math" w_speed="1" w_size="1" />
+  <flag type="simple" value="-favoid-store-forwarding" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fconserve-stack" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fdelayed-branch" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fdelete-dead-exceptions" w_speed="1" w_size="1" />
+  <flag type="simple" value="-ffinite-loops" w_speed="1" w_size="1" />
   <flag type="simple" value="-ffinite-math-only" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fgcse-las" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fgcse-sm" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fgraphite" w_speed="-6" w_size="1" />
-  <flag type="simple" value="-fgraphite-identity" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fgcse-las" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fgcse-sm" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fgraphite" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fgraphite-identity" w_speed="1" w_size="1" />
   <flag type="simple" value="-finline-stringops" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fipa-pta" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fipa-reorder-for-locality" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fira-loop-pressure" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fisolate-erroneous-paths-attribute" w_speed="0" w_size="0" />
-  <flag type="simple" value="-flimit-function-alignment" w_speed="0" w_size="0" />
-  <flag type="simple" value="-flive-range-shrinkage" w_speed="1" w_size="0" />
-  <flag type="simple" value="-floop-nest-optimize" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fmodulo-sched" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fmodulo-sched-allow-regmoves" w_speed="0" w_size="0" />
-  <flag type="simple" value="-freciprocal-math" w_speed="0" w_size="0" />
-  <flag type="simple" value="-frename-registers" w_speed="1" w_size="-3" />
-  <flag type="simple" value="-freschedule-modulo-scheduled-loops" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsched-pressure" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsched-spec-load" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsched-spec-load-dangerous" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsched-stalled-insns" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsched2-use-superblocks" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fschedule-insns" w_speed="1" w_size="-1" />
-  <flag type="simple" value="-fsel-sched-pipelining" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsel-sched-pipelining-outer-loops" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsel-sched-reschedule-pipelined" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fselective-scheduling" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fselective-scheduling2" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsingle-precision-constant" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fsplit-wide-types-early" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fipa-pta" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fipa-reorder-for-locality" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fira-loop-pressure" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fisolate-erroneous-paths-attribute" w_speed="1" w_size="1" />
+  <flag type="simple" value="-flimit-function-alignment" w_speed="1" w_size="1" />
+  <flag type="simple" value="-flive-range-shrinkage" w_speed="1" w_size="1" />
+  <flag type="simple" value="-floop-nest-optimize" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fmodulo-sched" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fmodulo-sched-allow-regmoves" w_speed="1" w_size="1" />
+  <flag type="simple" value="-freciprocal-math" w_speed="1" w_size="1" />
+  <flag type="simple" value="-frename-registers" w_speed="1" w_size="1" />
+  <flag type="simple" value="-freschedule-modulo-scheduled-loops" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsched-pressure" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsched-spec-load" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsched-spec-load-dangerous" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsched-stalled-insns" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsched2-use-superblocks" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fschedule-insns" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsel-sched-pipelining" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsel-sched-pipelining-outer-loops" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsel-sched-reschedule-pipelined" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fselective-scheduling" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fselective-scheduling2" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsingle-precision-constant" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fsplit-wide-types-early" w_speed="1" w_size="1" />
   <flag type="simple" value="-ftracer" w_speed="1" w_size="1" />
-  <flag type="simple" value="-ftree-cselim" w_speed="0" w_size="0" />
-  <flag type="simple" value="-ftree-vectorize" w_speed="0" w_size="0" />
-  <flag type="simple" value="-funconstrained-commons" w_speed="0" w_size="0" />
-  <flag type="simple" value="-funreachable-traps" w_speed="0" w_size="0" />
-  <flag type="simple" value="-funroll-all-loops" w_speed="2" w_size="-3" />
-  <flag type="simple" value="-funsafe-math-optimizations" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fvariable-expansion-in-unroller" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fvpt" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fweb" w_speed="0" w_size="0" />
+  <flag type="simple" value="-ftree-cselim" w_speed="1" w_size="1" />
+  <flag type="simple" value="-ftree-vectorize" w_speed="1" w_size="1" />
+  <flag type="simple" value="-funconstrained-commons" w_speed="1" w_size="1" />
+  <flag type="simple" value="-funreachable-traps" w_speed="1" w_size="1" />
+  <flag type="simple" value="-funroll-all-loops" w_speed="4" w_size="1" />
+  <flag type="simple" value="-funsafe-math-optimizations" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fvariable-expansion-in-unroller" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fvpt" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fweb" w_speed="1" w_size="1" />
 
   <!-- Enum flags -->
-  <flag type="simple" value="-fno-delete-null-pointer-checks" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fprefetch-loop-arrays" w_speed="0" w_size="0" />
-  <flag type="simple" value="-fno-tree-loop-if-convert" w_speed="0" w_size="0" />
+  <flag type="simple" value="-fno-delete-null-pointer-checks" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fprefetch-loop-arrays" w_speed="1" w_size="1" />
+  <flag type="simple" value="-fno-tree-loop-if-convert" w_speed="1" w_size="1" />
 
   <!-- Enum flags -->
   <flag type="enum" value="-fexcess-precision=fast|-fexcess-precision=standard|-fexcess-precision=16" w_speed="9" w_size="9" />
@@ -241,7 +241,7 @@
 
   <!-- Loop/IPA options folded in from the former curated config -->
   <flag type="simple" value="-fgcse-after-reload" w_speed="1" w_size="1" />
-  <flag type="simple" value="-fipa-cp-clone" w_speed="1" w_size="-7" />
+  <flag type="simple" value="-fipa-cp-clone" w_speed="1" w_size="1" />
   <flag type="simple" value="-floop-interchange" w_speed="1" w_size="1" />
   <flag type="simple" value="-floop-unroll-and-jam" w_speed="1" w_size="1" />
   <flag type="simple" value="-fno-common" w_speed="1" w_size="1" />
